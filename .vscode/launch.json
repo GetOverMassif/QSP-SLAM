@@ -1,0 +1,28 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+      {
+        "name": "C++ Launch",
+        "type": "cppdbg",
+        "request": "launch",
+        "program": "${workspaceFolder}/qsp_slam_rgbd",
+        "args": [
+            // "Vocabulary/ORBvoc.bin",
+            // "configs/tum_fr1_desk.yaml",
+            // "/media/lj/TOSHIBA/dataset/TUM/fr1_desk/rgbd_dataset_freiburg1_desk",
+            // "configs/associations/fr1_desk.txt",
+            // "map/tum/fr1_desk"
+            "Vocabulary/ORBvoc.bin",
+            "configs/redwood_01053.yaml",
+            "/media/lj/TOSHIBA/dataset/RedwoodOS/data/rgbd/01053",
+            "/media/lj/TOSHIBA/dataset/RedwoodOS/data/rgbd/01053/associate.txt",
+            "map/redwood/01053"
+        ],
+        "stopAtEntry": true,
+        "cwd": "${workspaceFolder}",
+        "externalConsole": false,
+        "MIMode": "gdb",
+        "miDebuggerPath": "/usr/bin/gdb"
+      }
+    ]
+}
