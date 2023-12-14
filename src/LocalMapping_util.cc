@@ -161,6 +161,7 @@ void LocalMapping::CreateNewMapObjects()
 
     auto SE3Twc = Converter::toMatrix4f(mpCurrentKeyFrame->GetPoseInverse());
     auto mvpObjectDetections = mpCurrentKeyFrame->GetObjectDetections();
+    // cout << "LocalMapping: mvpObjectDetections.size() = " << mvpObjectDetections.size() << endl;
 
     for (int i = 0; i < mvpObjectDetections.size(); i++)
     {
@@ -199,6 +200,7 @@ void LocalMapping::CreateNewMapObjects()
         mpCurrentKeyFrame->AddMapObject(pNewObj, i);
         mpMap->AddMapObject(pNewObj);
         mpObjectDrawer->AddObject(pNewObj);
+        cout << "mpObjectDrawer->AddObject" << endl;
         mlpRecentAddedMapObjects.push_back(pNewObj);
     }
     // cout << "LocalMapping: Finished new objects creation" << endl;
@@ -209,30 +211,46 @@ void LocalMapping::CreateNewMapObjects()
  */
 void LocalMapping::CreateNewObjectsFromDetections()
 {
-    cout << "LocalMapping: Started new objects creation" << endl;
 
+    /*这一帧中进行新物体的创建*/
+
+    cout << "[ LocalMapping - CreateNewObjectsFromDetections ]" << endl;
+
+    // Step 1: 获取当前帧的旋转、平移和物体检测
     cv::Mat Rcw = mpCurrentKeyFrame->GetRotation();
     cv::Mat tcw = mpCurrentKeyFrame->GetTranslation();
     auto mvpObjectDetections = mpCurrentKeyFrame->GetObjectDetections();
 
+    std::cout << " => " << "KF" << mpCurrentKeyFrame->mnId << ", mvpObjectDetections.size() = " << mvpObjectDetections.size() << std::endl;
+
+    // Step 2: 遍历检测
     // Create new objects first, otherwise data association might fail
     for (int det_i = 0; det_i < mvpObjectDetections.size(); det_i++)
     {
+        // Step 2.1: 如果该检测如果已经与物体关联/关键点过少，则continue
+
         auto det = mvpObjectDetections[det_i];
 
         // If the detection is a new object, create a new map object.
         // todo: 这里原本根据点云数量进行判断是否创建物体
 
-        if (!det->isNew)
+        if (!det->isNew) {
+            std::cout << "continue because !det->isNew" << std::endl;
             continue;
-        if (!det->isGood)
+        }
+            
+        if (!det->isGood) {
+            std::cout << "continue because !det->isGood" << std::endl;
             continue;
+        }
 
-        // Create object with associated feature points
-        // 创建物体，插入当前帧、地图
+        // Step 2.2: 创建地图物体，向当前帧、地图中进行添加，向该物体添加关联地图点
         auto pNewObj = new MapObject(mpCurrentKeyFrame, mpMap);
         mpCurrentKeyFrame->AddMapObject(pNewObj, det_i);
         mpMap->AddMapObject(pNewObj);
+
+        // New add
+        det->isNew = false;
 
         auto mvpMapPoints = mpCurrentKeyFrame->GetMapPointMatches();
         int n_valid_points = 0;
@@ -249,22 +267,31 @@ void LocalMapping::CreateNewObjectsFromDetections()
             pNewObj->AddMapPoints(pMP);
             n_valid_points++;
         }
+        std::cout << "n_valid_points = " << n_valid_points << std::endl;
+        std::cout << "det->isNew" << det->isNew << std::endl;
+        // todo: 这里只处理了一个结果
         return;  // for mono sequences, we only focus on the single object in the middle
     }
 }
 
 void LocalMapping::ProcessDetectedObjects()
 {
-    std::cout << "ProcessDetectedObjects" << std::endl;
-    // // std::cout << "Ready to reconstruct_object" << std::endl;
+    
+    std::cout << "[ LocalMapping - ProcessDetectedObjects ]" << std::endl;
+    char key;
+    // std::cout << "Ready to reconstruct_object" << std::endl;
     // std::cout << "Press [ENTER] to continue ... " << std::endl;
-    // char key = getchar();
+    // key = getchar();
     auto SE3Twc = Converter::toMatrix4f(mpCurrentKeyFrame->GetPoseInverse());
     auto SE3Tcw = Converter::toMatrix4f(mpCurrentKeyFrame->GetPose());
     cv::Mat Rcw = mpCurrentKeyFrame->GetRotation();
     cv::Mat tcw = mpCurrentKeyFrame->GetTranslation();
     auto mvpObjectDetections = mpCurrentKeyFrame->GetObjectDetections();
     auto mvpAssociatedObjects = mpCurrentKeyFrame->GetMapObjectMatches();
+
+    // std::cout << " => " << "mvpObjectDetections.size() = " << mvpObjectDetections.size() << std::endl;
+    std::cout << " => " << "KF" << mpCurrentKeyFrame->mnId << ", mvpObjectDetections.size() = " << mvpObjectDetections.size() << std::endl;
+
 
     // 处理当前帧的所有detection
 
@@ -281,32 +308,55 @@ void LocalMapping::ProcessDetectedObjects()
         // 2. the object has not been reconstructed:
         // check if it's ready for reconstruction, reconstruct if it's got enough points
 
-        if (det->isNew)
+        if (det->isNew) {
+            std::cout << "  Conitinue because det->isNew" << std::endl;
             continue;
-        if (!det->isGood)
+        }
+
+        if (!det->isGood) {
+            std::cout << "  Conitinue because !det->isGood" << std::endl;
             continue;
+        }
 
         // 只处理有关联物体的观测
         MapObject *pMO = mvpAssociatedObjects[det_i];
-        if (!pMO)
+        if (!pMO) {
+            std::cout << "  Conitinue because !pMO" << std::endl;
             continue;
+        }
+
         // We only consider the object in the middle
-        if (pMO->mnId != 0)
+        if (pMO->mnId != 0) {
+            std::cout << "  Conitinue because pMO->mnId != 0" << std::endl;
             continue;
+        }
 
         int numKFsPassedSinceInit = int(mpCurrentKeyFrame->mnId - pMO->mpRefKF->mnId);
 
-        if (numKFsPassedSinceInit < 50)
+        // bool isShortInternal = numKFsPassedSinceInit < 15;
+        // std::string condition_str = "numKFsPassedSinceInit < 15";
+        bool isShortInternal = numKFsPassedSinceInit < 15 and (mpCurrentKeyFrame->mnId >= 3);
+        std::string condition_str = "numKFsPassedSinceInit < 15 and (mpCurrentKeyFrame->mnId >= 3)";
+
+        // 只在前50帧进行PCA初始位姿估计
+        if (numKFsPassedSinceInit < 50) {
+            std::cout << "ComputeCuboidPCA" << std::endl;
             pMO->ComputeCuboidPCA(numKFsPassedSinceInit < 15);
-        else  // when we have relative good object shape
+        }
+        else { // when we have relative good object shape
             pMO->RemoveOutliersModel();
+        }
         
         // only begin to reconstruct the object if it is observed for enough amoubt of time (15 KFs)
-        if(numKFsPassedSinceInit < 15)
+        if(isShortInternal) {
+            std::cout << "  Conitinue because " << condition_str << std::endl;
             continue;
+        }
 
-        if ((numKFsPassedSinceInit - 15) % 5 != 0)
+        if ((numKFsPassedSinceInit - 15) % 5 != 0) {
+            std::cout << "  Conitinue because (numKFsPassedSinceInit - 15) % 5 != 0" << std::endl;
             continue;
+        }
 
 //        int numKFsPassedSinceLastRecon = int(mpCurrentKeyFrame->mnId) - nLastReconKFID;
 //        if (numKFsPassedSinceLastRecon  < 8)
@@ -329,7 +379,8 @@ void LocalMapping::ProcessDetectedObjects()
                 continue;
             n_valid_points++;
         }
-
+        
+        // 记录物体上的关键点的数量
         int n_rays = 0;
         auto map_points_vector = mpCurrentKeyFrame->GetMapPointMatches();
         for (auto idx : det->GetFeaturePoints())
@@ -349,7 +400,7 @@ void LocalMapping::ProcessDetectedObjects()
 
 
         // Surface points
-        std::cout << "n_valid_points: " << n_valid_points << ", n_rays: " << n_rays << std::endl;
+        std::cout << " =>" << "n_valid_points: " << n_valid_points << ", n_rays: " << n_rays << std::endl;
         if (n_valid_points >= 50 && n_rays > 20)
         {   
             //！获取surface_points_cam
@@ -378,6 +429,7 @@ void LocalMapping::ProcessDetectedObjects()
             //！ 获取ray_pixels和depth_obs
             Eigen::MatrixXf ray_pixels = Eigen::MatrixXf::Zero(n_rays, 2);
             Eigen::VectorXf depth_obs = Eigen::VectorXf::Zero(n_rays);
+
             int k_i = 0;
             for (auto point_idx : det->GetFeaturePoints())
             {
@@ -399,45 +451,61 @@ void LocalMapping::ProcessDetectedObjects()
                 k_i++;
             }
 
+            // 像素点的归一化的向量
             Eigen::MatrixXf u_hom(n_rays, 3);
             u_hom << ray_pixels, Eigen::MatrixXf::Ones(n_rays, 1);
+
+            // 转换到相机坐标系的射线向量
             Eigen::MatrixXf fg_rays(n_rays, 3);
             Eigen::Matrix3f invK = Converter::toMatrix3f(mpTracker->GetCameraIntrinsics()).inverse();
+            
             for (int i = 0; i  < n_rays; i++)
             {
                 auto x = u_hom.row(i).transpose();
                 fg_rays.row(i) = (invK * x).transpose();
             }
+
             Eigen::MatrixXf rays(fg_rays.rows() + det->background_rays.rows(), 3);
             rays << fg_rays, det->background_rays;
             
-            // std::cout << "Ready to reconstruct_object" << std::endl;
+            std::cout << "Ready to reconstruct_object" << std::endl;
             // std::cout << "Press [ENTER] to continue ... " << std::endl;
             // key = getchar();
 
             PyThreadStateLock PyThreadLock;
+
+            std::cout << "Before reconstruct_object" << std::endl;
+
+            std::cout << "SE3Tcw = \n" << SE3Tcw.matrix() << std::endl;
+            std::cout << "pMO->Sim3Two = \n" << pMO->Sim3Two.matrix() << std::endl;
+
             auto pyMapObject = pyOptimizer.attr("reconstruct_object")
                     (SE3Tcw * pMO->Sim3Two, surface_points_cam, rays, depth_obs, pMO->vShapeCode);
+            std::cout << "After reconstruct_object" << std::endl;
 
             // cout << "Number of KF passed: " << numKFsPassedSinceInit << endl;
 
+            // std::cout << "pMO->reconstructed = " << pMO->reconstructed << std::endl;
             // If not initialized, duplicate optimization to resolve orientation ambiguity
             if (!pMO->reconstructed)
             {
                 // 重建失败
-                std::cout << "Reconstruction failed" << std::endl;
-                continue;
+                // std::cout << "Reconstruction failed" << std::endl;
+                // continue;
+                
                 // 这里后面的代码会让定位失效
-                // abort();
-                // auto flipped_Two = pMO->Sim3Two;
-                // flipped_Two.col(0) *= -1;
-                // flipped_Two.col(2) *= -1;
-                // auto pyMapObjectFlipped = pyOptimizer.attr("reconstruct_object")
-                //         (SE3Tcw * flipped_Two, surface_points_cam, rays, depth_obs, pMO->vShapeCode);
 
-                // if (pyMapObject.attr("loss").cast<float>() > pyMapObjectFlipped.attr("loss").cast<float>())
-                //     pyMapObject = pyMapObjectFlipped;
+                auto flipped_Two = pMO->Sim3Two;
+                flipped_Two.col(0) *= -1;
+                flipped_Two.col(2) *= -1;
+                auto pyMapObjectFlipped = pyOptimizer.attr("reconstruct_object")
+                        (SE3Tcw * flipped_Two, surface_points_cam, rays, depth_obs, pMO->vShapeCode);
+
+                if (pyMapObject.attr("loss").cast<float>() > pyMapObjectFlipped.attr("loss").cast<float>())
+                    pyMapObject = pyMapObjectFlipped;
             }
+
+            // std::cout << "pMO->reconstructed = " << pMO->reconstructed << std::endl;
 
             std::cout << "Reconstruction successed" << std::endl;
 
@@ -468,11 +536,14 @@ void LocalMapping::ProcessDetectedObjects()
             pMO->AddObservation(mpCurrentKeyFrame, det_i);
             mpCurrentKeyFrame->AddMapObject(pMO, det_i);
             mpObjectDrawer->AddObject(pMO);
+            std::cout << "mpObjectDrawer->AddObject(pMO);" << std::endl;
+
             mlpRecentAddedMapObjects.push_back(pMO);
 
             nLastReconKFID = int(mpCurrentKeyFrame->mnId);
 
-            std::cout << "Finish reconstructing one object" << std::endl;
+            // std::cout << "Finish reconstructing one object" << std::endl;
+
             // std::cout << "Press [ENTER] to continue ... " << std::endl;
             // key = getchar();
         }

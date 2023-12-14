@@ -23,6 +23,7 @@ Thirdparty/g2o/lib/
 
 qsp_slam
 qsp_slam_mono
+qsp_slam_rgbd
 
 map/
 create_json.py

@@ -73,6 +73,10 @@ public:
         return mlNewKeyFrames.size();
     }
 
+    void InitSet();
+    bool RunOneTime();
+    bool RunWhileNewKeyFrame();
+
     // Object SLAM by Jingwen
     KeyFrame* mpLastKeyFrame;
     std::list<MapObject*> mlpRecentAddedMapObjects;
@@ -135,6 +139,8 @@ protected:
 
     bool mbAcceptKeyFrames;
     std::mutex mMutexAccept;
+
+    int nKFInserted;
 };
 
 } //namespace ORB_SLAM

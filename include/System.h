@@ -216,6 +216,8 @@ private:
     std::mutex mMutexState;
 
     vector<string> mvstrImageFilenamesRGB;
+
+    bool mbMapInSameThread;
 };
 
 }// namespace ORB_SLAM

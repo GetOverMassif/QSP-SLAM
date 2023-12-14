@@ -234,6 +234,10 @@ protected:
     list<MapPoint*> mlpTemporalPoints;
 
     vector<string> mvstrImageFilenamesRGB;
+
+    // bool mbMapInSameThread;
+
+    bool frame_by_frame;
 };
 
 } //namespace ORB_SLAM

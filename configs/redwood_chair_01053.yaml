@@ -5,12 +5,15 @@
 #--------------------------------------------------------------------------------------------
 
 frame_by_frame: 1  # 1: True, 0: False
+Tracking.frame_by_frame: 1  # 1: True, 0: False
 
 System.mode: RGBD
 System.output: KeyFrameTrajectoryRGBD.txt
 
 # System.mode: MONOCULAR
 # System.output: KeyFrameTrajectoryMONO.txt
+
+System.LocalMappingInSameThread: 1 
 
 # Camera calibration and distortion parameters (OpenCV)
 Camera.fx: 525.0

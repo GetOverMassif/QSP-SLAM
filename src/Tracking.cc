@@ -156,6 +156,14 @@ Tracking::Tracking(System *pSys, ORBVocabulary* pVoc, FrameDrawer *pFrameDrawer,
         cout << endl << "maskErrosion: " << maskErrosion << endl;
     }
     DetectorConfigFile = fSettings["DetectorConfigPath"].string();
+
+    // if(fSettings["System.LocalMappingInSameThread"].isNamed()) {
+    //     int MapInSameThread = fSettings["System.mode"];
+    //     mbMapInSameThread = MapInSameThread;
+    // }
+
+    frame_by_frame = fSettings["frame_by_frame"].isNamed();
+
 }
 
 void Tracking::SetLocalMapper(LocalMapping *pLocalMapper)
@@ -235,26 +243,16 @@ cv::Mat Tracking::GrabImageRGBD(const cv::Mat &imRGB,const cv::Mat &imD, const d
             cvtColor(mImGray,mImGray,CV_BGRA2GRAY);
     }
 
-    // cout << imDepth.type() << endl;
-    // cout << imDepth.at<int>(200, 300) << endl;
-    // cout << imDepth.at<float>(200, 300) << endl;
-
-    // std::cout << "convert to >> " << std::endl;
-
     if((fabs(mDepthMapFactor-1.0f)>1e-5) || imDepth.type()!=CV_32F)
         imDepth.convertTo(imDepth, CV_32F, mDepthMapFactor);
-    
-    // cout << imDepth.type() << endl;
-    // cout << imDepth.at<int>(200, 300) << endl;
-    // cout << imDepth.at<float>(200, 300) << endl;
 
-    clock_t time_0_start = clock();
+    // clock_t time_0_start = clock();
     mCurrentFrame = Frame(mImGray,imDepth,timestamp,mpORBextractorLeft,mpORBVocabulary,mK,mDistCoef,mbf,mThDepth);
-    clock_t time_frame_creation = clock();
-    cout << " -- time_frame_creation: " <<(double)(time_frame_creation - time_0_start) / CLOCKS_PER_SEC << "s" << endl;
+    // clock_t time_frame_creation = clock();
+    // cout << " -- time_frame_creation: " <<(double)(time_frame_creation - time_0_start) / CLOCKS_PER_SEC << "s" << endl;
     Track();
-    clock_t time_track = clock();
-    cout << " -- time_track: " <<(double)(time_track - time_frame_creation) / CLOCKS_PER_SEC << "s" << endl;
+    // clock_t time_track = clock();
+    // cout << " -- time_track: " <<(double)(time_track - time_frame_creation) / CLOCKS_PER_SEC << "s" << endl;
 
     return mCurrentFrame.mTcw.clone();
 }
@@ -1092,7 +1090,16 @@ bool Tracking::NeedNewKeyFrame()
 
 void Tracking::CreateNewKeyFrame()
 {
-    
+    if (frame_by_frame) {
+        char key;
+        std::cout << "Creating new KeyFrame" << std::endl;
+        std::cout << "Press [ENTER] to continue ... , [y] to autonomous mode" << std::endl;
+        key = getchar();
+        if (key=='y') {
+            frame_by_frame = false;
+        }
+    }
+
     if(!mpLocalMapper->SetNotStop(true))
         return;
 
@@ -1109,13 +1116,19 @@ void Tracking::CreateNewKeyFrame()
     else if (mSensor == System::MONOCULAR)
     {
         std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
-        // GetObjectDetectionsMono(pKF);
-        // //DetectObjects(pKF);
-        // if (!mpMap->GetAllMapObjects().empty())
-        // {
-        //     // AssociateObjects(pKF);
-        //     AssociateObjectsByProjection(pKF);
-        // }
+
+        // todo: 物体相关操作 1 ，从单目图像中进行物体检测
+
+        GetObjectDetectionsMono(pKF);
+
+        //DetectObjects(pKF);
+        if (!mpMap->GetAllMapObjects().empty())
+        {
+            // AssociateObjects(pKF);
+            // todo: 物体相关操作 2 ，进行物体数据关联
+            AssociateObjectsByProjection(pKF);
+        }
+
         std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
 
         double ttrack= std::chrono::duration_cast<std::chrono::duration<double> >(t2 - t1).count();
@@ -1205,6 +1218,7 @@ void Tracking::CreateNewKeyFrame()
     }
 
     mpLocalMapper->InsertKeyFrame(pKF);
+
     mpLocalMapper->SetNotStop(false);
 
     mnLastKeyFrameId = mCurrentFrame.mnId;

@@ -97,13 +97,13 @@ target_link_libraries(${PROJECT_NAME}
         ${DSC_SLAM_DIR}/Thirdparty/g2o/lib/libg2o.so
         )
 
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR})
-add_executable(qsp_slam qsp_slam.cc)
-target_link_libraries(qsp_slam ${PROJECT_NAME})
+# set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR})
+# add_executable(qsp_slam qsp_slam.cc)
+# target_link_libraries(qsp_slam ${PROJECT_NAME})
 
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR})
-add_executable(qsp_slam_mono qsp_slam_mono.cc)
-target_link_libraries(qsp_slam_mono ${PROJECT_NAME})
+# set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR})
+# add_executable(qsp_slam_mono qsp_slam_mono.cc)
+# target_link_libraries(qsp_slam_mono ${PROJECT_NAME})
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR})
 add_executable(qsp_slam_rgbd qsp_slam_rgbd.cc)

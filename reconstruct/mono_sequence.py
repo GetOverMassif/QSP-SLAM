@@ -94,7 +94,7 @@ class Frame:
             det_2d = torch.load(label_path2d)
         t2 = get_time()
         print("2D detctor takes %f seconds" % (t2 - t1))
-        print(f"self.img_rgb.shape = {self.img_rgb.shape}")
+        # print(f"self.img_rgb.shape = {self.img_rgb.shape}")
         img_h, img_w, _ = self.img_rgb.shape
         masks_2d = det_2d["pred_masks"]
         bboxes_2d = det_2d["pred_boxes"]
@@ -103,25 +103,19 @@ class Frame:
         if masks_2d.shape[0] == 0:
             return
 
-        print("100")
         # For redwood and freiburg cars, we only focus on the object in the middle
         max_id = np.argmax(masks_2d.sum(axis=-1).sum(axis=-1))
         mask_max = masks_2d[max_id, ...].astype(np.float32) * 255.
         bbox_max = bboxes_2d[max_id, ...]
 
-        print("106")
         non_surface_pixels = self.pixels_sampler(bbox_max, mask_max.astype(np.bool8))
-        print("108")
         if non_surface_pixels.shape[0] > 200:
             sample_ind = np.linspace(0, non_surface_pixels.shape[0]-1, 200).astype(np.int32)
             non_surface_pixels = non_surface_pixels[sample_ind, :]
 
         distortion_coef = np.array([self.k1, self.k2, 0.0, 0.0, 0.0])
-        print("114")
         non_surface_pixels_undistort = cv2.undistortPoints(non_surface_pixels.reshape(1, -1, 2).astype(np.float32), self.K, distortion_coef, P=self.K).squeeze()
-        print("116")
         background_rays_undist = get_rays(non_surface_pixels_undistort, self.invK).astype(np.float32)
-        print("118")
         instance = ForceKeyErrorDict()
         instance.bbox = bbox_max
         instance.mask = mask_max

@@ -93,6 +93,13 @@ class Optimizer(object):
         :param depth: depth values (K,) only contain foreground pixels, K = M for KITTI
         :return: optimized opject pose and shape, saved as a dict
         """
+
+        print(f"t_cam_obj = {t_cam_obj}")
+        print(f"pts.shape = {pts.shape}")
+        print(f"rays.shape = {rays.shape}")
+        print(f"depth.shape = {depth.shape}")
+
+
         # Always start from zero code
         if code is None:
             latent_vector = torch.zeros(self.code_len).cuda()

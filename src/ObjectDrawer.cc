@@ -57,6 +57,7 @@ void ObjectDrawer::ProcessNewObjects()
     unique_lock<mutex> lock(mMutexObjects);
     // std::cout << "??????????????????????????????????????????????" << std::endl;
     auto pMO = mlNewMapObjects.front();
+    // std::cout << "mlNewMapObjects.size() = " << mlNewMapObjects.size() << std::endl;
     if (pMO)
     {
         for (int i = 0; i < 1000; i++) {
@@ -66,6 +67,9 @@ void ObjectDrawer::ProcessNewObjects()
         pMO->SetRenderId(renderId);
         mlNewMapObjects.pop_front();
     }
+    else {
+        // std::cout << "!pMO" << std::endl;
+    }
 }
 
 void ObjectDrawer::DrawObjects(bool bFollow, const Eigen::Matrix4f &Tec)
@@ -74,15 +78,18 @@ void ObjectDrawer::DrawObjects(bool bFollow, const Eigen::Matrix4f &Tec)
 
     auto mvpMapObjects = mpMap->GetAllMapObjects();
 
+    // std::cout << "mvpMapObjects.size() = " << mvpMapObjects.size() << std::endl;
+
     for (MapObject *pMO : mvpMapObjects)
     {
-        std::cout << "??????????????????????????????????????????????" << std::endl;
-        if (!pMO)
+        if (!pMO) {
+            // std::cout << "!pMO" << std::endl;
             continue;
-        if (pMO->isBad())
+        }
+        if (pMO->isBad()) {
+            std::cout << "pMO->isBad()" << std::endl;
             continue;
-        
-
+        }
 
         Eigen::Matrix4f Sim3Two = pMO->GetPoseSim3();
 

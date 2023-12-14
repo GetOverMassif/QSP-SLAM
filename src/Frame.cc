@@ -646,12 +646,6 @@ void Frame::ComputeStereoFromRGBD(const cv::Mat &imDepth)
     mvuRight = vector<float>(N,-1);
     mvDepth = vector<float>(N,-1);
 
-    std::cout << "In compute stereo ..." << std::endl;
-
-    // cout << imDepth.type() << endl;
-    // cout << imDepth.at<int>(200, 300) << endl;
-    // cout << imDepth.at<float>(200, 300) << endl;
-
     for(int i=0; i<N; i++)
     {
         const cv::KeyPoint &kp = mvKeys[i];
