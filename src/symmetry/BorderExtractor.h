@@ -19,7 +19,7 @@
 
 typedef pcl::PointXYZ PointType;
 
-namespace EllipsoidSLAM
+namespace ORB_SLAM2
 {
 
 class BorderExtractor

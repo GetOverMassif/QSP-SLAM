@@ -4,7 +4,7 @@
 
 #include <ctime>
 
-namespace EllipsoidSLAM
+namespace ORB_SLAM2
 {
     // ---- compare functions
     bool comp_func_mapPlane(const pair<double,g2o::plane*>& t1, const pair<double,g2o::plane*>& t2)

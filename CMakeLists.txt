@@ -39,6 +39,20 @@ set(CONDA_ENV "/home/lj/anaconda3/envs/dsp-slam2")
 
 set(DSC_SLAM_DIR "/home/lj/Documents/DSC-SLAM")
 
+if(DEFINED ENV{PCL_DIR})
+   message("Environment variable PCL_DIR: " $ENV{PCL_DIR})
+   set(PCL_DIR $ENV{PCL_DIR})
+endif()
+
+include_directories(/usr/include/vtk-7.1)
+
+FIND_PACKAGE( PCL REQUIRED )
+list(REMOVE_ITEM PCL_LIBRARIES "vtkproj4")
+ADD_DEFINITIONS( ${PCL_DEFINITIONS} )
+INCLUDE_DIRECTORIES( ${PCL_INCLUDE_DIRS}  )
+LINK_LIBRARIES( ${PCL_LIBRARY_DIRS} )
+
+
 include_directories(
         ${PROJECT_SOURCE_DIR}
         ${PROJECT_SOURCE_DIR}/include
@@ -55,46 +69,110 @@ add_subdirectory(pybind11)
 
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/lib)
 add_library(${PROJECT_NAME} SHARED
-        src/System.cc
-        src/System_util.cc
-        src/Tracking.cc
-        src/Tracking_util.cc
-        src/LocalMapping.cc
-        src/LocalMapping_util.cc
-        src/LoopClosing.cc
-        src/LoopClosing_util.cc
-        src/ORBextractor.cc
-        src/ORBmatcher.cc
-        src/FrameDrawer.cc
-        src/Converter.cc
-        src/MapPoint.cc
-        src/MapPoint_util.cc
-        src/KeyFrame.cc
-        src/KeyFrame_util.cc
-        src/Map.cc
-        src/Map_util.cc
-        src/MapDrawer.cc
-        src/MapDrawer_util.cc
-        src/Optimizer.cc
-        src/Optimizer_util.cc
-        src/PnPsolver.cc
-        src/Frame.cc
-        src/KeyFrameDatabase.cc
-        src/Sim3Solver.cc
-        src/Initializer.cc
-        src/Viewer.cc
-        src/ObjectDetection.cc
-        src/MapObject.cc
-        src/ObjectDrawer.cc
-        src/ObjectRenderer.cc
-        )
+    src/System.cc
+    src/System_util.cc
+    src/Tracking.cc
+    src/Tracking_util.cc
+    src/LocalMapping.cc
+    src/LocalMapping_util.cc
+    src/LoopClosing.cc
+    src/LoopClosing_util.cc
+    src/ORBextractor.cc
+    src/ORBmatcher.cc
+    src/FrameDrawer.cc
+    src/Converter.cc
+    src/MapPoint.cc
+    src/MapPoint_util.cc
+    src/KeyFrame.cc
+    src/KeyFrame_util.cc
+    src/Map.cc
+    src/Map_util.cc
+    src/MapDrawer.cc
+    src/MapDrawer_util.cc
+    src/Optimizer.cc
+    src/Optimizer_util.cc
+    src/PnPsolver.cc
+    src/Frame.cc
+    src/KeyFrameDatabase.cc
+    src/Sim3Solver.cc
+    src/Initializer.cc
+    src/Viewer.cc
+    src/ObjectDetection.cc
+    src/MapObject.cc
+    src/ObjectDrawer.cc
+    src/ObjectRenderer.cc
+
+    src/core/Ellipsoid.cpp
+#     src/core/Map.cpp
+#     src/core/MapDrawer.cpp
+#     src/core/Viewer.cpp
+#     src/core/Initializer.cpp
+    src/core/Geometry.cpp
+#     src/core/System.cpp
+#     src/core/Tracking.cpp
+#     src/core/FrameDrawer.cpp
+#     src/core/Optimizer.cpp
+#     src/core/Frame.cpp
+    src/core/Plane.cpp
+#     src/core/DataAssociation.cpp
+#     src/core/BasicEllipsoidEdges.cpp
+#     src/core/NonparamDA.cpp
+#     src/core/SupportingPlane.cpp
+    src/core/ConstrainPlane.cpp
+#     src/core/SemanticLabel.cpp
+#     src/core/PriorInfer.cpp
+
+)
+
+# add_library(${PROJECT_NAME} SHARED
+#     src/core/Ellipsoid.cpp
+#     src/core/Map.cpp
+#     src/core/MapDrawer.cpp
+#     src/core/Viewer.cpp
+#     src/core/Initializer.cpp
+#     src/core/Geometry.cpp
+#     src/core/System.cpp
+#     src/core/Tracking.cpp
+#     src/core/FrameDrawer.cpp
+#     src/core/Optimizer.cpp
+#     src/core/Frame.cpp
+#     src/core/Plane.cpp
+#     src/core/DataAssociation.cpp
+#     src/core/BasicEllipsoidEdges.cpp
+#     src/core/NonparamDA.cpp
+#     src/core/SupportingPlane.cpp
+#     src/core/ConstrainPlane.cpp
+#     src/core/SemanticLabel.cpp
+#     src/core/PriorInfer.cpp
+# )
+
+add_library(utils SHARED
+    src/utils/matrix_utils.cpp
+    src/utils/dataprocess_utils.cpp
+)
+
+target_link_libraries(utils
+    ${OpenCV_LIBS}
+)
+
+
 target_link_libraries(${PROJECT_NAME}
         pybind11::embed
         ${OpenCV_LIBS}
         ${EIGEN3_LIBS}
         ${Pangolin_LIBRARIES}
         ${DSC_SLAM_DIR}/Thirdparty/DBoW2/lib/libDBoW2.so
-        ${DSC_SLAM_DIR}/Thirdparty/g2o/lib/libg2o.so
+        ${PROJECT_SOURCE_DIR}/Thirdparty/g2o/lib/libg2o.so
+
+        utils
+        Config
+        # symmetry
+        # EllipsoidExtractor
+        PlaneExtractor
+        # dense_builder
+        Polygon
+        # Relationship
+
         )
 
 # set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR})
@@ -108,3 +186,15 @@ target_link_libraries(${PROJECT_NAME}
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR})
 add_executable(qsp_slam_rgbd qsp_slam_rgbd.cc)
 target_link_libraries(qsp_slam_rgbd ${PROJECT_NAME})
+
+# add modules
+# add_subdirectory(src/tum_rgbd)
+# add_subdirectory(src/dense_builder)
+# add_subdirectory(src/symmetry)
+add_subdirectory(src/config)
+# add_subdirectory(src/pca)
+add_subdirectory(src/plane)
+add_subdirectory(src/Polygon)
+# add_subdirectory(src/Relationship)
+# add_subdirectory(src/evo)
+# add_subdirectory(src/Prior)

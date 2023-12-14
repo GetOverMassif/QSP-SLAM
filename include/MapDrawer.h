@@ -56,6 +56,9 @@ public:
     // void SE3ToOpenGLCameraMatrix(g2o::SE3Quat &matInSe3, pangolin::OpenGlMatrix &M);
     void drawEllipsoid();
 
+    // By Lijian
+    void DrawDepthPointCloud();
+
 private:
 
     float mKeyFrameSize;

@@ -409,4 +409,25 @@ void Tracking::SetImageNames(vector<string>& vstrImageFilenamesRGB)
     mvstrImageFilenamesRGB = std::vector<string>(vstrImageFilenamesRGB.begin(), vstrImageFilenamesRGB.end());
 }
 
+void Tracking::OpenGroundPlaneEstimation(){
+    miGroundPlaneState = 1;
+    PlaneExtractorParam param;
+    param.fx = mK.at<float>(0,0);
+    param.fy = mK.at<float>(1,1);
+    param.cx = mK.at<float>(0,2);
+    param.cy = mK.at<float>(1,2);
+    param.scale = Config::Get<double>("Camera.scale");
+    pPlaneExtractor = new PlaneExtractor;
+    pPlaneExtractor->SetParam(param);
+
+    // Manhattan Task
+    miMHPlanesState = 1;
+    pPlaneExtractorManhattan = new PlaneExtractorManhattan;
+    pPlaneExtractorManhattan->SetParam(param);
+
+    std::cout << " * Open Groundplane Estimation" << std::endl;
+    std::cout << std::endl;
+}
+
+
 }

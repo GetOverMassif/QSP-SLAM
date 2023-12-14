@@ -4,7 +4,7 @@
 
 #include "PlaneExtractor.h"
 
-namespace EllipsoidSLAM
+namespace ORB_SLAM2
 {
 
 // 公有继承. 扩展该函数.

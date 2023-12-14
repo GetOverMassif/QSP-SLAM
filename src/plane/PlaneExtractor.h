@@ -28,7 +28,7 @@
 typedef pcl::PointCloud<pcl::PointXYZRGB> PointCloudPCL;
 using namespace std;
 
-namespace EllipsoidSLAM
+namespace ORB_SLAM2
 {
 
 struct PlaneExtractorParam

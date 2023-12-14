@@ -1,6 +1,6 @@
 #include "BorderExtractor.h"
 
-namespace EllipsoidSLAM
+namespace ORB_SLAM2
 {
 pcl::PointCloud<PointType>::Ptr BorderExtractor::ToPointTCloud(pcl::PointCloud<pcl::PointWithRange>::Ptr pCloud)
 {

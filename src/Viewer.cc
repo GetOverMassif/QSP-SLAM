@@ -153,6 +153,11 @@ void Viewer::Run()
         mpObjectDrawer->ProcessNewObjects();
         mpObjectDrawer->DrawObjects(bFollow, Tec);
 
+        // 如果是RGBD模式，则绘制深度图对应的点云
+        if (mpTracker->mSensor == System::RGBD) {
+            mpMapDrawer->DrawDepthPointCloud();
+        }
+
         pangolin::FinishFrame();
 
         cv::Mat im = GetFrame();

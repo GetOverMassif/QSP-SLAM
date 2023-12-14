@@ -4,7 +4,7 @@
 
 #include <src/config/Config.h>
 
-namespace EllipsoidSLAM
+namespace ORB_SLAM2
 {
     bool compare_func_plane_dis(g2o::plane* &p1, g2o::plane* &p2)
     {

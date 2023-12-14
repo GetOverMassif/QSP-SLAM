@@ -39,6 +39,11 @@
 #include "System.h"
 #include "MapObject.h"
 
+
+#include <src/plane/PlaneExtractor.h>
+#include <src/plane/PlaneExtractorManhattan.h>
+#include <src/config/Config.h>
+
 #include <mutex>
 #include <ctime>
 
@@ -52,6 +57,9 @@ class LocalMapping;
 class LoopClosing;
 class System;
 class MapObject;
+
+class PlaneExtractor;
+class PlaneExtractorManhattan;
 
 class Tracking
 {  
@@ -89,6 +97,9 @@ public:
     void GetObjectDetectionsRGBD(KeyFrame *pKF);
     void AssociateObjectsByProjection(KeyFrame *pKF);  // assocating detection to object by projecting map points
     void SetImageNames(vector<string>& vstrImageFilenamesRGB);
+
+    // void 
+    void OpenGroundPlaneEstimation();
 
 public:
 
@@ -238,6 +249,14 @@ protected:
     // bool mbMapInSameThread;
 
     bool frame_by_frame;
+
+    // Plane
+    int miGroundPlaneState; // 0: Closed  1: estimating 2: estimated 3: set by mannual
+    g2o::plane mGroundPlane;
+    PlaneExtractor* pPlaneExtractor;
+    PlaneExtractorManhattan* pPlaneExtractorManhattan;
+    int miMHPlanesState; // 0: Closed 1: estimating 2: estimated
+
 };
 
 } //namespace ORB_SLAM

@@ -40,6 +40,8 @@
 #include "ORBVocabulary.h"
 #include "Viewer.h"
 
+
+
 #include <pybind11/embed.h>
 #include <pybind11/eigen.h>
 
@@ -54,6 +56,7 @@ class Map;
 class Tracking;
 class LocalMapping;
 class LoopClosing;
+// class PlaneExtractor;
 
 class PyThreadStateLock
 {

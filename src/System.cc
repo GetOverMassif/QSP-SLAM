@@ -174,6 +174,8 @@ System::System(const string &strVocFile, const string &strSettingsFile, const st
         mpLoopCloser->SetLocalMapper(mpLocalMapper);
     }
 
+    mpTracker->OpenGroundPlaneEstimation();     // Open Groundplane Estimation.
+
     // // Release GIL
     // PyEval_ReleaseThread(PyThreadState_Get());
 }

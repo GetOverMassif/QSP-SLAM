@@ -98,6 +98,25 @@ void MapDrawer::DrawMapPoints()
     }
 }
 
+void MapDrawer::DrawDepthPointCloud()
+{
+    glPointSize(mPointSize/2);
+    glBegin(GL_POINTS);
+
+    glColor3f(1.0,0.0,0.0);
+
+
+
+    // for(size_t i=0, iend=vpMPs.size(); i<iend;i++)
+    // {
+        
+    //     cv::Mat pos = vpMPs[i]->GetWorldPos();
+    //     glVertex3f(pos.at<float>(0),pos.at<float>(1),pos.at<float>(2));
+    // }
+
+    glEnd();
+}
+
 void MapDrawer::DrawKeyFrames(const bool bDrawKF, const bool bDrawGraph)
 {
     const float &w = mKeyFrameSize;

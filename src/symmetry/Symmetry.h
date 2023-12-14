@@ -11,7 +11,7 @@ using namespace Eigen;
 #include "SymmetrySolver.h"
 #include "BorderExtractor.h"
 
-namespace EllipsoidSLAM {
+namespace ORB_SLAM2{
 
 class SymmetryOutputData
 {

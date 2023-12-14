@@ -3,7 +3,7 @@
 #include "PlaneExtractorManhattan.h"
 #include <src/config/Config.h>
 
-namespace EllipsoidSLAM
+namespace ORB_SLAM2
 {
 
 void PlaneExtractorManhattan::SetGroundPlane(g2o::plane* gplane)

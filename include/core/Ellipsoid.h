@@ -7,6 +7,8 @@
 #include <Eigen/Geometry>
 #include <Eigen/Dense>
 
+#include <opencv2/core/core.hpp>
+
 #include "include/utils/matrix_utils.h"
  
 typedef Eigen::Matrix<double, 9, 1> Vector9d;
