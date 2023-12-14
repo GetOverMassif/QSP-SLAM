@@ -430,4 +430,161 @@ void Tracking::OpenGroundPlaneEstimation(){
 }
 
 
+void Tracking::UpdateObjectObservation(ORB_SLAM2::Frame *pFrame, bool withAssociation) {
+    clock_t time_0_start = clock();
+
+    // bool use_infer_detection = Config::Get<int>("System.MonocularInfer.Open") > 0;
+
+    // 思考: 如何让两个平面提取共用一个 MHPlane 提取.
+
+    // // [0] 刷新可视化
+    // ClearVisualization();
+
+    // [1] process MHPlanes estimation
+    TaskGroundPlane();
+    // clock_t time_1_TaskGroundPlane = clock();
+
+    // // New task : for Manhattan Planes
+    // // TaskManhattanPlanes(pFrame);
+    // clock_t time_2_TaskManhattanPlanes = clock();
+
+    // // [2] process single-frame ellipsoid estimation
+    // clock_t time_3_UpdateDepthEllipsoidEstimation, time_4_TaskRelationship, time_5_RefineObjectsWithRelations;
+    // if(!use_infer_detection){
+    //     UpdateDepthEllipsoidEstimation(pFrame, withAssociation);
+    //     time_3_UpdateDepthEllipsoidEstimation = clock();
+
+    //     // [3] Extract Relationship
+    //     TaskRelationship(pFrame);
+    //     time_4_TaskRelationship = clock();
+
+    //     // [4] Use Relationship To Refine Ellipsoids
+    //     // 注意: Refine时必然在第一步可以初始化出有效的物体.
+    //     RefineObjectsWithRelations(pFrame);
+    //     time_5_RefineObjectsWithRelations = clock();
+
+    //     // [5] 对于第一次提取，Refine提取都失败的，使用点模型
+    //     UpdateDepthEllipsoidUsingPointModel(pFrame);
+
+    //     GenerateObservationStructure(pFrame);
+    // }
+    
+    // // [6] 补充调试环节： 测试语义先验对物体的影响
+    // else
+    // {
+    //     GenerateObservationStructure(pFrame);   // 注意必须生成 measure 结构才能 Infer
+
+    //     const string priconfig_path = Config::Get<std::string>("Dataset.Path.PriTable");
+    //     bool bUseInputPri = (priconfig_path.size() > 0);
+    //     InferObjectsWithSemanticPrior(pFrame, false, use_infer_detection);   // 使用 1:1:1 的比例初始化
+    //     // InferObjectsWithSemanticPrior(pFrame, bUseInputPri, use_infer_detection); // 使用PriTable先验初始化，然而存在问题，尚未调试完毕
+
+    //     GenerateObservationStructure(pFrame);
+    // }
+
+    // // Output running time
+    // // cout << " -- UpdateObjectObservation Time: " << endl;
+    // // cout << " --- time_1_TaskGroundPlane: " <<(double)(time_1_TaskGroundPlane - time_0_start) / CLOCKS_PER_SEC << "s" << endl;        
+    // // cout << " --- time_2_TaskManhattanPlanes: " <<(double)(time_2_TaskManhattanPlanes - time_1_TaskGroundPlane) / CLOCKS_PER_SEC << "s" << endl;        
+    // // cout << " --- time_3_UpdateDepthEllipsoidEstimation: " <<(double)(time_3_UpdateDepthEllipsoidEstimation - time_2_TaskManhattanPlanes) / CLOCKS_PER_SEC << "s" << endl;        
+    // // cout << " --- time_4_TaskRelationship: " <<(double)(time_4_TaskRelationship - time_3_UpdateDepthEllipsoidEstimation) / CLOCKS_PER_SEC << "s" << endl;        
+    // // cout << " --- time_5_RefineObjectsWithRelations: " <<(double)(time_5_RefineObjectsWithRelations - time_4_TaskRelationship) / CLOCKS_PER_SEC << "s" << endl;        
+
+}
+
+void Tracking::TaskGroundPlane()
+{
+    ProcessGroundPlaneEstimation();
+
+    // // int miGroundPlaneState; // 0: Closed  1: estimating 2: estimated 3: set by mannual
+    // if(miGroundPlaneState == 1) // State 1: Groundplane estimation opened, and not done yet.
+    //     ProcessGroundPlaneEstimation();
+    // else if(miGroundPlaneState == 3) // State : Set by mannual
+    //     ActivateGroundPlane(mGroundPlane);
+
+}
+
+void Tracking::ProcessGroundPlaneEstimation()
+{
+    // cv::Mat depth = mCurrentFrame.mImDepth;
+    cv::Mat depth = mImDepth;
+    g2o::plane groundPlane;
+    bool result = pPlaneExtractor->extractGroundPlane(depth, groundPlane);
+    // g2o::SE3Quat& Twc = mCurrentFrame.cam_pose_Twc;
+    g2o::SE3Quat& Twc = mCurrentFrame.cam_pose_Twc;
+
+    // 可视化[所有平面]结果 : 放这里为了让Mannual Check 看见
+    auto vPotentialPlanePoints = pPlaneExtractor->GetPoints();
+    mpMap->AddPointCloudList("pPlaneExtractor.PlanePoints", vPotentialPlanePoints, Twc, REPLACE_POINT_CLOUD);
+    std::cout << " Extract Plane Num : " << vPotentialPlanePoints.size() << std::endl;
+
+    if( result )
+    {        
+        // 设置世界地平面
+        std::cout << " * [Local] Ground plane : " << groundPlane.param.transpose() << std::endl;
+        groundPlane.transform(Twc);   // transform to the world coordinate.
+        mGroundPlane = groundPlane;
+        std::cout << " * Estimate Ground Plane Succeeds: " << mGroundPlane.param.transpose() << std::endl;
+
+        // 可视化该平面 : 为了 Mannual Check.
+        mGroundPlane.color = Eigen::Vector3d(0.0,0.8,0.0); 
+        mGroundPlane.InitFinitePlane(Twc.translation(), 10);
+        mpMap->addPlane(&mGroundPlane);
+
+        // Active the mannual check of groundplane estimation.
+        int active_mannual_groundplane_check = Config::Get<int>("Plane.MannualCheck.Open");
+        int key = -1;
+        bool open_mannual_check = active_mannual_groundplane_check==1;
+        bool result_mannual_check = false;
+        if(open_mannual_check)
+        {
+            std::cout << "Estimate Groundplane Done." << std::endl;
+            std::cout << "As Groundplane estimation is a simple implementation, please mannually check its correctness." << std::endl;
+            std::cout << "Enter Key \'Y\' to confirm, and any other key to cancel this estimation: " << std::endl;
+
+            key = getchar();
+        }
+
+        result_mannual_check = (key == 'Y' || key == 'y');            
+
+        if( !open_mannual_check || (open_mannual_check &&  result_mannual_check) )
+        {
+            ActivateGroundPlane(mGroundPlane);
+        }
+        else
+        {
+            std::cout << " * Cancel this Estimation. " << std::endl;
+            miGroundPlaneState = 1;
+        }
+
+        // 可视化 : [所有潜在地平面], 从中选择了距离最近的一个
+        auto vPotentialGroundplanePoints = pPlaneExtractor->GetPotentialGroundPlanePoints();
+        mpMap->AddPointCloudList("pPlaneExtractor.PlanePoints", vPotentialGroundplanePoints, Twc, REPLACE_POINT_CLOUD);
+    }
+    else
+    {
+        std::cout << " * Estimate Ground Plane Fails " << std::endl;
+    }
+}
+
+void Tracking::ActivateGroundPlane(g2o::plane &groundplane)
+{
+    // Set groundplane to EllipsoidExtractor
+    
+    if( mbDepthEllipsoidOpened ){
+        std::cout << " * Add supporting plane to Ellipsoid Extractor." << std::endl;
+        mpEllipsoidExtractor->SetSupportingPlane(&groundplane, false);
+    }
+
+    // Set groundplane to Optimizer
+    std::cout << " * Add supporting plane to optimizer. " << std::endl;
+    mpOptimizer->SetGroundPlane(groundplane.param);
+
+    std::cout << " * Add supporting plane to Manhattan Plane Extractor. " << std::endl;
+    pPlaneExtractorManhattan->SetGroundPlane(&groundplane);
+
+    // Change state
+    miGroundPlaneState = 2;
+}
+
 }

@@ -39,6 +39,11 @@
 #include "System.h"
 #include "MapObject.h"
 
+#include "Initializer.h"
+#include "Optimizer.h"
+
+#include <src/symmetry/Symmetry.h>
+#include <src/pca/EllipsoidExtractor.h>
 
 #include <src/plane/PlaneExtractor.h>
 #include <src/plane/PlaneExtractorManhattan.h>
@@ -60,6 +65,9 @@ class MapObject;
 
 class PlaneExtractor;
 class PlaneExtractorManhattan;
+class Initializer;
+class Optimizer;
+class Symmetry;
 
 class Tracking
 {  
@@ -100,6 +108,10 @@ public:
 
     // void 
     void OpenGroundPlaneEstimation();
+    void UpdateObjectObservation(ORB_SLAM2::Frame *pFrame, bool withAssociation);
+    void TaskGroundPlane();
+    void ActivateGroundPlane(g2o::plane &groundplane);
+    void ProcessGroundPlaneEstimation();
 
 public:
 
@@ -121,6 +133,7 @@ public:
     // Current Frame
     Frame mCurrentFrame;
     cv::Mat mImGray;
+    cv::Mat mImDepth;
     vector<cv::Mat> mvImObjectMasks;
 
     // Initialization Variables (Monocular)
@@ -249,6 +262,10 @@ protected:
     // bool mbMapInSameThread;
 
     bool frame_by_frame;
+
+    Optimizer* mpOptimizer;
+
+    EllipsoidExtractor* mpEllipsoidExtractor;
 
     // Plane
     int miGroundPlaneState; // 0: Closed  1: estimating 2: estimated 3: set by mannual

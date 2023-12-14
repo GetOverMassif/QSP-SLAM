@@ -164,6 +164,10 @@ public:
     // Camera pose.
     cv::Mat mTcw;
 
+    // // todo: to be updated 
+    // g2o::SE3Quat cam_pose_Tcw;	     // optimized pose  world to cam
+    // g2o::SE3Quat cam_pose_Twc;	     // optimized pose  cam to world
+
     // Current and Next Frame id.
     static long unsigned int nNextId;
     long unsigned int mnId;

@@ -1,76 +1,76 @@
 #ifndef ELLIPSOIDSLAM_SYMMETRY_H
 #define ELLIPSOIDSLAM_SYMMETRY_H
 
-#include <core/Geometry.h>
 #include <core/Ellipsoid.h>
+#include <core/Geometry.h>
 
 #include <Eigen/Core>
 using namespace Eigen;
 
-#include <opencv2/core/core.hpp>
-#include "SymmetrySolver.h"
 #include "BorderExtractor.h"
+#include "SymmetrySolver.h"
+#include <opencv2/core/core.hpp>
 
-namespace ORB_SLAM2{
+namespace ORB_SLAM2 {
 
-class SymmetryOutputData
-{
-public:
+class SymmetryOutputData {
+  public:
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
     bool result;
-    
-    PointCloud* pCloud; // object point cloud
+
+    PointCloud *pCloud; // object point cloud
     Vector4d planeVec;
     Vector4d planeVec2; // the second plane of dual reflection
 
     double prob;
-    PointCloud* pBorders;   // object borders, used in the sparse mode; invalid now.
+    PointCloud *pBorders; // object borders, used in the sparse mode; invalid now.
 
-    Vector3d center;    // for visualizing the symmetry plane as an finite plane
+    Vector3d center; // for visualizing the symmetry plane as an finite plane
     int symmetryType;
 };
 
 class Symmetry {
-    public:
-        EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+  public:
+    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
-        Symmetry();
+    Symmetry();
 
-        // API: estimate a symmetry plane from a point cloud using all the points
-        // symType: 1 reflection symmetry; 2 dual reflection symmetry
-        SymmetrySolverData estimateSymmetry(Vector4d& bbox, PointCloud* pCloud, VectorXd& pose, cv::Mat& projDepth, camera_intrinsic& camera,
-            int symType=1);
-            
-        void static releaseData(SymmetryOutputData& data);
+    // API: estimate a symmetry plane from a point cloud using all the points
+    // symType: 1 reflection symmetry; 2 dual reflection symmetry
+    SymmetrySolverData estimateSymmetry(Vector4d &bbox, PointCloud *pCloud, VectorXd &pose, cv::Mat &projDepth, camera_intrinsic &camera,
+                                        int symType = 1);
 
-        cv::Mat static getProjDepthMat(cv::Mat& depth, camera_intrinsic& camera);
+    void static releaseData(SymmetryOutputData &data);
 
-    public:
-        void SetGroundPlane(Vector4d& normal);
+    cv::Mat static getProjDepthMat(cv::Mat &depth, camera_intrinsic &camera);
 
-        void SetBorders(EllipsoidSLAM::PointCloud* pBorders);       
-        void SetConfigResolution(double res);
-        double GetConfigResolution();
-        void SetConfigFilterPointNum(int num);
-    private:        
-        bool mbOpenSparseEstimation;
-        PointCloud* mpBorders;
+  public:
+    void SetGroundPlane(Vector4d &normal);
 
-        BorderExtractor* mpExtractor;
+    void SetBorders(ORB_SLAM2::PointCloud *pBorders);
+    void SetConfigResolution(double res);
+    double GetConfigResolution();
+    void SetConfigFilterPointNum(int num);
 
-        int miParamFilterPointNum;
+  private:
+    bool mbOpenSparseEstimation;
+    PointCloud *mpBorders;
 
-        Vector4d mGroundPlaneNormal;
-        bool mbGroundPlaneSet;
+    BorderExtractor *mpExtractor;
 
-        g2o::ellipsoid mObjInitialGuess;
-        bool mbObjInitialGuessSet;
+    int miParamFilterPointNum;
 
-        std::vector<g2o::plane*> mvpInitPlanes;
-        bool mbInitPlanesSet;
+    Vector4d mGroundPlaneNormal;
+    bool mbGroundPlaneSet;
+
+    g2o::ellipsoid mObjInitialGuess;
+    bool mbObjInitialGuessSet;
+
+    std::vector<g2o::plane *> mvpInitPlanes;
+    bool mbInitPlanesSet;
 };
 
-}
+} // namespace ORB_SLAM2
 
-#endif //ELLIPSOIDSLAM_SYMMETRY_H
+#endif // ELLIPSOIDSLAM_SYMMETRY_H

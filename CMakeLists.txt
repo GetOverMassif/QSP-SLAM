@@ -54,12 +54,13 @@ LINK_LIBRARIES( ${PCL_LIBRARY_DIRS} )
 
 
 include_directories(
-        ${PROJECT_SOURCE_DIR}
-        ${PROJECT_SOURCE_DIR}/include
-        ${DSC_SLAM_DIR}/Thirdparty/g2o
-        ${DSC_SLAM_DIR}/Thirdparty/DBoW2
-        ${EIGEN3_INCLUDE_DIR}
-        ${Pangolin_INCLUDE_DIRS}
+    ${PROJECT_SOURCE_DIR}
+    ${PROJECT_SOURCE_DIR}/include
+    ${PROJECT_SOURCE_DIR}/include/core
+    ${DSC_SLAM_DIR}/Thirdparty/g2o
+    ${DSC_SLAM_DIR}/Thirdparty/DBoW2
+    ${EIGEN3_INCLUDE_DIR}
+    ${Pangolin_INCLUDE_DIRS}
 )
 
 # You need to set to your own Python paths
@@ -103,14 +104,8 @@ add_library(${PROJECT_NAME} SHARED
     src/ObjectRenderer.cc
 
     src/core/Ellipsoid.cpp
-#     src/core/Map.cpp
-#     src/core/MapDrawer.cpp
-#     src/core/Viewer.cpp
 #     src/core/Initializer.cpp
     src/core/Geometry.cpp
-#     src/core/System.cpp
-#     src/core/Tracking.cpp
-#     src/core/FrameDrawer.cpp
 #     src/core/Optimizer.cpp
 #     src/core/Frame.cpp
     src/core/Plane.cpp
@@ -123,28 +118,6 @@ add_library(${PROJECT_NAME} SHARED
 #     src/core/PriorInfer.cpp
 
 )
-
-# add_library(${PROJECT_NAME} SHARED
-#     src/core/Ellipsoid.cpp
-#     src/core/Map.cpp
-#     src/core/MapDrawer.cpp
-#     src/core/Viewer.cpp
-#     src/core/Initializer.cpp
-#     src/core/Geometry.cpp
-#     src/core/System.cpp
-#     src/core/Tracking.cpp
-#     src/core/FrameDrawer.cpp
-#     src/core/Optimizer.cpp
-#     src/core/Frame.cpp
-#     src/core/Plane.cpp
-#     src/core/DataAssociation.cpp
-#     src/core/BasicEllipsoidEdges.cpp
-#     src/core/NonparamDA.cpp
-#     src/core/SupportingPlane.cpp
-#     src/core/ConstrainPlane.cpp
-#     src/core/SemanticLabel.cpp
-#     src/core/PriorInfer.cpp
-# )
 
 add_library(utils SHARED
     src/utils/matrix_utils.cpp
@@ -166,8 +139,8 @@ target_link_libraries(${PROJECT_NAME}
 
         utils
         Config
-        # symmetry
-        # EllipsoidExtractor
+        symmetry
+        EllipsoidExtractor
         PlaneExtractor
         # dense_builder
         Polygon
@@ -190,9 +163,9 @@ target_link_libraries(qsp_slam_rgbd ${PROJECT_NAME})
 # add modules
 # add_subdirectory(src/tum_rgbd)
 # add_subdirectory(src/dense_builder)
-# add_subdirectory(src/symmetry)
+add_subdirectory(src/symmetry)
 add_subdirectory(src/config)
-# add_subdirectory(src/pca)
+add_subdirectory(src/pca)
 add_subdirectory(src/plane)
 add_subdirectory(src/Polygon)
 # add_subdirectory(src/Relationship)

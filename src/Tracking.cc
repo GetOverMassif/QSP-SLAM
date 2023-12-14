@@ -226,6 +226,7 @@ cv::Mat Tracking::GrabImageStereo(const cv::Mat &imRectLeft, const cv::Mat &imRe
 cv::Mat Tracking::GrabImageRGBD(const cv::Mat &imRGB,const cv::Mat &imD, const double &timestamp)
 {
     mImGray = imRGB;
+    mImDepth = imD;
     cv::Mat imDepth = imD;
 
     if(mImGray.channels()==3)
@@ -1137,7 +1138,13 @@ void Tracking::CreateNewKeyFrame()
     else if (mSensor == System::RGBD)
     {
         std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
+        
         GetObjectDetectionsRGBD(pKF);
+
+        // 获取完检测之后更新物体观测
+        bool withAssociation = true;
+        // todo
+        UpdateObjectObservation(&mCurrentFrame, withAssociation);
 
         //DetectObjects(pKF);
         if (!mpMap->GetAllMapObjects().empty())

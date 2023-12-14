@@ -8,6 +8,7 @@
 #define __EllipsoidSLAM_POLYGON_HPP__
 
 #include <cxcore.h>
+#include <opencv2/core/core.hpp>
 
 namespace ORB_SLAM2
 {
@@ -24,7 +25,7 @@ bool pointInPolygon(CvPoint2D32f p,const CvPoint2D32f * points,int n) ;
 #define MAX_POINT_POLYGON 64
 struct Polygon {
 	cv::Point pt[MAX_POINT_POLYGON];
-	int     n;
+	int n;
 
 	Polygon(int n_ = 0 ) { assert(n_>= 0 && n_ < MAX_POINT_POLYGON); n = n_;}
 	virtual ~Polygon() {}

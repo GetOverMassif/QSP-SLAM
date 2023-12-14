@@ -11,7 +11,7 @@
 #include <pcl/kdtree/kdtree_flann.h>
 
 using namespace Eigen;
-using namespace EllipsoidSLAM;
+using namespace ORB_SLAM2;
 
 class SymmetrySolverData
 {
@@ -52,7 +52,7 @@ public:
     static PointCloud* GetSymmetryPointCloud(PointCloud* pCloud, g2o::plane &p, int symType = 1);
 
 public:
-    void SetBorders(EllipsoidSLAM::PointCloud* pBorders);
+    void SetBorders(ORB_SLAM2::PointCloud* pBorders);
 
 private:
     static double calculateOcclProbOfPoints(PointCloud *pCloudSym, cv::Mat& depth, VectorXd &pose, Matrix3d &calib, double scale);
@@ -137,7 +137,7 @@ namespace g2o
 
         void setBordersPointCloud(PointCloud* pBorders);
     private:
-        EllipsoidSLAM::PointCloud* mpCloud;
+        ORB_SLAM2::PointCloud* mpCloud;
         cv::Mat mDepth;
         VectorXd mPose;
         Matrix3d mCalib;
@@ -150,7 +150,7 @@ namespace g2o
         pcl::KdTreeFLANN<pcl::PointXYZ> mKdtree;
         bool mbKdTreeInitialized;
 
-        EllipsoidSLAM::PointCloud* mpBorders;
+        ORB_SLAM2::PointCloud* mpBorders;
 
         int miSymmetryType;
 
@@ -176,7 +176,7 @@ namespace g2o
         void setSymmetryType(int type);
 
     private:
-        EllipsoidSLAM::PointCloud* mpCloud;
+        ORB_SLAM2::PointCloud* mpCloud;
         cv::Mat mDepth;
         VectorXd mPose;
         Matrix3d mCalib;
@@ -189,7 +189,7 @@ namespace g2o
         pcl::KdTreeFLANN<pcl::PointXYZ> mKdtree;
         bool mbKdTreeInitialized;
 
-        EllipsoidSLAM::PointCloud* mpBorders;
+        ORB_SLAM2::PointCloud* mpBorders;
 
         int miSymmetryType;
 

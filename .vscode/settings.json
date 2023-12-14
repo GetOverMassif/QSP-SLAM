@@ -71,6 +71,7 @@
         "valarray": "cpp",
         "core": "cpp",
         "specialfunctions": "cpp",
-        "*.def": "cpp"
+        "*.def": "cpp",
+        "*.ipp": "cpp"
     }
 }

@@ -10,7 +10,7 @@
 using namespace std;
 using namespace Eigen;
 
-namespace EllipsoidSLAM
+namespace ORB_SLAM2
 {
     struct PointXYZRGB
     {

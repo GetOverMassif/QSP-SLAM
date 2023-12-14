@@ -23,9 +23,21 @@
 
 #include "MapPoint.h"
 #include "KeyFrame.h"
+
+#include "Ellipsoid.h"
+#include "Geometry.h"
+#include "Plane.h"
+
 #include <set>
 #include <mutex>
 
+
+#include <opencv2/opencv.hpp>
+#include <pcl/point_cloud.h>
+#include <pcl/point_types.h>	
+
+
+using namespace g2o;
 
 
 namespace ORB_SLAM2
@@ -74,6 +86,17 @@ public:
     void EraseMapObject(MapObject* pMO);
     MapObject* GetMapObject(int object_id);
     std::vector<MapObject*> GetAllMapObjects();
+
+    // Lj
+    void addPlane(plane *pPlane, int visual_group);
+    vector<plane*> GetAllPlanes();
+
+    bool AddPointCloudList(const string& name, std::vector<pcl::PointCloud<pcl::PointXYZRGB>>& vCloudPCL, g2o::SE3Quat& Twc, int type);
+    bool AddPointCloudList(const string& name, PointCloud* pCloud, int type);
+    bool DeletePointCloudList(const string& name, int type);
+    bool ClearPointCloudLists();
+    std::map<string, PointCloud*> GetPointCloudList();
+    PointCloud GetPointCloudInList(const string& name);
 
 protected:
     std::set<MapPoint*> mspMapPoints;
