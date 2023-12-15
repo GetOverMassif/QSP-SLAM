@@ -95,7 +95,7 @@ bool Map::AddPointCloudList(const string &name, PointCloud *pCloud, int type) {
         std::cout << "NULL point cloud." << std::endl;
         return false;
     }
-
+    cout << "[Map::AddPointCloudList] " << name << std::endl;
     // Check repetition
     if (mmPointCloudLists.find(name) != mmPointCloudLists.end()) {
         // Exist
@@ -109,14 +109,15 @@ bool Map::AddPointCloudList(const string &name, PointCloud *pCloud, int type) {
             // replace it.
             pCloudInMap->clear(); // release it
             mmPointCloudLists[name] = pCloud;
+            std::cout << "Replace mmPointCloudLists:" << name << std::endl;
         } else if (type == 1) {
             // add together
             for (auto &p : *pCloud)
                 pCloudInMap->push_back(p);
+            std::cout << "pCloudInMap->push_back(p), " << name << std::endl;
         } else {
             std::cout << "Wrong type : " << type << std::endl;
         }
-
         return false;
     } else {
         mmPointCloudLists.insert(make_pair(name, pCloud));

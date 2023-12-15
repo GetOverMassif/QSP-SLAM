@@ -276,7 +276,6 @@ void LocalMapping::CreateNewObjectsFromDetections()
 
 void LocalMapping::ProcessDetectedObjects()
 {
-    
     std::cout << "[ LocalMapping - ProcessDetectedObjects ]" << std::endl;
     char key;
     // std::cout << "Ready to reconstruct_object" << std::endl;

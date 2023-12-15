@@ -28,6 +28,7 @@
 #include <iomanip>
 #include <opencv2/core/eigen.hpp>
 #include <time.h>
+#include "src/config/Config.h"
 
 ORB_SLAM2::Map* expMap;
 
@@ -45,11 +46,14 @@ System::System(const string &strVocFile, const string &strSettingsFile, const st
                mbReset(false),mbActivateLocalizationMode(false), mbDeactivateLocalizationMode(false)
 {
     // Output welcome message
+    // cout << endl <<
+    // "DSP-SLAM: Object Oriented SLAM with Deep Shape Priors." << endl <<
+    // "This program comes with ABSOLUTELY NO WARRANTY;" << endl  <<
+    // "This is free software, and you are welcome to redistribute it" << endl <<
+    // "under certain conditions. See LICENSE.txt." << endl << endl;
+
     cout << endl <<
-    "DSP-SLAM: Object Oriented SLAM with Deep Shape Priors." << endl <<
-    "This program comes with ABSOLUTELY NO WARRANTY;" << endl  <<
-    "This is free software, and you are welcome to redistribute it" << endl <<
-    "under certain conditions. See LICENSE.txt." << endl << endl;
+    "QSP-SLAM: EllipsoidSLAM with Deep Shape Prior, 2023, Beihang University." << endl;
 
     cout << "Input sensor was set to: ";
 
@@ -65,8 +69,13 @@ System::System(const string &strVocFile, const string &strSettingsFile, const st
     if(!fsSettings.isOpened())
     {
        cerr << "Failed to open settings file at: " << strSettingsFile << endl;
+       cerr << " * State : " << fsSettings.state << endl;
        exit(-1);
     }
+    
+    // Initialize global settings.
+    Config::Init();
+    Config::SetParameterFile(strSettingsFile);
 
 
     //Load ORB Vocabulary
@@ -176,7 +185,11 @@ System::System(const string &strVocFile, const string &strSettingsFile, const st
         mpLoopCloser->SetLocalMapper(mpLocalMapper);
     }
 
+    OpenDepthEllipsoid();
+
     mpTracker->OpenGroundPlaneEstimation();     // Open Groundplane Estimation.
+
+    expMap = mpMap;
 
     // // Release GIL
     // PyEval_ReleaseThread(PyThreadState_Get());

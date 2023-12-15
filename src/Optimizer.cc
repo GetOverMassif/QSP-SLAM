@@ -38,6 +38,11 @@
 namespace ORB_SLAM2
 {
 
+Optimizer::Optimizer()
+{
+    mbGroundPlaneSet = false;
+}
+
 void Optimizer::GlobalBundleAdjustemnt(Map* pMap, int nIterations, bool* pbStopFlag, const unsigned long nLoopKF, const bool bRobust)
 {
     vector<KeyFrame*> vpKFs = pMap->GetAllKeyFrames();

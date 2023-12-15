@@ -1,9 +1,5 @@
 %YAML:1.0
 
-#--------------------------------------------------------------------------------------------
-# Camera Parameters. Adjust them!
-#--------------------------------------------------------------------------------------------
-
 frame_by_frame: 1  # 1: True, 0: False
 Tracking.frame_by_frame: 1  # 1: True, 0: False
 
@@ -14,6 +10,10 @@ System.output: KeyFrameTrajectoryRGBD.txt
 # System.output: KeyFrameTrajectoryMONO.txt
 
 System.LocalMappingInSameThread: 1 
+
+#---------------------------
+# Camera Parameters. 
+#---------------------------
 
 # Camera calibration and distortion parameters (OpenCV)
 Camera.fx: 525.0
@@ -54,9 +54,129 @@ Camera.scale: 1250
 DetectorConfigPath: configs/config_redwood_chair_01053.json
 Objects.maskErrosion: 5
 
-#--------------------------------------------------------------------------------------------
+# [From EllipsoldSLAM]
+
+# -----------------------------
+#   Monocular Infer
+# -----------------------------
+MonocularInfer.Init.Dis: 5
+
+# -----------------------------
+#   Semantic  Prior
+# -----------------------------
+#
+System.MonocularInfer.Open: 1
+Dataset.Path.PriTable: "./config/pritable.txt"
+
+SemanticPrior.PriorD: 1
+SemanticPrior.PriorE: 1
+# Prior weight
+SemanticPrior.Weight: 1
+# Ground Plane Contrain weight
+SemanticPrior.GroundWeight: 2
+
+# deg
+Optimizer.Edges.3DConstrain.PlaneAngle.Sigma: 100
+EllipsoidExtractor.SupportingPlaneFilter.DisThresh: 0.03
+
+#10
+Dataset.Jumpframe: 5
+
+# Use gt
+Dataset.UseGroundtruth: 1
+
+# ------------------------------
+#  Probabilistic Data Association
+# ------------------------------
+# 
+DataAssociation.DPAlpha: 0.1
+DataAssociation.PlaneError.DisSigma: 0.5
+
+# ------------------------------------
+#  Single-frame ellipsoid estimation
+# ------------------------------------
+# Pointcloud segmentation parameters
+EllipsoidExtraction.Euclidean.ClusterTolerance: 0.1
+EllipsoidExtraction.Euclidean.MinClusterSize: 5
+EllipsoidExtraction.Euclidean.CenterDis: 0.5
+
+EllipsoidExtractor.Rotation.NormalVoter.KSearchNum: 35
+EllipsoidExtractor.MinNeighborsInRadius: 40
+EllipsoidExtractor.StatisticalOutlierRemoval.MeanK: 50
+
+Optimizer.SLAM.mode: 0
+
+# weights of 3d, 2d edges in optimization
+Optimizer.Edges.3DEllipsoid.Scale: 0.1
+Optimizer.Edges.2D.Scale: 0.1
+Optimizer.PartialObservation.Open: 1
+
+Optimizer.NonparametricDA.Num: 1
+Optimizer.Optimize.Num: 5
+# ------------------------------
+#  Symmetry Estimation
+# ------------------------------
+# Whether open symmetry estimation
+EllipsoidExtraction.Symmetry.Open: 0
+
+# Downsample grid size. Extremely influence the time and efficiency.
+EllipsoidExtraction.Symmetry.GridSize: 0.1
+
+# Parameters for symmetry probability
+SymmetrySolver.Sigma: 0.1
+
+# ----------------------------------
+# Symmetry types of semantic labels
+# ----------------------------------
+  
+# Please see the definitions in the function:
+# EllipsoidExtractor::LoadSymmetryPrior()
+
+
+# -------------------------
+# Ground Plane Extraction
+# -------------------------
+Plane.MinSize: 1000
+Plane.AngleThreshold: 3.0
+Plane.DistanceThreshold: 0.05
+Plane.MannualCheck.Open: 1
+
+# # Mannual set
+# Plane.Groundplane.param: !!opencv-matrix
+#   rows: 1
+#   cols: 4
+#   dt: d
+#   data: [-0.00144757,   0.999998, -0.00141902,     1.16925]
+
+# Whether use the normal of the groundplane to constrain the ellipsoid
+Optimizer.Edges.GravityPrior.Open: 1
+Optimizer.Edges.GravityPrior.Scale: 100
+
+
+Optimizer.Edges.2DConstrain.Close: 0
+Optimizer.Edges.3DConstrain.Close: 0
+# ------------------------------
+# Other Parameters
+# ------------------------------
+# Bounding box filter
+Measurement.Border.Pixels: 10
+Measurement.LengthLimit.Pixels: 0
+Measurement.Probability.Thresh: 0
+
+# A observation will only be valid when the robot has a change of view.
+# Close it to consider every observations.
+Tracking.KeyFrameCheck.Close: 1
+
+# Visualization
+Visualization.Builder.Open: 1
+Visualization.Builder.Global.Open: 0
+
+# when >0, filter using dis to groundplane
+Visualization.Map.Filter.DisThresh: 2.3
+
+#------------------
 # ORB Parameters
-#--------------------------------------------------------------------------------------------
+#------------------
 
 # ORB Extractor: Number of features per image
 ORBextractor.nFeatures: 4000

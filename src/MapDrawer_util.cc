@@ -178,10 +178,13 @@ void MapDrawer::drawEllipsoid() {
     // draw all the planes
 bool MapDrawer::drawPlanes(int visual_group) {
     std::vector<plane*> planes = mpMap->GetAllPlanes();
+    // std::cout << "plane_num = " << planes.size() << std::endl;
     for( size_t i=0; i<planes.size(); i++) {
         g2o::plane* ppl = planes[i];
-        if(ppl->miVisualGroup == visual_group)
+        if(ppl->miVisualGroup == visual_group) {
+            // std::cout << "drawPlaneWithEquation : " << ppl->param.transpose().matrix() << std::endl;
             drawPlaneWithEquation(ppl);
+        }
     }
 
     return true;
@@ -232,7 +235,8 @@ void MapDrawer::drawPlaneWithEquation(plane *p) {
     else
     {
         // todo: this make only ground drew
-        return;
+        // std::cout << "return because p->mbLimited" << std::endl;
+        // return;
         size = p->mdPlaneSize;
         center = p->SampleNearAnotherPoint(p->mvPlaneCenter);
     }
@@ -263,7 +267,8 @@ void MapDrawer::drawPlaneWithEquation(plane *p) {
 
     double line_width = 2.0;
     double alpha = 0.8;
-    int sample_num = 15; // 格子数量
+    // int sample_num = 15; // 格子数量
+    int sample_num = max(15, (int)(size/0.5)); // 格子数量
     double sample_dis = size / sample_num;
     for(int i=0;i<sample_num+1;i++)
     {

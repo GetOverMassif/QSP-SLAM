@@ -151,4 +151,9 @@ void System::SaveEntireMap(const string &dir) {
     SaveTrajectoryKITTI(dir + "/Cameras.txt");
 }
 
+void System::OpenDepthEllipsoid()
+{
+    mpTracker->OpenDepthEllipsoid();
+}
+
 }

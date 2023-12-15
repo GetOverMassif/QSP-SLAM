@@ -87,7 +87,7 @@ public:
 
     // Load new settings
     // The focal lenght should be similar or scale prediction will fail when projecting points
-    // TODO: Modify MapPoint::PredictScale to take into account focal lenght
+    // TODO: Modify MapPoint::PredictScale to take into account focal length
     void ChangeCalibration(const string &strSettingPath);
 
     // Use this function if you have deactivated local mapping and you only want to localize the camera.
@@ -106,12 +106,26 @@ public:
     void AssociateObjectsByProjection(KeyFrame *pKF);  // assocating detection to object by projecting map points
     void SetImageNames(vector<string>& vstrImageFilenamesRGB);
 
-    // void 
-    void OpenGroundPlaneEstimation();
+    /** --------------------------------
+     * Object Observation 物体观测相关
+     * ---------------------------------*/
     void UpdateObjectObservation(ORB_SLAM2::Frame *pFrame, bool withAssociation);
+    /** --------------------------------
+     * Ellipsoid 椭球体相关
+     * ---------------------------------*/
+    void OpenDepthEllipsoid();
+    /** --------------------------------
+     * Ground Plane 地面平面相关
+     * ---------------------------------*/
+    void OpenGroundPlaneEstimation();
     void TaskGroundPlane();
+    void SetGroundPlaneMannually(const Eigen::Vector4d &param);
     void ActivateGroundPlane(g2o::plane &groundplane);
     void ProcessGroundPlaneEstimation();
+
+    // void Update3DObservationDataAssociation(EllipsoidSLAM::Frame* pFrame, std::vector<int>& associations, std::vector<bool>& KeyFrameChecks);
+    // void UpdateDepthEllipsoidEstimation(EllipsoidSLAM::Frame* pFrame, bool withAssociation);
+    // void UpdateDepthEllipsoidUsingPointModel(EllipsoidSLAM::Frame* pFrame);
 
 public:
 
@@ -275,7 +289,8 @@ protected:
     int miMHPlanesState; // 0: Closed 1: estimating 2: estimated
 
 
-    bool mbDepthEllipsoidOpened = true;
+    bool mbDepthEllipsoidOpened;
+    bool mbOpenOptimization;
 
 };
 

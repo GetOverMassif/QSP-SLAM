@@ -432,8 +432,9 @@ void Tracking::OpenGroundPlaneEstimation(){
 
 void Tracking::UpdateObjectObservation(ORB_SLAM2::Frame *pFrame, bool withAssociation) {
     clock_t time_0_start = clock();
-
-    // bool use_infer_detection = Config::Get<int>("System.MonocularInfer.Open") > 0;
+    // 
+    bool use_infer_detection = Config::Get<int>("System.MonocularInfer.Open") > 0;
+    std::cout << "use_infer_detection = " << use_infer_detection << std::endl;
 
     // 思考: 如何让两个平面提取共用一个 MHPlane 提取.
 
@@ -448,26 +449,26 @@ void Tracking::UpdateObjectObservation(ORB_SLAM2::Frame *pFrame, bool withAssoci
     // // TaskManhattanPlanes(pFrame);
     // clock_t time_2_TaskManhattanPlanes = clock();
 
-    // // [2] process single-frame ellipsoid estimation
+    // [2] process single-frame ellipsoid estimation
     // clock_t time_3_UpdateDepthEllipsoidEstimation, time_4_TaskRelationship, time_5_RefineObjectsWithRelations;
-    // if(!use_infer_detection){
-    //     UpdateDepthEllipsoidEstimation(pFrame, withAssociation);
-    //     time_3_UpdateDepthEllipsoidEstimation = clock();
+    if(!use_infer_detection){
+        // UpdateDepthEllipsoidEstimation(pFrame, withAssociation);
+        // time_3_UpdateDepthEllipsoidEstimation = clock();
 
-    //     // [3] Extract Relationship
-    //     TaskRelationship(pFrame);
-    //     time_4_TaskRelationship = clock();
+        // // [3] Extract Relationship
+        // TaskRelationship(pFrame);
+        // time_4_TaskRelationship = clock();
 
-    //     // [4] Use Relationship To Refine Ellipsoids
-    //     // 注意: Refine时必然在第一步可以初始化出有效的物体.
-    //     RefineObjectsWithRelations(pFrame);
-    //     time_5_RefineObjectsWithRelations = clock();
+        // // [4] Use Relationship To Refine Ellipsoids
+        // // 注意: Refine时必然在第一步可以初始化出有效的物体.
+        // RefineObjectsWithRelations(pFrame);
+        // time_5_RefineObjectsWithRelations = clock();
 
-    //     // [5] 对于第一次提取，Refine提取都失败的，使用点模型
-    //     UpdateDepthEllipsoidUsingPointModel(pFrame);
+        // // [5] 对于第一次提取，Refine提取都失败的，使用点模型
+        // UpdateDepthEllipsoidUsingPointModel(pFrame);
 
-    //     GenerateObservationStructure(pFrame);
-    // }
+        // GenerateObservationStructure(pFrame);
+    }
     
     // // [6] 补充调试环节： 测试语义先验对物体的影响
     // else
@@ -494,14 +495,21 @@ void Tracking::UpdateObjectObservation(ORB_SLAM2::Frame *pFrame, bool withAssoci
 
 void Tracking::TaskGroundPlane()
 {
-    ProcessGroundPlaneEstimation();
-
+    // // if (地面估计没有成功时进行)
+    // ProcessGroundPlaneEstimation();
     // // int miGroundPlaneState; // 0: Closed  1: estimating 2: estimated 3: set by mannual
-    // if(miGroundPlaneState == 1) // State 1: Groundplane estimation opened, and not done yet.
-    //     ProcessGroundPlaneEstimation();
-    // else if(miGroundPlaneState == 3) // State : Set by mannual
-    //     ActivateGroundPlane(mGroundPlane);
+    if(miGroundPlaneState == 1) // State 1: Groundplane estimation opened, and not done yet.
+        ProcessGroundPlaneEstimation();
+    else if(miGroundPlaneState == 3) // State : Set by mannual
+        ActivateGroundPlane(mGroundPlane);
+}
 
+void Tracking::SetGroundPlaneMannually(const Eigen::Vector4d &param)
+{
+    std::cout << "[GroundPlane] Set groundplane mannually: " << param.transpose() << std::endl;
+    miGroundPlaneState = 3;
+    mGroundPlane.param = param;
+    mGroundPlane.color = Vector3d(0,1,0);
 }
 
 void Tracking::ProcessGroundPlaneEstimation()
@@ -594,5 +602,129 @@ void Tracking::ActivateGroundPlane(g2o::plane &groundplane)
     // Change state
     miGroundPlaneState = 2;
 }
+
+void Tracking::OpenDepthEllipsoid(){
+    mbDepthEllipsoidOpened = true;
+
+    mpEllipsoidExtractor = new EllipsoidExtractor;
+    
+    // Open visualization during the estimation process
+    mpEllipsoidExtractor->OpenVisualization(mpMap);
+
+    // Open symmetry
+    if(Config::Get<int>("EllipsoidExtraction.Symmetry.Open") == 1)
+        mpEllipsoidExtractor->OpenSymmetry();
+
+    std::cout << std::endl;
+    cout << " * Open Single-Frame Ellipsoid Estimation. " << std::endl;
+    std::cout << std::endl;
+}
+
+// // Process Ellipsoid Estimation for every boundingboxes in current frame.
+// // Finally, store 3d Ellipsoids into the member variable mpLocalObjects of pFrame.
+// void Tracking::UpdateDepthEllipsoidEstimation(EllipsoidSLAM::Frame* pFrame, bool withAssociation)
+// {
+//     if( !mbDepthEllipsoidOpened ) return;
+
+//     Eigen::MatrixXd &obs_mat = pFrame->mmObservations;
+//     int rows = obs_mat.rows();
+
+//     Eigen::VectorXd pose = pFrame->cam_pose_Twc.toVector();
+
+//     mpEllipsoidExtractor->ClearPointCloudList();    // clear point cloud visualization
+
+//     bool bPlaneNotClear = true;
+//     bool bEllipsoidNotClear = true;
+//     for(int i=0;i<rows;i++){
+//         Eigen::VectorXd det_vec = obs_mat.row(i);  // id x1 y1 x2 y2 label rate instanceID
+//         int label = round(det_vec(5));
+//         double measurement_prob = det_vec(6);
+
+//         Eigen::Vector4d measurement = Eigen::Vector4d(det_vec(1), det_vec(2), det_vec(3), det_vec(4));
+
+//         // Filter those detections lying on the border.
+//         bool is_border = calibrateMeasurement(measurement, mRows, mCols, Config::Get<int>("Measurement.Border.Pixels"), Config::Get<int>("Measurement.LengthLimit.Pixels"));
+//         double prob_thresh = Config::Get<double>("Measurement.Probability.Thresh");
+//         bool prob_check = (measurement_prob > prob_thresh);
+
+//         g2o::ellipsoid* pEllipsoidForThisObservation = NULL;
+//         // 2 conditions must meet to start ellipsoid extraction:
+//         // C1 : the bounding box is not on border
+//         bool c1 = !is_border;
+
+//         // C2 : the groundplane has been estimated successfully
+//         bool c2 = miGroundPlaneState == 2;
+        
+//         // in condition 3, it will not start
+//         // C3 : under with association mode, and the association is invalid, no need to extract ellipsoids again.
+//         bool c3 = false;
+//         if( withAssociation )
+//         {
+//             int instance = round(det_vec(7));
+//             if ( instance < 0 ) c3 = true;  // invalid instance
+//         }
+
+//         // C4 : 物体过滤
+//         // 部分动态物体，如人类， label=0，将被过滤不考虑
+//         bool c4 = true;
+//         std::set<int> viIgnoreLabelLists = {
+//             0 // Human
+//         };
+//         if(viIgnoreLabelLists.find(label) != viIgnoreLabelLists.end())
+//             c4 = false;
+
+//         if( prob_check && c1 && c2 && !c3 && c4 ){   
+//             if(bPlaneNotClear){
+//                 mpMap->clearPlanes();
+//                 if(miGroundPlaneState == 2) // if the groundplane has been estimated
+//                     mpMap->addPlane(&mGroundPlane);
+
+//                 VisualizeManhattanPlanes();
+//                 bPlaneNotClear = false;
+//             }
+//             g2o::ellipsoid e_extractByFitting_newSym = mpEllipsoidExtractor->EstimateLocalEllipsoidUsingMultiPlanes(pFrame->frame_img, measurement, label, measurement_prob, pose, mCamera);
+            
+//             bool c0 = mpEllipsoidExtractor->GetResult();
+//             // 可视化部分
+//             if( c0 )
+//             {
+//                 // Visualize estimated ellipsoid
+//                 g2o::ellipsoid* pObjByFitting = new g2o::ellipsoid(e_extractByFitting_newSym.transform_from(pFrame->cam_pose_Twc));
+//                 if(pObjByFitting->prob_3d > 0.5)
+//                     pObjByFitting->setColor(Vector3d(0.8,0.0,0.0), 1); // Set green color
+//                 else 
+//                     pObjByFitting->setColor(Vector3d(0.8,0,0), 0.5); // 透明颜色
+
+//                 // 临时更新： 此处显示的是 3d prob
+//                 // pObjByFitting->prob = pObjByFitting->prob_3d;
+
+//                 // 第一次添加时清除上一次观测!
+//                 if(bEllipsoidNotClear)
+//                 {
+//                     mpMap->ClearEllipsoidsVisual(); // Clear the Visual Ellipsoids in the map
+//                     mpMap->ClearBoundingboxes();
+//                     bEllipsoidNotClear = false;
+//                 }
+//                 mpMap->addEllipsoidVisual(pObjByFitting);
+
+//                 // 添加debug, 测试筛选图像平面内的bbox平面
+//                 VisualizeCuboidsPlanesInImages(e_extractByFitting_newSym, pFrame->cam_pose_Twc, mCalib, mRows, mCols, mpMap);
+
+//             }   // successful estimation.
+
+//             // 存储条件1: 该检测 3d_prob > 0.5
+//             // 最终决定使用的估计结果
+//             if( c0 ){
+//                 g2o::ellipsoid *pE_extractByFitting = new g2o::ellipsoid(e_extractByFitting_newSym);
+//                 pEllipsoidForThisObservation = pE_extractByFitting;   // Store result to pE_extracted.
+//             }
+//         }
+
+//         // 若不成功保持为NULL
+//         pFrame->mpLocalObjects.push_back(pEllipsoidForThisObservation);
+//     }
+
+//     return;
+// }
 
 }

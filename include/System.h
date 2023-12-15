@@ -88,11 +88,13 @@ public:
 public:
 
     // Initialize the SLAM system. It launches the Local Mapping, Loop Closing and Viewer threads.
+    // 初始化SLAM系统，其中启动了局部建图、回环和可视化线程。
     System(const string &strVocFile, const string &strSettingsFile, const string &strSequencePath, const eSensor sensor = System::STEREO);
 
     // Proccess the given stereo frame. Images must be synchronized and rectified.
     // Input images: RGB (CV_8UC3) or grayscale (CV_8U). RGB is converted to grayscale.
     // Returns the camera pose (empty if tracking fails).
+    // 
     cv::Mat TrackStereo(const cv::Mat &imLeft, const cv::Mat &imRight, const double &timestamp);
 
     // Process the given rgbd frame. Depthmap must be registered to the RGB frame.
@@ -106,6 +108,9 @@ public:
     // Returns the camera pose (empty if tracking fails).
     cv::Mat TrackMonocular(const cv::Mat &im, const double &timestamp);
 
+    /** --------------------------------
+     * Localization Mode 定位模式修改 
+     * ---------------------------------*/
     // This stops local mapping thread (map building) and performs only camera tracking.
     void ActivateLocalizationMode();
     // This resumes local mapping thread and performs SLAM again.
@@ -122,6 +127,10 @@ public:
     // It waits until all threads have finished.
     // This function must be called before saving the trajectory.
     void Shutdown();
+
+    /** --------------------------------
+     * Result Saving 结果保存 
+     * ---------------------------------*/
 
     // Save camera trajectory in the TUM RGB-D dataset format.
     // Only for stereo and RGB-D. This method does not work for monocular.
@@ -144,11 +153,14 @@ public:
     void SaveMapCurrentFrame(const string &dir, int frameId);
     void SaveEntireMap(const string &dir);
 
+
     // Information from most recent processed frame
     // You can call this right after TrackMonocular (or stereo or RGBD)
     int GetTrackingState();
     std::vector<MapPoint*> GetTrackedMapPoints();
     std::vector<cv::KeyPoint> GetTrackedKeyPointsUn();
+
+    void OpenDepthEllipsoid();
 
     void SetImageNames(vector<string>& vstrImageFilenamesRGB);
 
@@ -218,8 +230,8 @@ private:
     std::vector<cv::KeyPoint> mTrackedKeyPointsUn;
     std::mutex mMutexState;
 
+    // Add by Lj
     vector<string> mvstrImageFilenamesRGB;
-
     bool mbMapInSameThread;
 };
 

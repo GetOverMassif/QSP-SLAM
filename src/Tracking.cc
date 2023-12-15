@@ -102,6 +102,15 @@ Tracking::Tracking(System *pSys, ORBVocabulary* pVoc, FrameDrawer *pFrameDrawer,
     cout << "- fps: " << fps << endl;
 
 
+    // mpInitializer =  new Initializer(rows, cols);
+    mpOptimizer = new Optimizer;
+    // mRows = rows;
+    // mCols = cols;
+
+    mbDepthEllipsoidOpened = false;
+    mbOpenOptimization = true;
+
+
     int nRGB = fSettings["Camera.RGB"];
     mbRGB = nRGB;
 
@@ -1143,7 +1152,7 @@ void Tracking::CreateNewKeyFrame()
 
         // 获取完检测之后更新物体观测
         bool withAssociation = true;
-        // todo
+        // todo：在这里进行物体观测的更新
         UpdateObjectObservation(&mCurrentFrame, withAssociation);
 
         //DetectObjects(pKF);
@@ -1155,7 +1164,7 @@ void Tracking::CreateNewKeyFrame()
         
         std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
 
-        double ttrack= std::chrono::duration_cast<std::chrono::duration<double> >(t2 - t1).count();
+        double ttrack = std::chrono::duration_cast<std::chrono::duration<double> >(t2 - t1).count();
         cout << "Object detection and Association take " << ttrack << "s" << endl;
     }
 

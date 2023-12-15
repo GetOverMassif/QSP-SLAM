@@ -108,7 +108,7 @@ namespace ORB_SLAM2
             extract.filter(*planeCloud);
 
             mvPlanePoints.push_back(*planeCloud);
-            mvPlaneCoefficients.push_back(coef);        
+            mvPlaneCoefficients.push_back(coef);
         }
     }
 
@@ -139,8 +139,10 @@ namespace ORB_SLAM2
         // ************************************
         extractPlanes(depth);   // first extract all the potential planes
         
-        if( mvPlaneCoefficients.size() < 1)     // there should be more than 1 potential planes 
+        if( mvPlaneCoefficients.size() < 1){  // there should be more than 1 potential planes
+            std::cout << " [PlaneExtractor.cpp] mvPlaneCoefficients.size() < 1" << std::endl;
             return false;
+        }
 
         // *********************************
         // 接下来从潜在平面中找寻最佳的地平面
@@ -153,12 +155,16 @@ namespace ORB_SLAM2
         Vector3d cam_pose(0,0,0);   
         std::vector<g2o::plane*> vpPlanes;
         std::vector<std::pair<g2o::plane*, double>> mapPlaneSorter;
+
+        // std::cout << " [PlaneExtractor.cpp] mvPlaneCoefficients[0] = " << vec.transpose().matrix() << std::endl;
         for( int i=0; i<mvPlaneCoefficients.size(); i++ )
         {
             Eigen::Vector4d vec;
             auto& coeff = mvPlaneCoefficients[i];
             vec << double(coeff.at<float>(0)), double(coeff.at<float>(1)), double(coeff.at<float>(2)), double(coeff.at<float>(3));
-
+            if (i == 0)
+                std::cout << " [PlaneExtractor.cpp] mvPlaneCoefficients[" << i << "] = " << vec.transpose().matrix() << std::endl;
+            // todo: Consider whether to use the prior of Camera Y-axis
             // suppose the Y axis of the camera coordinate is the gravity direction and set a tolerence of angle difference of [pi/4, 3*pi/4].
             // it always meets the criteria when the camera is located on a mobile robot.
             // it is a loose criteria only for filtering the walls.
@@ -168,7 +174,10 @@ namespace ORB_SLAM2
             cos_theta = cos_theta / axisNorm.norm() / axisY.norm();
 
             double theta = acos( cos_theta );      // acos : [0,pi]
-            if( theta > M_PI/4 && theta < 3*M_PI/4 ) continue;  
+            if( theta > M_PI/4 && theta < 3*M_PI/4 ){
+                std::cout << "continue because theta = " << theta << std::endl;
+                continue;
+            }
 
             g2o::plane* pPlane = new g2o::plane();
             pPlane->param= vec;

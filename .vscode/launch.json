@@ -13,7 +13,7 @@
             // "configs/associations/fr1_desk.txt",
             // "map/tum/fr1_desk"
             "Vocabulary/ORBvoc.bin",
-            "configs/redwood_01053.yaml",
+            "configs/redwood_chair_01053.yaml",
             "/media/lj/TOSHIBA/dataset/RedwoodOS/data/rgbd/01053",
             "/media/lj/TOSHIBA/dataset/RedwoodOS/data/rgbd/01053/associate.txt",
             "map/redwood/01053"

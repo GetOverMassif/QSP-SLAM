@@ -18,7 +18,7 @@ namespace ORB_SLAM2 {
         // Get function reads value from parameter file (.yaml)
         template <typename T>
         static T Get(const string& key){
-            return T(Config::mConfig->mFile[key]);
+             return T(Config::mConfig->mFile[key]);
         }
 
         template <typename T>

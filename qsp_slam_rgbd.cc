@@ -62,7 +62,7 @@ int main(int argc, char **argv)
     LoadImages(strAssociationFilename, vstrImageFilenamesRGB, vstrImageFilenamesD, vTimestamps);
 
     int nImages = vstrImageFilenamesRGB.size();
-    // TODO: 检查是否rgb, depth数量是否一致
+
     if(vstrImageFilenamesRGB.empty())
     {
         cerr << endl << "No images found in provided path." << endl;
