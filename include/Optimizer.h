@@ -29,10 +29,18 @@
 
 #include "Thirdparty/g2o/g2o/types/types_seven_dof_expmap.h"
 
+
+
 namespace ORB_SLAM2
 {
 
-class LoopClosing;
+// class LoopClosing;
+
+class KeyFrame;
+
+typedef map<KeyFrame*,g2o::Sim3,std::less<KeyFrame*>,
+    Eigen::aligned_allocator<std::pair<const KeyFrame*, g2o::Sim3> >> KeyFrameAndPose;
+
 
 class Optimizer
 {
@@ -49,20 +57,37 @@ public:
                                        const unsigned long nLoopKF=0, const bool bRobust = true);
     void static LocalBundleAdjustment(KeyFrame* pKF, bool *pbStopFlag, Map *pMap);
     void static LocalJointBundleAdjustment(KeyFrame* pKF, bool *pbStopFlag, Map *pMap);
-    void static LocalJointBundleAdjustment(KeyFrame* pKF, bool *pbStopFlag, Map *pMap, py::object *pyOptimizer);
+    // void static LocalJointBundleAdjustment(KeyFrame* pKF, bool *pbStopFlag, Map *pMap, py::object *pyOptimizer);
     int static PoseOptimization(Frame* pFrame);
 
     // if bFixScale is true, 6DoF optimization (stereo,rgbd), 7DoF otherwise (mono)
     void static OptimizeEssentialGraph(Map* pMap, KeyFrame* pLoopKF, KeyFrame* pCurKF,
-                                       const LoopClosing::KeyFrameAndPose &NonCorrectedSim3,
-                                       const LoopClosing::KeyFrameAndPose &CorrectedSim3,
-                                       const map<KeyFrame *, set<KeyFrame *> > &LoopConnections,
+                                       const KeyFrameAndPose &NonCorrectedSim3,
+                                       const KeyFrameAndPose &CorrectedSim3,
+                                       const map<KeyFrame *, set<KeyFrame *>> &LoopConnections,
                                        const bool &bFixScale);
 
     // if bFixScale is true, optimize SE3 (stereo,rgbd), Sim3 otherwise (mono)
     static int OptimizeSim3(KeyFrame* pKF1, KeyFrame* pKF2, std::vector<MapPoint *> &vpMatches1,
                             g2o::Sim3 &g2oS12, const float th2, const bool bFixScale);
     static int nBAdone;
+
+    void SetGroundPlane(Vector4d& normal);
+
+
+private:
+    std::map<int, std::vector<float>> mMapObjectConstrain;
+
+    bool mbGroundPlaneSet;
+    Vector4d mGroundPlaneNormal;
+
+    // bool mbRelationLoaded;
+    // Relations mRelations;
+    // SupportingPlanes mSupportingPlanes;
+
+    // // 保存优化结果
+    // Objects mObjects; 
+    // Measurements mMeasurements;
 };
 
 } //namespace ORB_SLAM

@@ -72,6 +72,7 @@
         "core": "cpp",
         "specialfunctions": "cpp",
         "*.def": "cpp",
-        "*.ipp": "cpp"
+        "*.ipp": "cpp",
+        "*.txx": "cpp"
     }
 }

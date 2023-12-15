@@ -3,7 +3,7 @@
 
 // ***************** DEBUG 可视化 ***************
 #include "Map.h"
-extern EllipsoidSLAM::Map *expMap;
+extern ORB_SLAM2::Map *expMap;
 
 bool g_bVisualize = false;
 // *********************************************
@@ -400,7 +400,7 @@ void EdgeSE3EllipsoidPlanePartial::computeError() {
     double error;
 
     // 1) 判断平面是否与椭球体相交
-    bool bCross = EllipsoidSLAM::JudgeCross(pl, e);
+    bool bCross = ORB_SLAM2::JudgeCross(pl, e);
     // std::cout << "bCross : " << bCross << std::endl;
 
     // 1.1 若相交, 则error为0

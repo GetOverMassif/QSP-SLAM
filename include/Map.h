@@ -47,6 +47,45 @@ class MapPoint;
 class KeyFrame;
 class MapObject;
 
+class SE3QuatWithStamp
+{
+public:
+    g2o::SE3Quat pose;
+    double timestamp;
+};
+typedef std::vector<SE3QuatWithStamp*> Trajectory;
+
+class Boundingbox
+{
+public:
+    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+    
+    Vector3d color;
+    double alpha;
+    Matrix3Xd points;
+};
+
+class Arrow
+{
+public:
+    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+    Vector3d center;
+    Vector3d norm;
+    Vector3d color;    
+};
+
+enum ADD_POINT_CLOUD_TYPE
+{
+    REPLACE_POINT_CLOUD = 0,
+    ADD_POINT_CLOUD = 1
+};
+
+enum DELETE_POINT_CLOUD_TYPE
+{
+    COMPLETE_MATCHING = 0,
+    PARTIAL_MATCHING = 1
+};
+
 class Map
 {
 public:
@@ -88,13 +127,25 @@ public:
     std::vector<MapObject*> GetAllMapObjects();
 
     // Lj
-    void addPlane(plane *pPlane, int visual_group);
+    void addPlane(plane* pPlane, int visual_group = 0);
     vector<plane*> GetAllPlanes();
 
-    bool AddPointCloudList(const string& name, std::vector<pcl::PointCloud<pcl::PointXYZRGB>>& vCloudPCL, g2o::SE3Quat& Twc, int type);
-    bool AddPointCloudList(const string& name, PointCloud* pCloud, int type);
-    bool DeletePointCloudList(const string& name, int type);
+    bool AddPointCloudList(const string& name, PointCloud* pCloud, int type = 0);   // type 0: replace when exist,  type 1: add when exist
+    bool DeletePointCloudList(const string& name, int type = 0);    // type 0: complete matching, 1: partial matching
     bool ClearPointCloudLists();
+
+    // 针对新的接口
+    bool AddPointCloudList(const string& name, std::vector<pcl::PointCloud<pcl::PointXYZRGB>>& vCloudPCL, g2o::SE3Quat& Twc, int type = REPLACE_POINT_CLOUD);
+
+    void addToTrajectoryWithName(SE3QuatWithStamp* state, const string& name);
+    Trajectory getTrajectoryWithName(const string& name);
+    bool clearTrajectoryWithName(const string& name);
+    bool addOneTrajectory(Trajectory& traj, const string& name);
+
+    void addArrow(const Vector3d& center, const Vector3d& norm, const Vector3d& color);
+    std::vector<Arrow> GetArrows();
+    void clearArrows();
+
     std::map<string, PointCloud*> GetPointCloudList();
     PointCloud GetPointCloudInList(const string& name);
 
@@ -110,6 +161,38 @@ protected:
     int mnBigChangeIdx;
 
     std::mutex mMutexMap;
+
+protected:
+    std::vector<ellipsoid*> mspEllipsoids;
+    std::set<plane*> mspPlanes;
+
+    g2o::SE3Quat* mCameraState;   // Twc
+    std::vector<g2o::SE3Quat*> mvCameraStates;      // Twc  camera in world
+    std::map<string, Trajectory> mmNameToTrajectory;
+
+    std::set<PointXYZRGB*> mspPoints;  
+    std::map<string, PointCloud*> mmPointCloudLists; // name-> pClouds
+
+    std::vector<Arrow> mvArrows;
+public:
+    // those visual ellipsoids are for visualization only and DO NOT join the optimization
+    void addEllipsoidVisual(ellipsoid* pObj);
+    std::vector<ellipsoid*> GetAllEllipsoidsVisual();
+    void ClearEllipsoidsVisual();
+
+    void addEllipsoidObservation(ellipsoid* pObj);
+    std::vector<ellipsoid*> GetObservationEllipsoids();
+    void ClearEllipsoidsObservation();
+
+    // interface for visualizing boungding box
+    void addBoundingbox(Boundingbox* pBox);
+    std::vector<Boundingbox*> GetBoundingboxes();
+    void ClearBoundingboxes();
+
+protected:
+    std::vector<ellipsoid*> mspEllipsoidsVisual;
+    std::vector<ellipsoid*> mspEllipsoidsObservation;
+    std::vector<Boundingbox*> mvBoundingboxes;
 };
 
 } //namespace ORB_SLAM

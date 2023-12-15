@@ -274,6 +274,9 @@ protected:
     PlaneExtractorManhattan* pPlaneExtractorManhattan;
     int miMHPlanesState; // 0: Closed 1: estimating 2: estimated
 
+
+    bool mbDepthEllipsoidOpened = true;
+
 };
 
 } //namespace ORB_SLAM

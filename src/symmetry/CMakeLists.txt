@@ -9,8 +9,8 @@ add_library(symmetry SHARED
 
 message ("source dir of symmetry: " ${PROJECT_SOURCE_DIR})
 target_link_libraries(symmetry
-        ${OpenCV_LIBS}
-        ${PCL_LIBRARIES}
-        utils
-        ${PROJECT_SOURCE_DIR}/Thirdparty/g2o/lib/libg2o.so
-        )
+    ${OpenCV_LIBS}
+    ${PCL_LIBRARIES}
+    utils
+    ${PROJECT_SOURCE_DIR}/Thirdparty/g2o/lib/libg2o.so
+)

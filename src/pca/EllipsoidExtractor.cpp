@@ -499,7 +499,7 @@ g2o::ellipsoid EllipsoidExtractor::EstimateLocalEllipsoid(cv::Mat &depth, Eigen:
             // VisualizePointCloud("WithSymNormalized", pObjectCloudNormalized, Vector3d(0,0,0.4), 2);
 
             // transform to the world
-            ORB_SLAM2::PointCloud *pObjectCloudWithSymWorld = EllipsoidSLAM::transformPointCloud(pObjectCloudNormalized, pSE3Two);
+            ORB_SLAM2::PointCloud *pObjectCloudWithSymWorld = ORB_SLAM2::transformPointCloud(pObjectCloudNormalized, pSE3Two);
             VisualizePointCloud("Mirrored Points", pObjectCloudWithSymWorld, Vector3d(0, 1.0, 0.2), 8);
 
         } // end of symmetry type

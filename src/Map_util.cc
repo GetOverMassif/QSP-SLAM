@@ -18,6 +18,8 @@
 #include "Map.h"
 #include <mutex>
 
+#include "src/symmetry/PointCloudFilter.h"
+
 namespace ORB_SLAM2 {
 
 void Map::AddMapObject(MapObject *pMO) {
@@ -182,6 +184,136 @@ PointCloud Map::GetPointCloudInList(const string &name) {
         return *mmPointCloudLists[name];
     else
         return PointCloud(); // 空
+}
+
+void Map::addEllipsoidVisual(ellipsoid *pObj)
+{
+    unique_lock<mutex> lock(mMutexMap);
+    mspEllipsoidsVisual.push_back(pObj);
+}
+
+
+vector<ellipsoid*> Map::GetAllEllipsoidsVisual()
+{
+    unique_lock<mutex> lock(mMutexMap);
+    return mspEllipsoidsVisual;
+}
+
+void Map::ClearEllipsoidsVisual()
+{
+    unique_lock<mutex> lock(mMutexMap);
+    mspEllipsoidsVisual.clear();
+}
+
+
+void Map::addEllipsoidObservation(ellipsoid *pObj)
+{
+    unique_lock<mutex> lock(mMutexMap);
+    mspEllipsoidsObservation.push_back(pObj);
+}
+
+
+vector<ellipsoid*> Map::GetObservationEllipsoids()
+{
+    unique_lock<mutex> lock(mMutexMap);
+    return mspEllipsoidsObservation;
+}
+
+void Map::ClearEllipsoidsObservation()
+{
+    unique_lock<mutex> lock(mMutexMap);
+    mspEllipsoidsObservation.clear();
+}
+
+void Map::addBoundingbox(Boundingbox* pBox)
+{
+    unique_lock<mutex> lock(mMutexMap);
+    mvBoundingboxes.push_back(pBox);
+}
+
+std::vector<Boundingbox*> Map::GetBoundingboxes()
+{
+    unique_lock<mutex> lock(mMutexMap);
+    return mvBoundingboxes;
+}
+
+void Map::ClearBoundingboxes()
+{
+    unique_lock<mutex> lock(mMutexMap);
+    mvBoundingboxes.clear();
+}
+
+void Map::addToTrajectoryWithName(SE3QuatWithStamp* state, const string& name)
+{
+    unique_lock<mutex> lock(mMutexMap);
+
+    // 没有则生成一个
+    if( mmNameToTrajectory.find(name) == mmNameToTrajectory.end() ){
+        mmNameToTrajectory[name] = Trajectory();
+        mmNameToTrajectory[name].push_back(state);
+    }
+    else
+    {
+        mmNameToTrajectory[name].push_back(state);
+    }
+}
+
+Trajectory Map::getTrajectoryWithName(const string& name)
+{
+    unique_lock<mutex> lock(mMutexMap);
+    if( mmNameToTrajectory.find(name) == mmNameToTrajectory.end() ){
+        return Trajectory();
+    }
+    else
+    {
+        return mmNameToTrajectory[name];
+    }
+}
+
+bool Map::clearTrajectoryWithName(const string& name)
+{
+    unique_lock<mutex> lock(mMutexMap);
+    if( mmNameToTrajectory.find(name) != mmNameToTrajectory.end() )
+    {
+        mmNameToTrajectory[name].clear();
+        return true;
+    }
+
+    return false;
+
+}
+
+bool Map::addOneTrajectory(Trajectory& traj, const string& name)
+{
+    unique_lock<mutex> lock(mMutexMap);
+    mmNameToTrajectory[name] = traj;
+
+    return true;
+}
+
+void Map::addArrow(const Vector3d& center, const Vector3d& norm, const Vector3d& color)
+{
+    unique_lock<mutex> lock(mMutexMap);
+    Arrow ar;
+    ar.center = center;
+    ar.norm = norm;
+    ar.color = color;
+    mvArrows.push_back(ar);
+    
+    return;
+}
+
+std::vector<Arrow> Map::GetArrows()
+{
+    unique_lock<mutex> lock(mMutexMap);
+    return mvArrows;
+}
+
+void Map::clearArrows()
+{
+    unique_lock<mutex> lock(mMutexMap);
+    mvArrows.clear();
+    return;
 }
 
 } // namespace ORB_SLAM2

@@ -69,6 +69,7 @@ add_subdirectory(pybind11)
 # include_directories(/home/lj/Documents/DSC-SLAM/pybind11)
 
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/lib)
+
 add_library(${PROJECT_NAME} SHARED
     src/System.cc
     src/System_util.cc
@@ -104,18 +105,15 @@ add_library(${PROJECT_NAME} SHARED
     src/ObjectRenderer.cc
 
     src/core/Ellipsoid.cpp
-#     src/core/Initializer.cpp
     src/core/Geometry.cpp
-#     src/core/Optimizer.cpp
-#     src/core/Frame.cpp
     src/core/Plane.cpp
 #     src/core/DataAssociation.cpp
-#     src/core/BasicEllipsoidEdges.cpp
+    src/core/BasicEllipsoidEdges.cpp
 #     src/core/NonparamDA.cpp
 #     src/core/SupportingPlane.cpp
     src/core/ConstrainPlane.cpp
 #     src/core/SemanticLabel.cpp
-#     src/core/PriorInfer.cpp
+    src/core/PriorInfer.cpp
 
 )
 

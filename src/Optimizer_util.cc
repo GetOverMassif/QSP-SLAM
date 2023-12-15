@@ -770,4 +770,9 @@ void Optimizer::LocalJointBundleAdjustment(KeyFrame *pKF, bool *pbStopFlag, Map 
 
 }
 
+void Optimizer::SetGroundPlane(Vector4d& normal){
+    mbGroundPlaneSet = true;
+    mGroundPlaneNormal = normal;
+}
+
 }

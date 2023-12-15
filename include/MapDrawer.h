@@ -59,6 +59,13 @@ public:
     // By Lijian
     void DrawDepthPointCloud();
 
+    bool drawPlanes(int visual_group=0);
+    void drawLine(const Vector3d& start, const Vector3d& end, const Vector3d& color, double width, double alpha);
+
+private:
+
+    void drawPlaneWithEquation(plane* p);
+
 private:
 
     float mKeyFrameSize;

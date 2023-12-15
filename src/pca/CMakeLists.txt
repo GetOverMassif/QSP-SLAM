@@ -8,7 +8,8 @@ add_library(EllipsoidExtractor SHARED
 )
 
 target_link_libraries(EllipsoidExtractor
-        ${OpenCV_LIBS}
-        symmetry
-        utils
-        )
+    pybind11::embed
+    ${OpenCV_LIBS}
+    symmetry
+    utils
+)

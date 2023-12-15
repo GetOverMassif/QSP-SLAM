@@ -148,6 +148,8 @@ void Viewer::Run()
         if(menuShowPoints)
             mpMapDrawer->DrawMapPoints();
         
+        // if(menuShowPlanes)
+            mpMapDrawer->drawPlanes(0); // 0:default.
         // mpMapDrawer->drawEllipsoid();
 
         mpObjectDrawer->ProcessNewObjects();

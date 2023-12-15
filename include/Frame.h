@@ -162,7 +162,7 @@ public:
     std::vector<std::size_t> mGrid[FRAME_GRID_COLS][FRAME_GRID_ROWS];
 
     // Camera pose.
-    cv::Mat mTcw;
+    cv::Mat mTcw; 
 
     // // todo: to be updated 
     // g2o::SE3Quat cam_pose_Tcw;	     // optimized pose  world to cam
