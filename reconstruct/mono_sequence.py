@@ -98,6 +98,8 @@ class Frame:
         img_h, img_w, _ = self.img_rgb.shape
         masks_2d = det_2d["pred_masks"]
         bboxes_2d = det_2d["pred_boxes"]
+        labels_2d = det_2d[""]
+        probs_2d = det_2d[""]
 
         # If no 2D detections, return right away
         if masks_2d.shape[0] == 0:
@@ -107,6 +109,8 @@ class Frame:
         max_id = np.argmax(masks_2d.sum(axis=-1).sum(axis=-1))
         mask_max = masks_2d[max_id, ...].astype(np.float32) * 255.
         bbox_max = bboxes_2d[max_id, ...]
+        label_max = labels_2d[max_id, ...]
+        prob_max = probs_2d[max_id, ...]
 
         non_surface_pixels = self.pixels_sampler(bbox_max, mask_max.astype(np.bool8))
         if non_surface_pixels.shape[0] > 200:
@@ -120,6 +124,8 @@ class Frame:
         instance.bbox = bbox_max
         instance.mask = mask_max
         instance.background_rays = background_rays_undist
+        instance.label = label_max
+        instance.prob = prob_max
 
         self.instances = [instance]
 

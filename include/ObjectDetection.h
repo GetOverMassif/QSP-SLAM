@@ -59,6 +59,9 @@ public:
     std::mutex mMutexDetection;
 
     std::vector<Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d>> valid_edges;
+    Eigen::Vector4d bbox;
+    int label;
+    double prob;
 };
 }
 

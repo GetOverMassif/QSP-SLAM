@@ -123,8 +123,10 @@ public:
     void ActivateGroundPlane(g2o::plane &groundplane);
     void ProcessGroundPlaneEstimation();
 
+    void VisualizeManhattanPlanes();
+
     // void Update3DObservationDataAssociation(EllipsoidSLAM::Frame* pFrame, std::vector<int>& associations, std::vector<bool>& KeyFrameChecks);
-    // void UpdateDepthEllipsoidEstimation(EllipsoidSLAM::Frame* pFrame, bool withAssociation);
+    void UpdateDepthEllipsoidEstimation(ORB_SLAM2::Frame* pFrame, bool withAssociation);
     // void UpdateDepthEllipsoidUsingPointModel(EllipsoidSLAM::Frame* pFrame);
 
 public:

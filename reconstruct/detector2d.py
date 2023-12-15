@@ -92,11 +92,14 @@ class Detector2D(object):
         boxes = np.concatenate(boxes, axis=0)
         masks = []
         labels = []
+        probs = []
+
         n_det = 0
         for o in object_class_table[object_class]:
             masks += self.predictions[1][o]
             n_det += len(self.predictions[1][o])
-            # labels += 
+            labels.append()
+            probs.append()
         
         # In case there is no detections
         if n_det == 0:
@@ -105,12 +108,15 @@ class Detector2D(object):
             masks = np.stack(masks, axis=0)
         assert boxes.shape[0] == masks.shape[0]
 
-        return self.get_valid_detections(boxes, masks)
+
+
+        return self.get_valid_detections(boxes, masks, labels, probs)
 
     def visualize_result(self, image, filename):
         self.model.show_result(image, self.predictions, out_file=filename)
 
-    def get_valid_detections(self, boxes, masks):
+
+    def get_valid_detections(self, boxes, masks, labels, probs):
         # Remove those on the margin
 
         cond1 = (boxes[:, 0] >= 30) & (boxes[:, 1] > 10) & (boxes[:, 2] < 1211) & (boxes[:, 3] < 366)
@@ -121,10 +127,13 @@ class Detector2D(object):
         scores = boxes[:, -1]
         cond3 = (scores >= 0.70)
 
+        # valid_mask = (cond2 & cond3)
         valid_mask = (cond2 & cond3)
+
         valid_instances = {"pred_boxes": boxes[valid_mask, :4],
-                           "pred_masks": masks[valid_mask, ...]
-                        #    , "pred_labels": 
+                           "pred_masks": masks[valid_mask, ...],
+                           "pred_labels": labels[valid_mask],
+                           "pred_probss": probs[valid_mask],
                            }
 
         return valid_instances

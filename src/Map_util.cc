@@ -62,6 +62,11 @@ vector<plane *> Map::GetAllPlanes() {
     return vector<plane *>(mspPlanes.begin(), mspPlanes.end());
 }
 
+void Map::clearPlanes(){
+    unique_lock<mutex> lock(mMutexMap);
+    mspPlanes.clear();
+}
+
 /**
  * PointCloud
  */

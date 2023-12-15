@@ -128,7 +128,9 @@ public:
 
     // Lj
     void addPlane(plane* pPlane, int visual_group = 0);
-    vector<plane*> GetAllPlanes();
+    std::vector<plane*> GetAllPlanes();
+    void clearPlanes();
+
 
     bool AddPointCloudList(const string& name, PointCloud* pCloud, int type = 0);   // type 0: replace when exist,  type 1: add when exist
     bool DeletePointCloudList(const string& name, int type = 0);    // type 0: complete matching, 1: partial matching

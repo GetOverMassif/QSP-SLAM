@@ -23,6 +23,7 @@
 
 #include<vector>
 
+#include "core/Ellipsoid.h"
 #include "MapPoint.h"
 #include "Thirdparty/DBoW2/DBoW2/BowVector.h"
 #include "Thirdparty/DBoW2/DBoW2/FeatureVector.h"
@@ -31,6 +32,7 @@
 #include "ORBextractor.h"
 
 #include <opencv2/opencv.hpp>
+#include <Eigen/Dense>
 
 namespace ORB_SLAM2
 {
@@ -98,6 +100,8 @@ public:
 
     // Backprojects a keypoint (if stereo/depth info available) into 3D world coordinates.
     cv::Mat UnprojectStereo(const int &i);
+
+    bool SetObservations(KeyFrame* pKF);
 
 public:
     // Vocabulary used for relocalization.
@@ -167,6 +171,13 @@ public:
     // // todo: to be updated 
     // g2o::SE3Quat cam_pose_Tcw;	     // optimized pose  world to cam
     // g2o::SE3Quat cam_pose_Twc;	     // optimized pose  cam to world
+
+    Eigen::MatrixXd mmObservations;     // id x1 y1 x2 y2 label rate instanceID
+    // std::vector<bool> mvbOutlier;
+
+    // For depth ellipsoid extraction.
+    bool mbHaveLocalObject;
+    std::vector<g2o::ellipsoid*> mpLocalObjects; // local 3d ellipsoid
 
     // Current and Next Frame id.
     static long unsigned int nNextId;

@@ -1150,8 +1150,12 @@ void Tracking::CreateNewKeyFrame()
         
         GetObjectDetectionsRGBD(pKF);
 
+        mCurrentFrame.SetObservations(pKF);
+
         // 获取完检测之后更新物体观测
-        bool withAssociation = true;
+        // 是否直接使用物体检测中的InstanceID
+        // bool withAssociation = true;
+        bool withAssociation = false;
         // todo：在这里进行物体观测的更新
         UpdateObjectObservation(&mCurrentFrame, withAssociation);
 

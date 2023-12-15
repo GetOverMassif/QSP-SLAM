@@ -680,4 +680,15 @@ cv::Mat Frame::UnprojectStereo(const int &i)
         return cv::Mat();
 }
 
+bool Frame::SetObservations(KeyFrame* pKF){
+    std::vector<ObjectDetection*> obj_dets = pKF->GetObjectDetections();
+    int num_det = obj_dets.size();
+    std::cout << "num_det = " << num_det << std::endl;
+    
+    // for i in {}
+    return true;
+}
+
+
+
 } //namespace ORB_SLAM
