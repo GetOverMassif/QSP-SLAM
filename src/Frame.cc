@@ -117,10 +117,17 @@ Frame::Frame(const cv::Mat &imLeft, const cv::Mat &imRight, const double &timeSt
     AssignFeaturesToGrid();
 }
 
+// todo: 其他模式有待更新
 Frame::Frame(const cv::Mat &imGray, const cv::Mat &imDepth, const double &timeStamp, ORBextractor* extractor,ORBVocabulary* voc, cv::Mat &K, cv::Mat &distCoef, const float &bf, const float &thDepth)
     :mpORBvocabulary(voc),mpORBextractorLeft(extractor),mpORBextractorRight(static_cast<ORBextractor*>(NULL)),
      mTimeStamp(timeStamp), mK(K.clone()),mDistCoef(distCoef.clone()), mbf(bf), mThDepth(thDepth)
 {
+    // timestamp = timestamp_;
+    rgb_img = imGray.clone();
+    frame_img = imDepth.clone();
+    // if(!rgb_img.empty())
+    //     cv::cvtColor(rgb_img, gray_img, CV_BGR2GRAY);
+
     // Frame ID
     mnId=nNextId++;
 
@@ -265,6 +272,11 @@ void Frame::UpdatePoseMatrices()
     mRwc = mRcw.t();
     mtcw = mTcw.rowRange(0,3).col(3);
     mOw = -mRcw.t()*mtcw;
+
+    cv::Mat Twc_mat;
+    cv::invert(mTcw, Twc_mat);
+    cam_pose_Twc = Converter::toSE3Quat(Twc_mat);
+    cam_pose_Tcw = Converter::toSE3Quat(mTcw);
 }
 
 bool Frame::isInFrustum(MapPoint *pMP, float viewingCosLimit)
@@ -684,7 +696,7 @@ bool Frame::SetObservations(KeyFrame* pKF){
     std::vector<ObjectDetection*> obj_dets = pKF->GetObjectDetections();
     int num_det = obj_dets.size();
     std::cout << "num_det = " << num_det << std::endl;
-    
+
     // for i in {}
     return true;
 }

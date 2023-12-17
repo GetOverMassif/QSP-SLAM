@@ -102,10 +102,23 @@ Tracking::Tracking(System *pSys, ORBVocabulary* pVoc, FrameDrawer *pFrameDrawer,
     cout << "- fps: " << fps << endl;
 
 
+    int rows = fSettings["Camera.height"];
+    int cols = fSettings["Camera.width"];
+
+    mCalib << fx,  0, cx,
+               0, fy, cy,
+               0,  0,  1;
+
+    mCamera.cx = cx;
+    mCamera.cy = cy;
+    mCamera.fx = fx;
+    mCamera.fy = fy;
+    mCamera.scale = fSettings["Camera.scale"];
+
     // mpInitializer =  new Initializer(rows, cols);
     mpOptimizer = new Optimizer;
-    // mRows = rows;
-    // mCols = cols;
+    mRows = rows;
+    mCols = cols;
 
     mbDepthEllipsoidOpened = false;
     mbOpenOptimization = true;
@@ -1148,6 +1161,7 @@ void Tracking::CreateNewKeyFrame()
     {
         std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
         
+        mvpFrames.push_back(&mCurrentFrame);
         GetObjectDetectionsRGBD(pKF);
 
         mCurrentFrame.SetObservations(pKF);
@@ -1158,6 +1172,8 @@ void Tracking::CreateNewKeyFrame()
         bool withAssociation = false;
         // todo：在这里进行物体观测的更新
         UpdateObjectObservation(&mCurrentFrame, withAssociation);
+
+        ManageMemory();
 
         //DetectObjects(pKF);
         if (!mpMap->GetAllMapObjects().empty())

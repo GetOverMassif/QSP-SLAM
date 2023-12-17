@@ -165,12 +165,23 @@ public:
     static float mfGridElementHeightInv;
     std::vector<std::size_t> mGrid[FRAME_GRID_COLS][FRAME_GRID_ROWS];
 
+
+    // int frame_seq_id;    // image topic sequence id, fixed
+
+    cv::Mat frame_img;      // depth img for processing
+    cv::Mat rgb_img;        // rgb img for visualization.
+    cv::Mat gray_img;       // gray! for texture
+    cv::Mat ellipsoids_2d_img;
+
+    // double timestamp;
+
+    g2o::VertexSE3Expmap* pose_vertex;
+
     // Camera pose.
     cv::Mat mTcw; 
 
-    // // todo: to be updated 
-    // g2o::SE3Quat cam_pose_Tcw;	     // optimized pose  world to cam
-    // g2o::SE3Quat cam_pose_Twc;	     // optimized pose  cam to world
+    g2o::SE3Quat cam_pose_Tcw;	     // optimized pose  world to cam
+    g2o::SE3Quat cam_pose_Twc;	     // optimized pose  cam to world
 
     Eigen::MatrixXd mmObservations;     // id x1 y1 x2 y2 label rate instanceID
     // std::vector<bool> mvbOutlier;

@@ -106,6 +106,7 @@ public:
     void AssociateObjectsByProjection(KeyFrame *pKF);  // assocating detection to object by projecting map points
     void SetImageNames(vector<string>& vstrImageFilenamesRGB);
 
+    void ManageMemory();
     /** --------------------------------
      * Object Observation 物体观测相关
      * ---------------------------------*/
@@ -148,6 +149,10 @@ public:
 
     // Current Frame
     Frame mCurrentFrame;
+
+    Eigen::Matrix3d mCalib;
+    int mRows, mCols;
+
     cv::Mat mImGray;
     cv::Mat mImDepth;
     vector<cv::Mat> mvImObjectMasks;
@@ -243,6 +248,12 @@ protected:
     cv::Mat mK;
     cv::Mat mDistCoef;
     float mbf;
+    camera_intrinsic mCamera;
+
+    // todo: 实际上只对关键帧对应的Frame进行记录
+    std::vector<Frame*> mvpFrames;
+
+    // std::map<int, Observations> mmObjectObservations;
 
     //New KeyFrame rules (according to fps)
     int mMinFrames;

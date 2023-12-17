@@ -522,16 +522,16 @@ void Tracking::ProcessGroundPlaneEstimation()
     cv::Mat depth = mImDepth;
     g2o::plane groundPlane;
     bool result = pPlaneExtractor->extractGroundPlane(depth, groundPlane);
-    // g2o::SE3Quat& Twc = mCurrentFrame.cam_pose_Twc;
+    g2o::SE3Quat& Twc = mCurrentFrame.cam_pose_Twc;
 
-    // Camera pose.
-    // cv::Mat Tcw_mat = mCurrentFrame.mTcw;
+    // // Camera pose.
+    // // cv::Mat Tcw_mat = mCurrentFrame.mTcw;
     
-    // g2o::SE3Quat& Twc = mCurrentFrame.cam_pose_Twc;
-    cv::Mat Twc_mat;
-    cv::invert(mCurrentFrame.mTcw, Twc_mat);
-    // g2o::SE3Quat& Twc = Converter::toSE3Quat(Twc_mat);
-    g2o::SE3Quat Twc = Converter::toSE3Quat(Twc_mat);
+    // // g2o::SE3Quat& Twc = mCurrentFrame.cam_pose_Twc;
+    // cv::Mat Twc_mat;
+    // cv::invert(mCurrentFrame.mTcw, Twc_mat);
+    // // g2o::SE3Quat& Twc = Converter::toSE3Quat(Twc_mat);
+    // g2o::SE3Quat Twc = Converter::toSE3Quat(Twc_mat);
 
     // 可视化[所有平面]结果 : 放这里为了让Mannual Check 看见
     auto vPotentialPlanePoints = pPlaneExtractor->GetPoints();
@@ -794,6 +794,20 @@ void Tracking::VisualizeManhattanPlanes()
     for(auto& vP:vDominantMHPlanes ) {
         mpMap->addPlane(vP);
     }
+}
+
+void Tracking::ManageMemory()
+{
+    if(mvpFrames.size() > 1){
+        Frame* pLastFrame = mvpFrames[mvpFrames.size()-2];
+
+        // std::cout << "Going to release image..." << std::endl;
+        // getchar();
+        pLastFrame->frame_img.release();
+        pLastFrame->rgb_img.release();
+        // std::cout << "Released rgb and depth images." << std::endl;
+    }
+
 }
 
 }
