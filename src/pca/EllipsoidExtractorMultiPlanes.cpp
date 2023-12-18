@@ -696,6 +696,7 @@ void GenerateConstrainPlanesToEllipsoid(g2o::ellipsoid &e_local_normalized, Vect
 // 2. 将点云转换到重力坐标系( Z轴沿重力方向, 中心为物体中心点 )
 // 3. ...
 g2o::ellipsoid EllipsoidExtractor::EstimateLocalEllipsoidUsingMultiPlanes(cv::Mat &depth, Eigen::Vector4d &bbox, int label, double prob, Eigen::VectorXd &pose, camera_intrinsic &camera) {
+    std::cout << "In EllipsoidExtractor::EstimateLocalEllipsoidUsingMultiPlanes" << std::endl;
     g2o::ellipsoid e;
     miSystemState = 0;                  // reset the state
     mSymmetryOutputData.result = false; // reset
@@ -711,8 +712,10 @@ g2o::ellipsoid EllipsoidExtractor::EstimateLocalEllipsoidUsingMultiPlanes(cv::Ma
     // 注意: 该过程由于进行了与世界平面的操作, 所以位于世界坐标系下.
     pcl::PointCloud<PointType>::Ptr pCloudPCL = ExtractPointCloud(depth, bbox, pose, camera);
     clock_t time_1_ExtractPointCloud = clock();
-    if (miSystemState > 0)
+    if (miSystemState > 0) {
+        cout << "return because miSystemState = " << miSystemState << std::endl;
         return e;
+    }
 
     // 搭建世界系描述下的物体重力坐标系
     // gravity 系: 位于物体中心, Z轴与重力方向对齐.
@@ -730,9 +733,16 @@ g2o::ellipsoid EllipsoidExtractor::EstimateLocalEllipsoidUsingMultiPlanes(cv::Ma
     pcl::transformPointCloud(*pCloudPCL, *pCloudPCLGravity, transform_gw);
 
     // 可视化: 重力系下的物体
-    // ORB_SLAM2::PointCloud* pObjectCloudGravity = pclXYZToQuadricPointCloudPtr(pCloudPCLGravity); // normalized coordinate
-    // // mpMap->AddPointCloudList("cloud_gravity", pObjectCloudGravity, 0);
-    // delete pObjectCloudGravity; pObjectCloudGravity = NULL;
+    ORB_SLAM2::PointCloud *pObjectCloudGravity = pclXYZToQuadricPointCloudPtr(pCloudPCLGravity); // normalized coordinate
+    mpMap->AddPointCloudList("cloud_gravity", pObjectCloudGravity, 0);
+
+    std::cout << "*****************************" << std::endl;
+    std::cout << "Showing pObjectCloudGravity, press [ENTER] to continue ... " << std::endl;
+    std::cout << "*****************************" << std::endl;
+    getchar();
+
+    delete pObjectCloudGravity;
+    pObjectCloudGravity = NULL;
 
     // 开始计算朝向: 使用法向量投票器
     // 计算该点云的 normal voters
@@ -747,7 +757,12 @@ g2o::ellipsoid EllipsoidExtractor::EstimateLocalEllipsoidUsingMultiPlanes(cv::Ma
     ORB_SLAM2::PointCloud *pObjectCloudNormalized = pclXYZToQuadricPointCloudPtr(pCloudPCLNormalized); // normalized coordinate
 
     // 可视化: 物体重力坐标系下，转角对齐后的点云
-    // mpMap->AddPointCloudList("cloud_normalized", pObjectCloudNormalized, 0);
+    mpMap->AddPointCloudList("cloud_normalized", pObjectCloudNormalized, 0);
+
+    std::cout << "*****************************" << std::endl;
+    std::cout << "Showing pObjectCloudNormalized, press [ENTER] to continue ... " << std::endl;
+    std::cout << "*****************************" << std::endl;
+    getchar();
 
     // 基于PCA结果生成最小包围盒顶点. 位于相机坐标系内.
     g2o::ellipsoid e_zero_normalized = GetEllipsoidFromNomalizedPointCloud(pObjectCloudNormalized);
@@ -760,6 +775,14 @@ g2o::ellipsoid EllipsoidExtractor::EstimateLocalEllipsoidUsingMultiPlanes(cv::Ma
     g2o::SE3Quat Twn = Twg * Tgn;
     g2o::SE3Quat Tcn = campose_wc.inverse() * Twn;
     g2o::ellipsoid e_local_normalized = e_zero_normalized.transform_from(Tcn);
+
+    // 可视化: 物体重力坐标系下，转角对齐后的点云
+    mpMap->addEllipsoid(&e_local_normalized);
+
+    std::cout << "*****************************" << std::endl;
+    std::cout << "Showing ellipsoid e_local_normalized, press [ENTER] to continue ... " << std::endl;
+    std::cout << "*****************************" << std::endl;
+    getchar();
 
     // -------------- 到此已获得相机坐标系下的椭球体!
 

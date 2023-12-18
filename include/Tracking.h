@@ -126,6 +126,10 @@ public:
 
     void VisualizeManhattanPlanes();
 
+
+    // void TaskRelationship(EllipsoidSLAM::Frame* pFrame);
+    // void RefineObjectsWithRelations(EllipsoidSLAM::Frame *pFrame);
+
     // void Update3DObservationDataAssociation(EllipsoidSLAM::Frame* pFrame, std::vector<int>& associations, std::vector<bool>& KeyFrameChecks);
     void UpdateDepthEllipsoidEstimation(ORB_SLAM2::Frame* pFrame, bool withAssociation);
     // void UpdateDepthEllipsoidUsingPointModel(EllipsoidSLAM::Frame* pFrame);

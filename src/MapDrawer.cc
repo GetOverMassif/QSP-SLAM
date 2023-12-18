@@ -50,6 +50,18 @@ MapDrawer::MapDrawer(Map* pMap, const string &strSettingPath):mpMap(pMap)
     mvObjectColors.push_back(std::tuple<float, float, float>({250. / 255., 190. / 255., 190. / 255.})); //pink  8
     mvObjectColors.push_back(std::tuple<float, float, float>({0., 128. / 255., 128. / 255.}));   //Teal  9
 
+
+    float fx = fSettings["Camera.fx"];
+    float fy = fSettings["Camera.fy"];
+    float cx = fSettings["Camera.cx"];
+    float cy = fSettings["Camera.cy"];
+
+    mCalib << fx,  0,  cx,
+            0,  fy, cy,
+            0,      0,     1;
+
+    mbOpenTransform = false;
+
 }
 
 void MapDrawer::DrawMapPoints()
@@ -104,7 +116,6 @@ void MapDrawer::DrawDepthPointCloud()
     glBegin(GL_POINTS);
 
     glColor3f(1.0,0.0,0.0);
-
 
 
     // for(size_t i=0, iend=vpMPs.size(); i<iend;i++)
@@ -308,6 +319,38 @@ void MapDrawer::GetCurrentOpenGLCameraMatrix(pangolin::OpenGlMatrix &M)
     }
     else
         M.SetIdentity();
+}
+
+void MapDrawer::drawPointCloudWithOptions(const std::map<std::string,bool> &options)
+{
+    auto pointLists = mpMap->GetPointCloudList();
+    if(pointLists.size() < 1) return;
+    glPushMatrix();
+
+    for(auto pair:pointLists){
+        auto pPoints = pair.second;
+        if( pPoints == NULL ) continue;
+        
+        auto iter = options.find(pair.first);
+        if(iter == options.end()) {
+            continue;  // not exist
+        }
+        if(iter->second == false) continue; // menu is closed
+
+        // 拷贝指针指向的点云. 过程中应该锁定地图. (理应考虑对性能的影响)
+        PointCloud cloud = mpMap->GetPointCloudInList(pair.first); 
+        for(int i=0; i<cloud.size(); i=i+1)
+        {
+            PointXYZRGB& p = cloud[i];
+            glPointSize( p.size );
+            glBegin(GL_POINTS);
+            glColor3d(p.r/255.0, p.g/255.0, p.b/255.0);
+            glVertex3d(p.x, p.y, p.z);
+            glEnd();
+        }
+    }
+    glPointSize( 1 );
+    glPopMatrix();        
 }
 
 } //namespace ORB_SLAM

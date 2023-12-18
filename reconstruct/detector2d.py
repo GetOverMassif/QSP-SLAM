@@ -87,30 +87,46 @@ class Detector2D(object):
 
         self.predictions = inference_detector(self.model, image)
 
-        boxes = [self.predictions[0][o] for o in object_class_table[object_class]]
+        # print(f"type(self.predictions) = {self.predictions}")
 
-        boxes = np.concatenate(boxes, axis=0)
+        """
+            structure of predictions:
+            - bboxs: self.predictions[0]
+                - bboxs[class]: self.predictions[0][class_index]
+                    - bbox: self.predictions[0][class_index][instance_index]
+                        - x1, y1, x2, y2, prob
+            - masks: self.predictions[1]
+                - masks[class]: self.predictions[1][class_index]
+        """
+
+        bboxes = []
         masks = []
         labels = []
-        probs = []
 
         n_det = 0
+
         for o in object_class_table[object_class]:
+            print(f"o = {o}")
+            n_det_bbox = len(self.predictions[0][o])
+            n_det_mask = len(self.predictions[1][o])
+            assert n_det_bbox == n_det_mask,  f"len(bbox[{o}]) != len(mask[{o}])"
+            bboxes_o = self.predictions[0][o]
+            bboxes.append(bboxes_o)
             masks += self.predictions[1][o]
-            n_det += len(self.predictions[1][o])
-            labels.append()
-            probs.append()
+            labels.extend([o for i in range(n_det_bbox)])
+            n_det += n_det_bbox
+
+        bboxes = np.concatenate(bboxes, axis=0)
+        labels = np.array(labels)
+        probs = bboxes[:,4]
         
         # In case there is no detections
         if n_det == 0:
             masks = np.zeros((0, 0, 0))
         else:
             masks = np.stack(masks, axis=0)
-        assert boxes.shape[0] == masks.shape[0]
 
-
-
-        return self.get_valid_detections(boxes, masks, labels, probs)
+        return self.get_valid_detections(bboxes, masks, labels, probs)
 
     def visualize_result(self, image, filename):
         self.model.show_result(image, self.predictions, out_file=filename)
@@ -133,7 +149,7 @@ class Detector2D(object):
         valid_instances = {"pred_boxes": boxes[valid_mask, :4],
                            "pred_masks": masks[valid_mask, ...],
                            "pred_labels": labels[valid_mask],
-                           "pred_probss": probs[valid_mask],
+                           "pred_probs": probs[valid_mask],
                            }
 
         return valid_instances

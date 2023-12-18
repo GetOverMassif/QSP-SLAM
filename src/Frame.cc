@@ -118,13 +118,34 @@ Frame::Frame(const cv::Mat &imLeft, const cv::Mat &imRight, const double &timeSt
 }
 
 // todo: 其他模式有待更新
-Frame::Frame(const cv::Mat &imGray, const cv::Mat &imDepth, const double &timeStamp, ORBextractor* extractor,ORBVocabulary* voc, cv::Mat &K, cv::Mat &distCoef, const float &bf, const float &thDepth)
+Frame::Frame(const cv::Mat &imGray, const cv::Mat &imDepth, const double &timeStamp, \
+        ORBextractor* extractor,ORBVocabulary* voc, cv::Mat &K, cv::Mat &distCoef, const float &bf, const float &thDepth, \
+        const cv::Mat &imDepth_raw // 这里有待优化的更优雅一点，暂时没有想到更便捷地修改方式
+        )
     :mpORBvocabulary(voc),mpORBextractorLeft(extractor),mpORBextractorRight(static_cast<ORBextractor*>(NULL)),
      mTimeStamp(timeStamp), mK(K.clone()),mDistCoef(distCoef.clone()), mbf(bf), mThDepth(thDepth)
 {
     // timestamp = timestamp_;
+    // todo: 这里的imGray世纪不是BGR格式
     rgb_img = imGray.clone();
-    frame_img = imDepth.clone();
+    frame_img = imDepth_raw.clone(); // 这里的imDepth已经不是原始格式了
+
+    // float mDepthMapFactor = fSettings["DepthMapFactor"];
+    // if(fabs(mDepthMapFactor)<1e-5)
+    //     mDepthMapFactor=1;
+    // else
+    //     mDepthMapFactor = 1.0f/mDepthMapFactor;
+
+    // frame_img.convertTo(frame_img, CV_16U, 1.0/mDepthMapFactor);
+
+
+    // depth_img_unshort = imDepth.clone();
+
+
+    // depth_img_unshort.convertTo(depth_img_unshort, CV_16U, 1.0/mDepthMapFactor);
+
+    // #define CV_16U  2
+
     // if(!rgb_img.empty())
     //     cv::cvtColor(rgb_img, gray_img, CV_BGR2GRAY);
 
@@ -697,7 +718,19 @@ bool Frame::SetObservations(KeyFrame* pKF){
     int num_det = obj_dets.size();
     std::cout << "num_det = " << num_det << std::endl;
 
-    // for i in {}
+    mmObservations = Eigen::MatrixXd(num_det, 8);
+
+    for (int i = 0; i < num_det; i++) {
+        auto pDet = obj_dets[i];
+        Eigen::VectorXd mdet(8);
+        auto bbox = pDet->bbox;
+        auto label = pDet->label;
+        auto prob = pDet->prob;
+        int instanceID = 1;
+        mdet << i, bbox(0), bbox(1), bbox(2), bbox(3), label, prob, instanceID;
+        mmObservations.row(i) = mdet;
+    }   
+
     return true;
 }
 

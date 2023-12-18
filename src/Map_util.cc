@@ -322,4 +322,17 @@ void Map::clearArrows()
     return;
 }
 
+void Map::addEllipsoid(ellipsoid *pObj)
+{
+    unique_lock<mutex> lock(mMutexMap);
+    mspEllipsoids.push_back(pObj);
+}
+
+
+vector<ellipsoid*> Map::GetAllEllipsoids()
+{
+    unique_lock<mutex> lock(mMutexMap);
+    return mspEllipsoids;
+}
+
 } // namespace ORB_SLAM2

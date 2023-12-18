@@ -109,8 +109,8 @@ int main(int argc, char **argv)
         std::chrono::steady_clock::time_point t1_read = std::chrono::steady_clock::now();
 
         //! 读取图像
-        imRGB = cv::imread(string(argv[3])+"/"+vstrImageFilenamesRGB[ni],CV_LOAD_IMAGE_UNCHANGED);
-        imD = cv::imread(string(argv[3])+"/"+vstrImageFilenamesD[ni],CV_LOAD_IMAGE_UNCHANGED);
+        imRGB = cv::imread(string(argv[3])+"/"+vstrImageFilenamesRGB[ni], CV_LOAD_IMAGE_UNCHANGED);
+        imD = cv::imread(string(argv[3])+"/"+vstrImageFilenamesD[ni], CV_LOAD_IMAGE_UNCHANGED);
 
         std::chrono::steady_clock::time_point t2_read = std::chrono::steady_clock::now();
         double t_read = std::chrono::duration_cast<std::chrono::duration<double> >(t2_read - t1_read).count();

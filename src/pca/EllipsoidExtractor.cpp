@@ -97,11 +97,24 @@ pcl::PointCloud<PointType>::Ptr EllipsoidExtractor::ExtractPointCloud(cv::Mat &d
     // PointCloud* pPoints_local_downsample = new PointCloud;
     // DownSamplePointCloudOnly(*pPoints_local, *pPoints_local_downsample, 0.02);
 
+    VisualizePointCloud("Points_local", pPoints_local, Vector3d(0, 0.5, 0), 2);
+    std::cout << "*****************************" << std::endl;
+    std::cout << "Showing Points_local, press [ENTER] to continue ... " << std::endl;
+    std::cout << "*****************************" << std::endl;
+    getchar();
+
+    std::cout << "campose_wc = " << campose_wc.to_homogeneous_matrix().matrix() << std::endl;
+
     // 产生两组可视化点云 world, world_downsample
     PointCloud *pPoints_world = transformPointCloud(pPoints_local, &campose_wc);
     // PointCloud* pPoints_world_downsample = transformPointCloud(pPoints_local_downsample, &campose_wc);
     VisualizePointCloud("Points_world", pPoints_world, Vector3d(0, 0.5, 0), 2);
     // VisualizePointCloud("Points_world_downsample", pPoints_world_downsample, Vector3d(0,0.8,0), 2);
+
+    std::cout << "*****************************" << std::endl;
+    std::cout << "Showing Points_world, press [ENTER] to continue ... " << std::endl;
+    std::cout << "*****************************" << std::endl;
+    getchar();
 
     // 在此滤除离群点
     clock_t time_1_1_outliers_filter_start = clock();
@@ -140,6 +153,12 @@ pcl::PointCloud<PointType>::Ptr EllipsoidExtractor::ExtractPointCloud(cv::Mat &d
     // 新添加的可视化: 滤波后
     PointCloud *pCloudFilteredWorld = transformPointCloud(pCloudFiltered, &campose_wc);
     VisualizePointCloud("CloudFiltered", pCloudFilteredWorld, Vector3d(0, 1.0, 0), 2);
+
+    std::cout << "*****************************" << std::endl;
+    std::cout << "Showing CloudFiltered, press [ENTER] to continue ... " << std::endl;
+    std::cout << "*****************************" << std::endl;
+    getchar();
+
     delete pCloudFiltered;
     pCloudFiltered = NULL;
 
@@ -147,9 +166,12 @@ pcl::PointCloud<PointType>::Ptr EllipsoidExtractor::ExtractPointCloud(cv::Mat &d
     clock_t time_2_getPointsDownsampleTransToWorld = clock();
 
     PointCloud *pPoints_planeFiltered;
-    if (!mbOpenMHPlanesFilter)
+    if (!mbOpenMHPlanesFilter){
+        std::cout << "ApplySupportingPlaneFilter" << std::endl;
         pPoints_planeFiltered = ApplySupportingPlaneFilter(pPoints_global);
+    }
     else {
+        std::cout << "ApplyMHPlanesFilter" << std::endl;
         std::vector<g2o::plane *> vMHPlanes = mvpMHPlanes;
         vMHPlanes.push_back(mpPlane);
         pPoints_planeFiltered = ApplyMHPlanesFilter(pPoints_global, vMHPlanes);
@@ -157,6 +179,11 @@ pcl::PointCloud<PointType>::Ptr EllipsoidExtractor::ExtractPointCloud(cv::Mat &d
     clock_t time_3_SupportingPlaneFilter = clock();
 
     VisualizePointCloud("planeFiltered", pPoints_planeFiltered, Vector3d(1.0, 0, 0), 2);
+    std::cout << "*****************************" << std::endl;
+    std::cout << "Showing CloudCloud planeFiltered, press [ENTER] to continue ... " << std::endl;
+    std::cout << "*****************************" << std::endl;
+    getchar();
+
     clock_t time_4_VisualizePointCloud = clock();
 
     if (pPoints_planeFiltered->size() < 1) {
@@ -195,23 +222,26 @@ pcl::PointCloud<PointType>::Ptr EllipsoidExtractor::ExtractPointCloud(cv::Mat &d
         return NULL;
     }
     clock_t time_5_GetCenter = clock();
-
+    std::cout << "center = " << center << std::endl;
     mDebugCenter = center;
     PointCloud *pPointsEuFiltered = ApplyEuclideanFilter(pPoints_sampled, center);
     // delete pPoints_sampled; pPoints_sampled = NULL;
 
     if (miEuclideanFilterState > 0) {
+        std::cout << "Fail to filter." << std::endl;
         miSystemState = 2; // fail to filter
         return NULL;
     }
     clock_t time_6_ApplyEuclideanFilter = clock();
+
+    std::cout << "pPointsEuFiltered.size() = " << pPointsEuFiltered->size() << std::endl;
 
     // we have gotten the object points in the world coordinate
     pcl::PointCloud<PointType>::Ptr clear_cloud_ptr = QuadricPointCloudToPclXYZ(*pPointsEuFiltered);
 
     mpPoints = pPointsEuFiltered;
     VisualizePointCloud("EuclideanFiltered", mpPoints, Vector3d(0.4, 0, 1.0), 2);
-    ;
+
     clock_t time_7_VisualizePointCloud = clock();
 
     // output: time efficiency
@@ -652,9 +682,12 @@ ORB_SLAM2::PointCloud *EllipsoidExtractor::ApplySupportingPlaneFilter(ORB_SLAM2:
 //  and their average 3D positions will be taken as the output.
 bool EllipsoidExtractor::GetCenter(cv::Mat &depth, Eigen::Vector4d &bbox, Eigen::VectorXd &pose, camera_intrinsic &camera, Vector3d &center) {
     double depth_range = Config::ReadValue<double>("EllipsoidExtractor_DEPTH_RANGE");
+    cout << "[EllipsoidExtractor::GetCenter] depth_range = " << depth_range << std::endl;
     // get the center of the bounding box
     int x = int((bbox(0) + bbox(2)) / 2.0);
     int y = int((bbox(1) + bbox(3)) / 2.0);
+
+    // std::cout << "bbox = " << bbox.transpose().matrix() << std::endl;
 
     int point_num = 10; // sample 10 * 10 points
     int x_delta = std::abs(bbox(0) - bbox(2)) / 4.0 / point_num;
@@ -666,6 +699,7 @@ bool EllipsoidExtractor::GetCenter(cv::Mat &depth, Eigen::Vector4d &bbox, Eigen:
         for (int y_id = -point_num / 2; y_id < point_num / 2; y_id++) {
             int x_ = x + x_id * x_delta;
             int y_ = y + y_id * y_delta;
+            // cout << "x_ = " << x_ << ", y_ = " << y_ << std::endl; 
             ushort *ptd = depth.ptr<ushort>(y_);
             ushort d = ptd[x_];
 
@@ -674,7 +708,7 @@ bool EllipsoidExtractor::GetCenter(cv::Mat &depth, Eigen::Vector4d &bbox, Eigen:
             // if the depth value is invalid, ignore this point
             if (p.z <= 0.1 || p.z > depth_range)
                 continue;
-
+            // cout << "p.z = " << p.z << std::endl;
             p.x = (x_ - camera.cx) * p.z / camera.fx;
             p.y = (y_ - camera.cy) * p.z / camera.fy;
             cloud.points.push_back(p);

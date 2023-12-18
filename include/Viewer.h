@@ -85,6 +85,12 @@ private:
     bool mbStopRequested;
     std::mutex mMutexStop;
 
+    // Manual control of the point cloud visualization
+    map<string,pangolin::Var<bool>*> mmPointCloudOptionMenus;
+
+    std::map<std::string,bool> mmPointCloudOptionMap;
+    void RefreshPointCloudOptions();
+
 };
 
 }

@@ -247,9 +247,22 @@ cv::Mat Tracking::GrabImageStereo(const cv::Mat &imRectLeft, const cv::Mat &imRe
 
 cv::Mat Tracking::GrabImageRGBD(const cv::Mat &imRGB,const cv::Mat &imD, const double &timestamp)
 {
+/**
+    #define CV_8U   0
+    #define CV_8S   1
+    #define CV_16U  2
+    #define CV_16S  3
+    #define CV_32S  4
+    #define CV_32F  5
+    #define CV_64F  6
+    #define CV_16F  7
+*/
+
     mImGray = imRGB;
     mImDepth = imD;
     cv::Mat imDepth = imD;
+
+    std::cout << "imDepth.type() = " << imDepth.type() << std::endl;
 
     if(mImGray.channels()==3)
     {
@@ -268,9 +281,9 @@ cv::Mat Tracking::GrabImageRGBD(const cv::Mat &imRGB,const cv::Mat &imD, const d
 
     if((fabs(mDepthMapFactor-1.0f)>1e-5) || imDepth.type()!=CV_32F)
         imDepth.convertTo(imDepth, CV_32F, mDepthMapFactor);
-
+    
     // clock_t time_0_start = clock();
-    mCurrentFrame = Frame(mImGray,imDepth,timestamp,mpORBextractorLeft,mpORBVocabulary,mK,mDistCoef,mbf,mThDepth);
+    mCurrentFrame = Frame(mImGray,imDepth,timestamp,mpORBextractorLeft,mpORBVocabulary,mK,mDistCoef,mbf,mThDepth,imD);
     // clock_t time_frame_creation = clock();
     // cout << " -- time_frame_creation: " <<(double)(time_frame_creation - time_0_start) / CLOCKS_PER_SEC << "s" << endl;
     Track();

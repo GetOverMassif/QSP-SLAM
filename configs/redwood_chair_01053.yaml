@@ -65,7 +65,8 @@ MonocularInfer.Init.Dis: 5
 #   Semantic  Prior
 # -----------------------------
 #
-System.MonocularInfer.Open: 1
+# System.MonocularInfer.Open: 1
+System.MonocularInfer.Open: 0
 Dataset.Path.PriTable: "./config/pritable.txt"
 
 SemanticPrior.PriorD: 1

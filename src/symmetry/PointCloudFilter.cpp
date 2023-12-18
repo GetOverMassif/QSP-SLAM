@@ -13,7 +13,7 @@ Vector2d getXYCenterOfPointCloud(ORB_SLAM2::PointCloud *pPoints) {
     y = y / double(num);
     return Vector2d(x, y);
 }
-
+// todo
 // coordinates : x -> right, y-> down, z->front
 ORB_SLAM2::PointCloud getPointCloudInRect(cv::Mat &depth, cv::Mat &rgb, const VectorXd &detect, ORB_SLAM2::camera_intrinsic &camera, double range) {
     // detect : x1 y1 x2 y2
@@ -24,6 +24,17 @@ ORB_SLAM2::PointCloud getPointCloudInRect(cv::Mat &depth, cv::Mat &rgb, const Ve
     int y1 = int(detect(1));
     int x2 = int(detect(2));
     int y2 = int(detect(3));
+
+    std::cout << "fx,fy,cx,cy = " << camera.fx << "," \
+                                  << camera.fy << "," \
+                                  << camera.cx << "," \
+                                  << camera.cx << std::endl;
+    // // 深度图似乎不正常
+    // cv::imshow("depth", depth);
+    // cv::waitKey(0);
+    // cv::destroyAllWindows();
+
+    // double 
 
     for (int y = y1; y < y2; y = y + 3) {
         for (int x = x1; x < x2; x = x + 3) {
@@ -37,6 +48,8 @@ ORB_SLAM2::PointCloud getPointCloudInRect(cv::Mat &depth, cv::Mat &rgb, const Ve
 
             p.x = (x - camera.cx) * p.z / camera.fx;
             p.y = (y - camera.cy) * p.z / camera.fy;
+
+            cout << "x,y,z = " << p.x << "," << p.y << "," << p.z << std::endl;
 
             p.b = rgb.ptr<uchar>(y)[x * 3];
             p.g = rgb.ptr<uchar>(y)[x * 3 + 1];
