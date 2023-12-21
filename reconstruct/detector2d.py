@@ -106,7 +106,7 @@ class Detector2D(object):
         n_det = 0
 
         for o in object_class_table[object_class]:
-            print(f"o = {o}")
+            # print(f"o = {o}")
             n_det_bbox = len(self.predictions[0][o])
             n_det_mask = len(self.predictions[1][o])
             assert n_det_bbox == n_det_mask,  f"len(bbox[{o}]) != len(mask[{o}])"

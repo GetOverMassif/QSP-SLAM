@@ -47,11 +47,6 @@ int main(int argc, char **argv)
         return 1;
     }
 
-    // cv::FileStorage fSettings(string(argv[2]), cv::FileStorage::READ);
-
-    // float fps = fSettings["Camera.fps"];
-
-    // Retrieve paths to images
     vector<string> vstrImageFilenamesRGB;
     vector<string> vstrImageFilenamesD;
     vector<double> vTimestamps;
@@ -85,7 +80,6 @@ int main(int argc, char **argv)
 
     // Create SLAM system. It initializes all system threads and gets ready to process frames.
     ORB_SLAM2::System SLAM(argv[1], argv[2], argv[3], msensor);
-    // ORB_SLAM2::System SLAM(argv[1], argv[2], argv[3], ORB_SLAM2::System::MONOCULAR);
 
     SLAM.SetImageNames(vstrImageFilenamesRGB);
 

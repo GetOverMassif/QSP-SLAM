@@ -318,7 +318,8 @@ namespace g2o
     Vector5d ellipsoid::projectOntoImageEllipse(const SE3Quat& campose_cw, const Matrix3d& Kalib) const 
     {
         Matrix3d C = projectOntoImageEllipseMat(campose_cw, Kalib);
-        SelfAdjointEigenSolver<Matrix3d> es(C);    // ascending sort by default
+        // 计算给定矩阵的特征分解
+        SelfAdjointEigenSolver<Matrix3d> es(C);    // ascending sort by default, 默认升序排序
         VectorXd eigens = es.eigenvalues();
 
         // If it is an ellipse, the sign of eigen values must be :  1 1 -1 
@@ -343,8 +344,8 @@ namespace g2o
         double a_2 =  2*(a* x_c*x_c+ c * y_c*y_c+ b *x_c*y_c -1) /(a + c + sqrt((a-c)*(a-c)+b*b));
         double b_2 =  2*(a*x_c*x_c+c*y_c*y_c+b*x_c*y_c -1) /( a + c - sqrt((a-c)*(a-c)+b*b));
 
-        double axis1= sqrt(a_2);
-        double axis2= sqrt(b_2);
+        double axis1 = sqrt(a_2);
+        double axis2 = sqrt(b_2);
 
         Vector5d output;
         output << x_c, y_c, theta, axis1, axis2;
@@ -376,7 +377,7 @@ namespace g2o
         return output;
     }
 
-    // Get projection matrix P = K [ R | t ]
+    // Get projection matrix P = K [ R | t ] 
     Matrix3Xd ellipsoid::generateProjectionMatrix(const SE3Quat& campose_cw, const Matrix3d& Kalib) const
     {
         Matrix3Xd identity_lefttop;

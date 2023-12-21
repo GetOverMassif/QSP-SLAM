@@ -94,10 +94,10 @@ class Optimizer(object):
         :return: optimized opject pose and shape, saved as a dict
         """
 
-        print(f"t_cam_obj = {t_cam_obj}")
-        print(f"pts.shape = {pts.shape}")
-        print(f"rays.shape = {rays.shape}")
-        print(f"depth.shape = {depth.shape}")
+        # print(f"t_cam_obj = {t_cam_obj}")
+        # print(f"pts.shape = {pts.shape}")
+        # print(f"rays.shape = {rays.shape}")
+        # print(f"depth.shape = {depth.shape}")
 
 
         # Always start from zero code

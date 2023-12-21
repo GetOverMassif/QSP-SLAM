@@ -62,7 +62,7 @@ void Viewer::Run()
     mbStopped = false;
     int w = 1024;
     int h = 576;
-    pangolin::CreateWindowAndBind("ORB-SLAM2: Map Viewer",w,h);
+    pangolin::CreateWindowAndBind("QSP-SLAM: Map Viewer",w,h);
 
     // 3D Mouse handler requires depth testing to be enabled
     glEnable(GL_DEPTH_TEST);
@@ -80,11 +80,12 @@ void Viewer::Run()
     pangolin::Var<bool> menuReset("menu.Reset",false,false);
     pangolin::Var<bool> menuClose("menu.Close",false,false);
 
+    pangolin::Var<bool> menuShowMapObjects("menu.Show MapObjects",true,true);
     pangolin::Var<bool> menuShowGroundPlane("menu.Show GroundPlane",true,true);
     pangolin::Var<bool> menuShowEllipsoids("menu.Show Ellipsoids", true, true);
     pangolin::Var<bool> menuShowPointCloudLists("menu.Show PointCloudLists", true, true);
 
-    // pangolin::Var<bool> menuShowEllipsoidsObservation("menu.Ellipsoids-Ob", true, true);
+    pangolin::Var<bool> menuShowEllipsoidsObservation("menu.Ellipsoids-Ob", true, true);
     // pangolin::Var<bool> menuShowCuboids("menu. - Show Cuboids", false, true);
     // pangolin::Var<bool> menuShowEllipsoidsDetails("menu. - Show Details", true, true);
     // pangolin::Var<bool> menuShowPlanes("menu.Show Planes", true, true);
@@ -197,6 +198,10 @@ void Viewer::Run()
         if(menuShowEllipsoids)
             mpMapDrawer->drawEllipsoids(ellipsoidProbThresh);
 
+        // draw the result of the single-frame ellipsoid extraction
+        if(menuShowEllipsoidsObservation)
+            mpMapDrawer->drawObservationEllipsoids(ellipsoidProbThresh);
+        
         // mpMapDrawer->drawEllipsoid();
 
         // draw pointclouds with names
@@ -206,9 +211,11 @@ void Viewer::Run()
         if(menuShowPointCloudLists)
             mpMapDrawer->drawPointCloudLists();
 
+
         mpObjectDrawer->ProcessNewObjects();
 
-        mpObjectDrawer->DrawObjects(bFollow, Tec);
+        if(menuShowMapObjects)
+            mpObjectDrawer->DrawObjects(bFollow, Tec);
 
         // 如果是RGBD模式，则绘制深度图对应的点云
         if (mpTracker->mSensor == System::RGBD) {

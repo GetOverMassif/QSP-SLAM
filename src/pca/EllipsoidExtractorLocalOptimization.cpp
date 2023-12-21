@@ -17,10 +17,11 @@ g2o::ellipsoid EllipsoidExtractor::OptimizeEllipsoidUsingPlanes(g2o::ellipsoid &
 {
     // 此处使用图优化, 与各个平面做优化.
     // 迭代过程中，固定其中一个转角轴? 即垂直方向解耦合.?
-    // 先不管细节优化，先实现功能. 即，重力方向约束+各平面的联合优化.
+    // 先不管细节优化，先实现功能. 即，重力方向约束 + 各平面的联合优化.
     // 立方体也直接转为平面. - > 部分平面是选择性的: 遮挡部分去除.
     
     // initialize graph optimization.
+    // 创建一个图、线性求解器、块求解器、LB求解器、
     g2o::SparseOptimizer graph;
     g2o::BlockSolverX::LinearSolverType* linearSolver;
     linearSolver = new g2o::LinearSolverDense<g2o::BlockSolverX::PoseMatrixType>();
@@ -30,6 +31,7 @@ g2o::ellipsoid EllipsoidExtractor::OptimizeEllipsoidUsingPlanes(g2o::ellipsoid &
     graph.setVerbose(false);        // Set output.
 
     // Add objects vertices
+    // 添加物体顶点
     g2o::VertexEllipsoidXYZABC *vEllipsoid = new g2o::VertexEllipsoidXYZABC();
     vEllipsoid->setEstimate(e_in);
     vEllipsoid->setId(graph.vertices().size());
@@ -48,7 +50,7 @@ g2o::ellipsoid EllipsoidExtractor::OptimizeEllipsoidUsingPlanes(g2o::ellipsoid &
     //     vGravityPriorEdge->setInformation(info);
         
     //     graph.addEdge(vGravityPriorEdge);
-    //     edgesEllipsoidGravityPlanePrior.push_back(vGravityPriorEdge);
+    //     // edgesEllipsoidGravityPlanePrior.push_back(vGravityPriorEdge);
         
     // }
 
@@ -72,8 +74,8 @@ g2o::ellipsoid EllipsoidExtractor::OptimizeEllipsoidUsingPlanes(g2o::ellipsoid &
         graph.addEdge(pEdge);
     }
 
-    // graph.initializeOptimization();
-    // graph.optimize( 10 );  //optimization step
+    graph.initializeOptimization();
+    graph.optimize( 10 );  //optimization step
     // DEBUG: CLOSE IT!!!!
     std::cout << "[ATTENTION LOCALOPTIMIZATION] CLOSED." << std::endl;
 

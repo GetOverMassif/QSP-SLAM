@@ -9,7 +9,7 @@
 
 
 # REDWOOD_SCAN_ID=01053  # 
-# # REDWOOD_SCAN_ID=02484  # 
+# REDWOOD_SCAN_ID=01041  # 
 # # REDWOOD_SCAN_ID=03815  # 效果不佳
 # # REDWOOD_SCAN_ID=09374  # 效果较好
 
@@ -37,7 +37,18 @@
 # /media/lj/TOSHIBA/dataset/RedwoodOS/data/rgbd/01041/associate.txt \
 # map/redwood/01041
 
-./qsp_slam_rgbd Vocabulary/ORBvoc.bin configs/redwood_chair_01053.yaml \
-/media/lj/TOSHIBA/dataset/RedwoodOS/data/rgbd/01053  \
-/media/lj/TOSHIBA/dataset/RedwoodOS/data/rgbd/01053/associate.txt \
-map/redwood/01053
+
+# # REDWOOD_SCAN_ID=01053
+# # REDWOOD_SCAN_ID=03815
+# REDWOOD_SCAN_ID=09374
+
+# ./qsp_slam_rgbd Vocabulary/ORBvoc.bin configs/redwood_chair_01053.yaml \
+# /media/lj/TOSHIBA/dataset/RedwoodOS/data/rgbd/$REDWOOD_SCAN_ID  \
+# /media/lj/TOSHIBA/dataset/RedwoodOS/data/rgbd/$REDWOOD_SCAN_ID/associate.txt \
+# map/redwood/$REDWOOD_SCAN_ID
+
+REDWOOD_SCAN_ID=01041
+./qsp_slam_rgbd Vocabulary/ORBvoc.bin configs/redwood_monitor_01041.yaml \
+/media/lj/TOSHIBA/dataset/RedwoodOS/data/rgbd/$REDWOOD_SCAN_ID  \
+/media/lj/TOSHIBA/dataset/RedwoodOS/data/rgbd/$REDWOOD_SCAN_ID/associate.txt \
+map/redwood/$REDWOOD_SCAN_ID

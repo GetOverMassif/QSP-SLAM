@@ -62,7 +62,7 @@ vector<plane *> Map::GetAllPlanes() {
     return vector<plane *>(mspPlanes.begin(), mspPlanes.end());
 }
 
-void Map::clearPlanes(){
+void Map::clearPlanes() {
     unique_lock<mutex> lock(mMutexMap);
     mspPlanes.clear();
 }
@@ -130,8 +130,11 @@ bool Map::AddPointCloudList(const string &name, PointCloud *pCloud, int type) {
     }
 }
 
+// 删除点云
 bool Map::DeletePointCloudList(const string &name, int type) {
     unique_lock<mutex> lock(mMutexMap);
+
+    std::cout << "Ready to delete pointcloud: " << name << std::endl;
 
     if (type == 0) // complete matching: the name must be the same
     {
@@ -154,9 +157,10 @@ bool Map::DeletePointCloudList(const string &name, int type) {
         for (auto iter = mmPointCloudLists.begin(); iter != mmPointCloudLists.end();) {
             auto strPoints = iter->first;
             if (strPoints.find(name) != strPoints.npos) {
+                // std::cout << "Ready to delete pointcloud: " << name << std::endl;
                 PointCloud *pCloud = iter->second;
                 if (pCloud != NULL) {
-                    delete pCloud;
+                    delete pCloud;  // bug: 这里出现了报错: free(): double free detected in tcache 2
                     pCloud = NULL;
                 }
                 iter = mmPointCloudLists.erase(iter);
@@ -192,145 +196,118 @@ PointCloud Map::GetPointCloudInList(const string &name) {
         return PointCloud(); // 空
 }
 
-void Map::addEllipsoidVisual(ellipsoid *pObj)
-{
+void Map::addEllipsoidVisual(ellipsoid *pObj) {
     unique_lock<mutex> lock(mMutexMap);
     mspEllipsoidsVisual.push_back(pObj);
 }
 
-
-vector<ellipsoid*> Map::GetAllEllipsoidsVisual()
-{
+vector<ellipsoid *> Map::GetAllEllipsoidsVisual() {
     unique_lock<mutex> lock(mMutexMap);
     return mspEllipsoidsVisual;
 }
 
-void Map::ClearEllipsoidsVisual()
-{
+void Map::ClearEllipsoidsVisual() {
     unique_lock<mutex> lock(mMutexMap);
     mspEllipsoidsVisual.clear();
 }
 
-
-void Map::addEllipsoidObservation(ellipsoid *pObj)
-{
+void Map::addEllipsoidObservation(ellipsoid *pObj) {
     unique_lock<mutex> lock(mMutexMap);
     mspEllipsoidsObservation.push_back(pObj);
 }
 
-
-vector<ellipsoid*> Map::GetObservationEllipsoids()
-{
+vector<ellipsoid *> Map::GetObservationEllipsoids() {
     unique_lock<mutex> lock(mMutexMap);
     return mspEllipsoidsObservation;
 }
 
-void Map::ClearEllipsoidsObservation()
-{
+void Map::ClearEllipsoidsObservation() {
     unique_lock<mutex> lock(mMutexMap);
     mspEllipsoidsObservation.clear();
 }
 
-void Map::addBoundingbox(Boundingbox* pBox)
-{
+void Map::addBoundingbox(Boundingbox *pBox) {
     unique_lock<mutex> lock(mMutexMap);
     mvBoundingboxes.push_back(pBox);
 }
 
-std::vector<Boundingbox*> Map::GetBoundingboxes()
-{
+std::vector<Boundingbox *> Map::GetBoundingboxes() {
     unique_lock<mutex> lock(mMutexMap);
     return mvBoundingboxes;
 }
 
-void Map::ClearBoundingboxes()
-{
+void Map::ClearBoundingboxes() {
     unique_lock<mutex> lock(mMutexMap);
     mvBoundingboxes.clear();
 }
 
-void Map::addToTrajectoryWithName(SE3QuatWithStamp* state, const string& name)
-{
+void Map::addToTrajectoryWithName(SE3QuatWithStamp *state, const string &name) {
     unique_lock<mutex> lock(mMutexMap);
 
     // 没有则生成一个
-    if( mmNameToTrajectory.find(name) == mmNameToTrajectory.end() ){
+    if (mmNameToTrajectory.find(name) == mmNameToTrajectory.end()) {
         mmNameToTrajectory[name] = Trajectory();
         mmNameToTrajectory[name].push_back(state);
-    }
-    else
-    {
+    } else {
         mmNameToTrajectory[name].push_back(state);
     }
 }
 
-Trajectory Map::getTrajectoryWithName(const string& name)
-{
+Trajectory Map::getTrajectoryWithName(const string &name) {
     unique_lock<mutex> lock(mMutexMap);
-    if( mmNameToTrajectory.find(name) == mmNameToTrajectory.end() ){
+    if (mmNameToTrajectory.find(name) == mmNameToTrajectory.end()) {
         return Trajectory();
-    }
-    else
-    {
+    } else {
         return mmNameToTrajectory[name];
     }
 }
 
-bool Map::clearTrajectoryWithName(const string& name)
-{
+bool Map::clearTrajectoryWithName(const string &name) {
     unique_lock<mutex> lock(mMutexMap);
-    if( mmNameToTrajectory.find(name) != mmNameToTrajectory.end() )
-    {
+    if (mmNameToTrajectory.find(name) != mmNameToTrajectory.end()) {
         mmNameToTrajectory[name].clear();
         return true;
     }
 
     return false;
-
 }
 
-bool Map::addOneTrajectory(Trajectory& traj, const string& name)
-{
+bool Map::addOneTrajectory(Trajectory &traj, const string &name) {
     unique_lock<mutex> lock(mMutexMap);
     mmNameToTrajectory[name] = traj;
 
     return true;
 }
 
-void Map::addArrow(const Vector3d& center, const Vector3d& norm, const Vector3d& color)
-{
+void Map::addArrow(const Vector3d &center, const Vector3d &norm, const Vector3d &color) {
     unique_lock<mutex> lock(mMutexMap);
     Arrow ar;
     ar.center = center;
     ar.norm = norm;
     ar.color = color;
     mvArrows.push_back(ar);
-    
+
     return;
 }
 
-std::vector<Arrow> Map::GetArrows()
-{
+std::vector<Arrow> Map::GetArrows() {
     unique_lock<mutex> lock(mMutexMap);
     return mvArrows;
 }
 
-void Map::clearArrows()
-{
+void Map::clearArrows() {
     unique_lock<mutex> lock(mMutexMap);
     mvArrows.clear();
     return;
 }
 
-void Map::addEllipsoid(ellipsoid *pObj)
-{
+void Map::addEllipsoid(ellipsoid *pObj) {
     unique_lock<mutex> lock(mMutexMap);
     mspEllipsoids.push_back(pObj);
+    std::cout << "map add ellipsoid, mspEllipsoids.size() = " << mspEllipsoids.size() << std::endl;
 }
 
-
-vector<ellipsoid*> Map::GetAllEllipsoids()
-{
+vector<ellipsoid *> Map::GetAllEllipsoids() {
     unique_lock<mutex> lock(mMutexMap);
     return mspEllipsoids;
 }

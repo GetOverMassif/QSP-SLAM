@@ -126,6 +126,13 @@ target_link_libraries(utils
     ${OpenCV_LIBS}
 )
 
+# find_package(PythonLibs REQUIRED)
+
+# include_directories(${PYTHON_INCLUDE_DIRS})
+
+# target_link_libraries(<your exe or lib> ${PYTHON_LIBRARIES})
+
+message("PYTHON_INCLUDE_DIRS = " ${PYTHON_INCLUDE_DIRS})
 
 target_link_libraries(${PROJECT_NAME}
         pybind11::embed
@@ -134,6 +141,7 @@ target_link_libraries(${PROJECT_NAME}
         ${Pangolin_LIBRARIES}
         ${DSC_SLAM_DIR}/Thirdparty/DBoW2/lib/libDBoW2.so
         ${PROJECT_SOURCE_DIR}/Thirdparty/g2o/lib/libg2o.so
+        # ${PYTHON_LIBRARIES}
 
         utils
         Config
@@ -142,8 +150,7 @@ target_link_libraries(${PROJECT_NAME}
         PlaneExtractor
         # dense_builder
         Polygon
-        # Relationship
-
+        Relationship
         )
 
 # set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR})
@@ -166,6 +173,6 @@ add_subdirectory(src/config)
 add_subdirectory(src/pca)
 add_subdirectory(src/plane)
 add_subdirectory(src/Polygon)
-# add_subdirectory(src/Relationship)
+add_subdirectory(src/Relationship)
 # add_subdirectory(src/evo)
 # add_subdirectory(src/Prior)

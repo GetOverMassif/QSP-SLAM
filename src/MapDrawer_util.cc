@@ -54,90 +54,6 @@ namespace ORB_SLAM2
         glEnd();
     }
 
-    // In : Tcw
-    // Out: Twc
-    // void MapDrawer::SE3ToOpenGLCameraMatrix(g2o::SE3Quat &matInSe3, pangolin::OpenGlMatrix &M)
-    // {
-    //     // eigen to cv
-    //     Eigen::Matrix4d matEigen = matInSe3.to_homogeneous_matrix();
-    //     cv::Mat matIn;
-    //     eigen2cv(matEigen, matIn);
-
-    //     if(!matIn.empty())
-    //     {
-    //         cv::Mat Rwc(3,3,CV_64F);
-    //         cv::Mat twc(3,1,CV_64F);
-    //         {
-    //             unique_lock<mutex> lock(mMutexCamera);
-    //             Rwc = matIn.rowRange(0,3).colRange(0,3).t();
-    //             twc = -Rwc*matIn.rowRange(0,3).col(3);
-    //         }
-
-    //         M.m[0] = Rwc.at<double>(0,0);
-    //         M.m[1] = Rwc.at<double>(1,0);
-    //         M.m[2] = Rwc.at<double>(2,0);
-    //         M.m[3]  = 0.0;
-
-    //         M.m[4] = Rwc.at<double>(0,1);
-    //         M.m[5] = Rwc.at<double>(1,1);
-    //         M.m[6] = Rwc.at<double>(2,1);
-    //         M.m[7]  = 0.0;
-
-    //         M.m[8] = Rwc.at<double>(0,2);
-    //         M.m[9] = Rwc.at<double>(1,2);
-    //         M.m[10] = Rwc.at<double>(2,2);
-    //         M.m[11]  = 0.0;
-
-    //         M.m[12] = twc.at<double>(0);
-    //         M.m[13] = twc.at<double>(1);
-    //         M.m[14] = twc.at<double>(2);
-    //         M.m[15]  = 1.0;
-    //     }
-    //     else
-    //         M.SetIdentity();
-    // }
-
-    // draw ellipsoids
-    // bool MapDrawer::drawEllipsoids() {
-    //     // std::vector<ellipsoid*> ellipsoids = mpMap->GetAllEllipsoids();
-
-    //     // std::vector<ellipsoid*> ellipsoidsVisual = mpMap->GetAllEllipsoidsVisual();
-    //     // ellipsoids.insert(ellipsoids.end(), ellipsoidsVisual.begin(), ellipsoidsVisual.end());
-
-
-    //     for( size_t i=0; i<ellipsoids.size(); i++)
-    //     {
-    //         SE3Quat TmwSE3 = ellipsoids[i]->pose.inverse();
-    //         Vector3d scale = ellipsoids[i]->scale;
-
-    //         glPushMatrix();
-
-    //         glLineWidth(mCameraLineWidth*3/4.0);
-
-    //         if(ellipsoids[i]->isColorSet()){
-    //             Vector4d color = ellipsoids[i]->getColorWithAlpha();
-    //             glColor4f(color(0),color(1),color(2),color(3));
-    //         }
-    //         else
-    //             glColor3f(0.0f,0.0f,1.0f);
-
-    //         GLUquadricObj *pObj;
-    //         pObj = gluNewQuadric();
-    //         gluQuadricDrawStyle(pObj, GLU_LINE);
-
-    //         pangolin::OpenGlMatrix Twm;   // model to world
-    //         SE3ToOpenGLCameraMatrix(TmwSE3, Twm);
-    //         glMultMatrixd(Twm.m);  
-    //         glScaled(scale[0],scale[1],scale[2]);
-
-    //         gluSphere(pObj, 1.0, 26, 13); // draw a sphere with radius 1.0, center (0,0,0), slices 26, and stacks 13.
-    //         drawAxisNormal();
-
-    //         glPopMatrix();
-    //     }
-
-    //     return true;
-    // }
 
 void MapDrawer::drawEllipsoid() {
     // SE3Quat TmwSE3 = ellipsoids[i]->pose.inverse();
@@ -199,6 +115,9 @@ bool MapDrawer::drawEllipsoids(double prob_thresh) {
 // 加入了 transform
 void MapDrawer::drawAllEllipsoidsInVector(std::vector<ellipsoid*>& ellipsoids)
 {
+    // std::cout << "[MapDrawer::drawAllEllipsoidsInVector] " \
+    //     << "ellipsoids.size() = " << ellipsoids.size() << std::endl;
+    
     for( size_t i=0; i<ellipsoids.size(); i++)
     {
         SE3Quat TmwSE3 = ellipsoids[i]->pose.inverse();
@@ -208,12 +127,16 @@ void MapDrawer::drawAllEllipsoidsInVector(std::vector<ellipsoid*>& ellipsoids)
 
         Vector3d scale = ellipsoids[i]->scale;
 
+        // std::cout << "TmwSE3 = " << TmwSE3.to_homogeneous_matrix().matrix() << std::endl;
+        // std::cout << "Ellipsoid scale = " << scale.transpose().matrix() << std::endl; 
+
         glPushMatrix();
 
         glLineWidth(mCameraLineWidth/3.0);
 
         if(ellipsoids[i]->isColorSet()){
             Vector4d color = ellipsoids[i]->getColorWithAlpha();
+            // std::cout << "color = " << color.matrix() << std::endl;
             glColor4d(color(0),color(1),color(2),color(3));
         }
         else
@@ -224,17 +147,32 @@ void MapDrawer::drawAllEllipsoidsInVector(std::vector<ellipsoid*>& ellipsoids)
         gluQuadricDrawStyle(pObj, GLU_LINE);
 
         pangolin::OpenGlMatrix Twm;   // model to world
+
         SE3ToOpenGLCameraMatrix(TmwSE3, Twm);
+
         glMultMatrixd(Twm.m);  
         glScaled(scale[0],scale[1],scale[2]);
-
         gluSphere(pObj, 1.0, 26, 13); // draw a sphere with radius 1.0, center (0,0,0), slices 26, and stacks 13.
 
         glPopMatrix();
+    }
+    return;
+}
 
+bool MapDrawer::drawObservationEllipsoids(double prob_thresh)
+{
+    std::vector<ellipsoid*> ellipsoidsObservation = mpMap->GetObservationEllipsoids();
+
+    // filter those ellipsoids with prob
+    std::vector<ellipsoid*> ellipsoids_prob;
+    for(auto& pE : ellipsoidsObservation)
+    {
+        if(pE->prob > prob_thresh )
+            ellipsoids_prob.push_back(pE);
     }
 
-    return;
+    drawAllEllipsoidsInVector(ellipsoids_prob);
+    return true;
 }
 
     // draw all the planes
@@ -261,36 +199,41 @@ void MapDrawer::SE3ToOpenGLCameraMatrix(g2o::SE3Quat &matInSe3, pangolin::OpenGl
     cv::Mat matIn;
 
     matIn = Converter::toCvMat(matEigen);
+
+    // std::cout << "matIn = " << matIn << std::endl;
     // cv::eigen2cv(matEigen, matIn);
 
     if(!matIn.empty())
     {
         cv::Mat Rwc(3,3,CV_64F);
         cv::Mat twc(3,1,CV_64F);
+
         {
             unique_lock<mutex> lock(mMutexCamera);
             Rwc = matIn.rowRange(0,3).colRange(0,3).t();
             twc = -Rwc*matIn.rowRange(0,3).col(3);
         }
 
-        M.m[0] = Rwc.at<double>(0,0);
-        M.m[1] = Rwc.at<double>(1,0);
-        M.m[2] = Rwc.at<double>(2,0);
+        // 原来是 double, 发现有问题
+
+        M.m[0] = Rwc.at<float>(0,0);
+        M.m[1] = Rwc.at<float>(1,0);
+        M.m[2] = Rwc.at<float>(2,0);
         M.m[3]  = 0.0;
 
-        M.m[4] = Rwc.at<double>(0,1);
-        M.m[5] = Rwc.at<double>(1,1);
-        M.m[6] = Rwc.at<double>(2,1);
+        M.m[4] = Rwc.at<float>(0,1);
+        M.m[5] = Rwc.at<float>(1,1);
+        M.m[6] = Rwc.at<float>(2,1);
         M.m[7]  = 0.0;
 
-        M.m[8] = Rwc.at<double>(0,2);
-        M.m[9] = Rwc.at<double>(1,2);
-        M.m[10] = Rwc.at<double>(2,2);
+        M.m[8] = Rwc.at<float>(0,2);
+        M.m[9] = Rwc.at<float>(1,2);
+        M.m[10] = Rwc.at<float>(2,2);
         M.m[11]  = 0.0;
 
-        M.m[12] = twc.at<double>(0);
-        M.m[13] = twc.at<double>(1);
-        M.m[14] = twc.at<double>(2);
+        M.m[12] = twc.at<float>(0);
+        M.m[13] = twc.at<float>(1);
+        M.m[14] = twc.at<float>(2);
         M.m[15]  = 1.0;
     }
     else
@@ -437,6 +380,9 @@ void MapDrawer::drawPointCloudLists()
         for(int i=0; i<pPoints->size(); i=i+1)
         {
             PointXYZRGB &p = (*pPoints)[i];
+            // std::cout << "pPoints->size() = " << pPoints->size() << std::endl;
+            // std::cout << "(&p) == NULL = " << ((&p)==NULL ) << std::endl;
+            // std::cout << "p.x = " << p.x << std::endl;
             glPointSize( p.size );
             glBegin(GL_POINTS);
             glColor3d(p.r/255.0, p.g/255.0, p.b/255.0);

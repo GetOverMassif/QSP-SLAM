@@ -64,7 +64,7 @@ public:
 
     void drawEllipsoid();
     bool drawEllipsoids(double prob_thresh = 0);
-    // bool drawObservationEllipsoids(double prob_thresh = 0);
+    bool drawObservationEllipsoids(double prob_thresh = 0);
 
     bool drawPlanes(int visual_group=0);
     // bool drawPoints();

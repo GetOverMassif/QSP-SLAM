@@ -45,6 +45,8 @@ KeyFrame::KeyFrame(Frame &F, Map *pMap, KeyFrameDatabase *pKFDB):
 {
     mnId=nNextId++;
 
+    mbHaveLocalObject = false;
+
     mGrid.resize(mnGridCols);
     for(int i=0; i<mnGridCols;i++)
     {

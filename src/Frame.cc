@@ -130,6 +130,9 @@ Frame::Frame(const cv::Mat &imGray, const cv::Mat &imDepth, const double &timeSt
     rgb_img = imGray.clone();
     frame_img = imDepth_raw.clone(); // 这里的imDepth已经不是原始格式了
 
+    mbHaveLocalObject = false;
+    mbSetRelation = false;
+
     // float mDepthMapFactor = fSettings["DepthMapFactor"];
     // if(fabs(mDepthMapFactor)<1e-5)
     //     mDepthMapFactor=1;

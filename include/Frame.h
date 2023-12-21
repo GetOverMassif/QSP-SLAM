@@ -34,6 +34,8 @@
 #include <opencv2/opencv.hpp>
 #include <Eigen/Dense>
 
+#include <src/Relationship/Relationship.h>
+
 namespace ORB_SLAM2
 {
 #define FRAME_GRID_ROWS 48
@@ -41,6 +43,9 @@ namespace ORB_SLAM2
 
 class MapPoint;
 class KeyFrame;
+class Relation;
+
+typedef std::vector<Relation> Relations;
 
 class Frame
 {
@@ -191,6 +196,10 @@ public:
     // For depth ellipsoid extraction.
     bool mbHaveLocalObject;
     std::vector<g2o::ellipsoid*> mpLocalObjects; // local 3d ellipsoid
+
+    // Store relations
+    bool mbSetRelation;
+    Relations relations;
 
     // Current and Next Frame id.
     static long unsigned int nNextId;
