@@ -50,6 +50,7 @@ MapObject::MapObject(const Eigen::Matrix4f &T, const Eigen::Vector<float, 64> &v
     vShapeCode = vCode;
     velocity = Eigen::Vector3f::Zero();
     mnId = nNextId++;
+    findGoodOrientation=false;
 }
 
 MapObject::MapObject(KeyFrame *pRefKF, Map *pMap) :
@@ -61,6 +62,7 @@ MapObject::MapObject(KeyFrame *pRefKF, Map *pMap) :
     scale = 1.;
     invScale = 1.;
     vShapeCode = Eigen::Vector<float, 64>::Zero();
+    findGoodOrientation = false;
 }
 
 void MapObject::AddObservation(KeyFrame *pKF, int idx)
@@ -433,12 +435,12 @@ void MapObject::ComputeCuboidPCA(bool updatePose)
     // Update object pose with pose computed by PCA, only for the very first few frames
     if (updatePose)
     {
-        Eigen::Matrix4f T = Eigen::Matrix4f::Identity();
-        T.topLeftCorner(3, 3) = 0.40 * l * R;
+        Eigen::Matrix4f Two = Eigen::Matrix4f::Identity();
+        Two.topLeftCorner(3, 3) = 0.40 * l * R;
         // cout << R.determinant() << " " << endl;
         // cout << pow(T.topLeftCorner(3, 3).determinant(), 1./3) << endl;
-        T.topRightCorner(3, 1) = cuboid_centre_w;
-        SetObjectPoseSim3(T);
+        Two.topRightCorner(3, 1) = cuboid_centre_w;
+        SetObjectPoseSim3(Two);
     }
 }
 
@@ -448,20 +450,21 @@ void MapObject::SetPoseByEllipsold(g2o::ellipsoid* e)
     // SE3Quat pose;  // rigid body transformation, object in world coordinate
     // Vector3d scale; // a,b,c : half length of axis x,y,z
 
-    Eigen::Matrix4f T = Converter::toMatrix4f(e->pose);
+    // world -> object
+    Eigen::Matrix4f Two = Converter::toMatrix4f(e->pose);
 
-    cout << "T = \n" << T.matrix() << endl;
+    cout << "Ellipsold->pose, Two = \n" << Two.matrix() << endl;
 
     Vector3d& scale = e->scale;
-    float l = scale.norm();
+    float l = scale.norm() * 2;
 
-    cout << "T = \n" << T.matrix() << endl;
+    // Rx(90)*Ry(-90)
+    Eigen::Matrix3f Ron = Eigen::AngleAxisf(M_PI/2, Eigen::Vector3f(1,0,0)).matrix()
+        * Eigen::AngleAxisf(-M_PI/2, Eigen::Vector3f(0,1,0)).matrix();
+    Two.topLeftCorner(3, 3) = Two.topLeftCorner(3, 3) * Ron;
+    Two.topLeftCorner(3, 3) = 0.40 * l * Two.topLeftCorner(3, 3);
 
-    T.topLeftCorner(3, 3) = 0.40 * l * T.topLeftCorner(3, 3);
-    cout << "T = \n" << T.matrix() << endl;
-    // cout << pow(T.topLeftCorner(3, 3).determinant(), 1./3) << endl;
-    // T.topRightCorner(3, 1) = cuboid_centre_w;
-    SetObjectPoseSim3(T);
+    SetObjectPoseSim3(Two); // Two
 }
 
 void MapObject::AddMapPoints(MapPoint *pMP)

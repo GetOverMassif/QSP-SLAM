@@ -148,6 +148,8 @@ protected:
     int nKFInserted;
 
     bool use_ellipsold_pose_for_shape_optimization;
+    int flip_sample_num;
+    double flip_sample_angle;
 };
 
 } //namespace ORB_SLAM

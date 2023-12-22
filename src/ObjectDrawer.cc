@@ -55,14 +55,11 @@ void ObjectDrawer::AddObject(MapObject *pMO)
 void ObjectDrawer::ProcessNewObjects()
 {
     unique_lock<mutex> lock(mMutexObjects);
-    // std::cout << "??????????????????????????????????????????????" << std::endl;
     auto pMO = mlNewMapObjects.front();
     // std::cout << "mlNewMapObjects.size() = " << mlNewMapObjects.size() << std::endl;
+    // todo: 这里只处理了最新添加的一个物体
     if (pMO)
     {
-        for (int i = 0; i < 1000; i++) {
-            // std::cout << "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" << std::endl;
-        }
         int renderId = (int) mpRenderer->AddObject(pMO->vertices, pMO->faces);
         pMO->SetRenderId(renderId);
         mlNewMapObjects.pop_front();

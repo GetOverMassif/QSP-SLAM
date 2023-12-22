@@ -42,6 +42,8 @@ LocalMapping::LocalMapping(System *pSys, Map *pMap, ObjectDrawer* pObjectDrawer,
     nLastReconKFID = 0;
 
     use_ellipsold_pose_for_shape_optimization = Config::Get<int>("System.UseEllipsoldPoseForDSP.Open") > 0;
+    flip_sample_num = Config::Get<int>("flip_sample_num");
+    flip_sample_angle = 2 * M_PI / (double)flip_sample_num;
 }
 
 void LocalMapping::SetLoopCloser(LoopClosing* pLoopCloser)

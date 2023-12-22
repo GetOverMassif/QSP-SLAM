@@ -33,6 +33,7 @@ public:
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
     SE3Quat pose;  // rigid body transformation, object in world coordinate
+                   // Two: object -> world
     Vector3d scale; // a,b,c : half length of axis x,y,z
 
     Vector9d vec_minimal; // x,y,z,roll,pitch,yaw,a,b,c

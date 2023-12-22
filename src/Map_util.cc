@@ -100,10 +100,17 @@ bool Map::AddPointCloudList(const string &name, PointCloud *pCloud, int type) {
         std::cout << "NULL point cloud." << std::endl;
         return false;
     }
+    std::cout << "!!!!Map's pointcloud now: \n";
+    for (auto &pair: mmPointCloudLists) {
+        auto strPoints = pair.first;
+        std::cout << strPoints << "," << std::endl;
+    }
+
     cout << "[Map::AddPointCloudList] " << name << std::endl;
     // Check repetition
     if (mmPointCloudLists.find(name) != mmPointCloudLists.end()) {
         // Exist
+        std::cout << "Exist" << std::endl;
         auto pCloudInMap = mmPointCloudLists[name];
         if (pCloudInMap == NULL) {
             std::cout << "Error: the cloud " << name << " has been deleted." << std::endl;
@@ -125,6 +132,7 @@ bool Map::AddPointCloudList(const string &name, PointCloud *pCloud, int type) {
         }
         return false;
     } else {
+        std::cout << "Insert pointcloud :" << name << std::endl;
         mmPointCloudLists.insert(make_pair(name, pCloud));
         return true;
     }
@@ -134,12 +142,13 @@ bool Map::AddPointCloudList(const string &name, PointCloud *pCloud, int type) {
 bool Map::DeletePointCloudList(const string &name, int type) {
     unique_lock<mutex> lock(mMutexMap);
 
-    std::cout << "Ready to delete pointcloud: " << name << std::endl;
+    std::cout << "!!!!!!!!!Ready to delete pointcloud: " << name << std::endl;
 
     if (type == 0) // complete matching: the name must be the same
     {
         auto iter = mmPointCloudLists.find(name);
         if (iter != mmPointCloudLists.end()) {
+            std::cout << "Exist " << std::endl;
             PointCloud *pCloud = iter->second;
             if (pCloud != NULL) {
                 delete pCloud;

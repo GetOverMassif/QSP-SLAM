@@ -73,6 +73,14 @@
         "specialfunctions": "cpp",
         "*.def": "cpp",
         "*.ipp": "cpp",
-        "*.txx": "cpp"
+        "*.txx": "cpp",
+        "strstream": "cpp",
+        "codecvt": "cpp",
+        "__nullptr": "cpp",
+        "filesystem": "cpp",
+        "numericaldiff": "cpp",
+        "__mutex_base": "cpp",
+        "__split_buffer": "cpp",
+        "queue": "cpp"
     }
 }

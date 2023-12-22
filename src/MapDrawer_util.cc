@@ -154,6 +154,8 @@ void MapDrawer::drawAllEllipsoidsInVector(std::vector<ellipsoid*>& ellipsoids)
         glScaled(scale[0],scale[1],scale[2]);
         gluSphere(pObj, 1.0, 26, 13); // draw a sphere with radius 1.0, center (0,0,0), slices 26, and stacks 13.
 
+        drawAxisNormal();
+
         glPopMatrix();
     }
     return;
@@ -375,6 +377,8 @@ void MapDrawer::drawPointCloudLists()
     glPushMatrix();
 
     for(auto pair:pointLists){
+        auto strpoints = pair.first;
+        // std::cout << "strpoints = " << strpoints << std::endl;
         auto pPoints = pair.second;
         if( pPoints == NULL ) continue;
         for(int i=0; i<pPoints->size(); i=i+1)

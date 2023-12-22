@@ -772,8 +772,8 @@ g2o::ellipsoid EllipsoidExtractor::EstimateLocalEllipsoidUsingMultiPlanes(cv::Ma
     pcl::transformPointCloud(*pCloudPCLGravity, *pCloudPCLNormalized, transform_ng);
     ORB_SLAM2::PointCloud *pObjectCloudNormalized = pclXYZToQuadricPointCloudPtr(pCloudPCLNormalized); // normalized coordinate
 
-    // 可视化: 物体重力坐标系下，转角对齐后的点云
-    mpMap->AddPointCloudList("cloud_normalized", pObjectCloudNormalized, 0);
+    // // 可视化: 物体重力坐标系下，转角对齐后的点云
+    // mpMap->AddPointCloudList("cloud_normalized", pObjectCloudNormalized, 0);
 
     // std::cout << "*****************************" << std::endl;
     // std::cout << "Showing pObjectCloudNormalized, press [ENTER] to continue ... " << std::endl;

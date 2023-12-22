@@ -129,6 +129,7 @@ public:
     // 有待手动设置外点剔除的距离阈值
     double outlierThreDis = 1.0;
 
+    bool findGoodOrientation;
 };
 
 }

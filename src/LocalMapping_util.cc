@@ -214,7 +214,7 @@ void LocalMapping::CreateNewObjectsFromDetections()
 
     /*这一帧中进行新物体的创建*/
 
-    cout << "[ LocalMapping - CreateNewObjectsFromDetections ]" << endl;
+    cout << "\n[ LocalMapping - CreateNewObjectsFromDetections ]" << endl;
 
     // Step 1: 获取当前帧的旋转、平移和物体检测
     cv::Mat Rcw = mpCurrentKeyFrame->GetRotation();
@@ -277,7 +277,7 @@ void LocalMapping::CreateNewObjectsFromDetections()
 //
 void LocalMapping::ProcessDetectedObjects()
 {
-    std::cout << "[ LocalMapping - ProcessDetectedObjects ]" << std::endl;
+    std::cout << "\n[ LocalMapping - ProcessDetectedObjects ]" << std::endl;
     char key;
     // std::cout << "Ready to reconstruct_object" << std::endl;
     // std::cout << "Press [ENTER] to continue ... " << std::endl;
@@ -330,6 +330,12 @@ void LocalMapping::ProcessDetectedObjects()
             continue;
         }
 
+        std::cout << "mpCurrentKeyFrame->mnId = " << mpCurrentKeyFrame->mnId << std::endl;
+        std::cout << "pMO->mpRefKF->mnId = " << pMO->mpRefKF->mnId << std::endl;
+
+        std::cout << "use_ellipsold_pose_for_shape_optimization = " << \
+            use_ellipsold_pose_for_shape_optimization << std::endl;
+
         int numKFsPassedSinceInit = int(mpCurrentKeyFrame->mnId - pMO->mpRefKF->mnId);
 
         // bool isShortInternal = numKFsPassedSinceInit < 15;
@@ -340,20 +346,21 @@ void LocalMapping::ProcessDetectedObjects()
         // bool use_ellipsold_pose_for_shape_optimization = true;
 
         // 只在前50帧进行PCA初始位姿估计， 后面使用得到的网格模型过滤地图点外点
-        if (numKFsPassedSinceInit < 50) {
-            std::cout << "ComputeCuboidPCA" << std::endl;
-            pMO->ComputeCuboidPCA(numKFsPassedSinceInit < 15);
-        }
         // if (numKFsPassedSinceInit < 50) {
-        //     if (!use_ellipsold_pose_for_shape_optimization || mpCurrentKeyFrame->mpLocalObjects[det_i] == NULL) {
-        //         std::cout << "ComputeCuboidPCA" << std::endl;
-        //         pMO->ComputeCuboidPCA(numKFsPassedSinceInit < 15);
-        //     }
-        //     else{
-        //         // Method 2: 使用来自椭球体的位姿信息
-        //         pMO->SetPoseByEllipsold(mpCurrentKeyFrame->mpLocalObjects[det_i]);
-        //     }
+        //     std::cout << "ComputeCuboidPCA" << std::endl;
+        //     pMO->ComputeCuboidPCA(numKFsPassedSinceInit < 15);
         // }
+        if (numKFsPassedSinceInit < 50) {
+            if (!use_ellipsold_pose_for_shape_optimization || mpCurrentKeyFrame->mpLocalObjects[det_i] == NULL) {
+                std::cout << "ComputeCuboidPCA" << std::endl;
+                pMO->ComputeCuboidPCA(numKFsPassedSinceInit < 15);
+            }
+            else{
+                // Method 2: 使用来自椭球体的位姿信息
+                std::cout << "SetPoseByEllipsold" << std::endl;
+                pMO->SetPoseByEllipsold(mpCurrentKeyFrame->mpLocalObjects[det_i]);
+            }
+        }
         else { // when we have relative good object shape
             pMO->RemoveOutliersModel();
         }
@@ -488,51 +495,78 @@ void LocalMapping::ProcessDetectedObjects()
 
             std::cout << "Before reconstruct_object" << std::endl;
 
-            std::cout << "SE3Tcw = \n" << SE3Tcw.matrix() << std::endl;
+            std::cout << "mpCurrentKeyFrame->pose = \n" << SE3Tcw.matrix() << std::endl;
             std::cout << "pMO->Sim3Two = \n" << pMO->Sim3Two.matrix() << std::endl;
 
+            std::cout << "Reconstruct_object: " << std::endl;
+
+            auto Sim3Two_pMO = pMO->Sim3Two;
+
             auto pyMapObject = pyOptimizer.attr("reconstruct_object")
-                    (SE3Tcw * pMO->Sim3Two, surface_points_cam, rays, depth_obs, pMO->vShapeCode);
-            std::cout << "After reconstruct_object" << std::endl;
+                    (SE3Tcw * Sim3Two_pMO, surface_points_cam, rays, depth_obs, pMO->vShapeCode);
 
-            // cout << "Number of KF passed: " << numKFsPassedSinceInit << endl;
+            std::cout << "Loss: " << pyMapObject.attr("loss").cast<float>() << std::endl;
 
-            // std::cout << "pMO->reconstructed = " << pMO->reconstructed << std::endl;
-            // If not initialized, duplicate optimization to resolve orientation ambiguity
-            if (!pMO->reconstructed)
+            auto& pyMapObjectLeastLoss = pyMapObject;
+
+            if (!pMO->findGoodOrientation)
             {
-                // 重建失败
-                // std::cout << "Reconstruction failed" << std::endl;
-                // continue;
+                // 绕y轴进行采样，可以直接附加到Two上
+                std::cout << "Has not found good orientation yet." << std::endl;
+                std::vector<float> losses(flip_sample_num);
+                losses[0] = pyMapObject.attr("loss").cast<float>();
                 
-                // 这里后面的代码会让定位失效
+                for (int i_rot = 1; i_rot < flip_sample_num; i_rot++) {
 
-                auto flipped_Two = pMO->Sim3Two;
-                flipped_Two.col(0) *= -1;
-                flipped_Two.col(2) *= -1;
-                auto pyMapObjectFlipped = pyOptimizer.attr("reconstruct_object")
-                        (SE3Tcw * flipped_Two, surface_points_cam, rays, depth_obs, pMO->vShapeCode);
+                    auto flipped_Two = Sim3Two_pMO;
+                    Eigen::Matrix3f Ry = Eigen::AngleAxisf(double(i_rot) * flip_sample_angle, \
+                                                Eigen::Vector3f(0,1,0)).matrix();
 
-                if (pyMapObject.attr("loss").cast<float>() > pyMapObjectFlipped.attr("loss").cast<float>())
-                    pyMapObject = pyMapObjectFlipped;
+                    flipped_Two.topLeftCorner(3,3) = flipped_Two.topLeftCorner(3,3) * Ry;
+                    cout << " => flipped_Two = " << flipped_Two.matrix() << std::endl;
+                    auto pyMapObjectFlipped = pyOptimizer.attr("reconstruct_object")
+                            (SE3Tcw * flipped_Two, surface_points_cam, rays, depth_obs, pMO->vShapeCode);
+                    
+                    std::cout << "Loss: " << pyMapObjectFlipped.attr("loss").cast<float>() << std::endl;
+                    losses[i_rot] = pyMapObjectFlipped.attr("loss").cast<float>();
+
+                    bool recon_state = pyMapObjectLeastLoss.attr("is_good").cast<bool>();
+                    bool recon_state_flipped = pyMapObjectFlipped.attr("is_good").cast<bool>();
+                    float loss_least = pyMapObjectLeastLoss.attr("loss").cast<float>();
+                    float loss_flipped = pyMapObjectFlipped.attr("loss").cast<float>();
+
+                    std::cout << "recon_state = " << recon_state << std::endl;
+                    std::cout << "recon_state_flipped = " << recon_state_flipped << std::endl;
+                    std::cout << "loss_least = " << loss_least << std::endl;
+                    std::cout << "loss_flipped = " << loss_flipped << std::endl;
+
+                    // 如果先前的重建失败 / 当前重建成功且loss更小
+                    if (!recon_state || \
+                        (loss_least > loss_flipped && recon_state_flipped)) {
+                        std::cout << "Rotate y axis" << double(i_rot) * flip_sample_angle << " rad" << std::endl;
+                        pyMapObjectLeastLoss = pyMapObjectFlipped;
+                    }
+                }
+                // todo: to Judge whether good orientation has been found
             }
 
-            // std::cout << "pMO->reconstructed = " << pMO->reconstructed << std::endl;
+            auto t_cam_obj = pyMapObjectLeastLoss.attr("t_cam_obj");
 
-            // auto Sim3Tco = pyMapObject.attr("t_cam_obj").cast<Eigen::Matrix4f>();
-
-            auto t_cam_obj = pyMapObject.attr("t_cam_obj");
-            // if (py::is_none(t_cam_obj)) {
             if (t_cam_obj.is_none()) {
                 std::cout << "Output t_cam_obj == None, reconstruction failed." << std::endl;
                 continue;
             }
             auto Sim3Tco = t_cam_obj.cast<Eigen::Matrix4f>();
 
+            std::cout << "Sim3Tco = " << Sim3Tco.matrix() << std::endl;
+
+            // auto Sim3Tco = SE3Tcw * pMO->Sim3Two;
+
             std::cout << "Reconstruction successed" << std::endl;
             
             det->SetPoseMeasurementSim3(Sim3Tco);
             // Sim3, SE3, Sim3
+            // Sim3 可以乘在前面但不能乘在后面?
             Eigen::Matrix4f Sim3Two = SE3Twc * Sim3Tco;
 
             std::cout << "Sim3Two = " << Sim3Two.matrix() << std::endl;
@@ -541,16 +575,63 @@ void LocalMapping::ProcessDetectedObjects()
             Eigen::Vector<float, 64> code = Eigen::VectorXf::Zero(64);
             if (code_len == 32)
             {
-                auto code_32 = pyMapObject.attr("code").cast<Eigen::Vector<float, 32>>();
+                auto code_32 = pyMapObjectLeastLoss.attr("code").cast<Eigen::Vector<float, 32>>();
                 code.head(32) = code_32;
             }
             else
             {
-                code = pyMapObject.attr("code").cast<Eigen::Vector<float, 64>>();
+                code = pyMapObjectLeastLoss.attr("code").cast<Eigen::Vector<float, 64>>();
             }
 
+            // pMO->UpdateReconstruction(Sim3Two, code);
+
+            // pMO->UpdateReconstruction(pMO->Sim3Two, code);
+
+            std::cout << "Ready to reconstruct_object" << std::endl;
+            std::cout << "Press [ENTER] to continue ... " << std::endl;
+            key = getchar();
+            std::cout << "Press [ENTER] to continue ... " << std::endl;
+            key = getchar();
+
+            // auto Sim3Two_fix = pMO->Sim3Two;
+
+            // for (int i_rot = 0; i_rot < flip_sample_num; i_rot++) {
+            //     std::cout << "i_rot = " << i_rot << std::endl;
+            //     std::cout << "Rotate y axis" << double(i_rot) * flip_sample_angle << " rad" << std::endl;
+            //     // 这里的pMO->Sim3Two发生了变化
+            //     auto flipped_Two = Sim3Two_fix;
+            //     Eigen::Matrix3f Ry = Eigen::AngleAxisf((double)i_rot * flip_sample_angle, \
+            //                                 Eigen::Vector3f(0,1,0)).matrix();
+
+            //     std::cout << "Two = \n" << flipped_Two << std::endl;
+            //     std::cout << "Ry = \n" << Ry << std::endl;
+
+            //     flipped_Two.topLeftCorner(3,3) = flipped_Two.topLeftCorner(3,3) * Ry;
+
+            //     std::cout << "flipped_Two = \n" << flipped_Two << std::endl;
+
+            //     pMO->UpdateReconstruction(flipped_Two, code);
+
+            //     auto pyMesh = pyMeshExtractor.attr("extract_mesh_from_code")(code);
+
+            //     pMO->vertices = pyMesh.attr("vertices").cast<Eigen::MatrixXf>();
+            //     pMO->faces = pyMesh.attr("faces").cast<Eigen::MatrixXi>();
+            //     pMO->reconstructed = true;
+            //     pMO->AddObservation(mpCurrentKeyFrame, det_i);
+            //     mpCurrentKeyFrame->AddMapObject(pMO, det_i);
+            //     mpObjectDrawer->AddObject(pMO);
+
+            //     nLastReconKFID = int(mpCurrentKeyFrame->mnId);
+
+            //     std::cout << "Press [ENTER] to continue ... " << std::endl;
+            //     key = getchar();
+            // }
+
+
             pMO->UpdateReconstruction(Sim3Two, code);
+
             auto pyMesh = pyMeshExtractor.attr("extract_mesh_from_code")(code);
+
             pMO->vertices = pyMesh.attr("vertices").cast<Eigen::MatrixXf>();
             pMO->faces = pyMesh.attr("faces").cast<Eigen::MatrixXi>();
             pMO->reconstructed = true;

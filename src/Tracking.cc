@@ -1176,7 +1176,7 @@ void Tracking::CreateNewKeyFrame()
         mvpFrames.push_back(&mCurrentFrame);
 
         // 首先进行物体检测，得到 label, bbox, mask, prob 等数据
-        std::cout << " [ GetObjectDetectionsRGBD ]" << std::endl;
+        std::cout << "\n [ GetObjectDetectionsRGBD ]" << std::endl;
         GetObjectDetectionsRGBD(pKF);
 
         // 将这些结果也设置到对应的普通帧Frame中（这里是为了适用椭球体SLAM需求，有待未来优化）
@@ -1190,7 +1190,7 @@ void Tracking::CreateNewKeyFrame()
         /** todo：在这里进行物体观测的更新
          *  包括地面提取、深度图椭球估计、关联曼哈顿平面估计、
         */
-        std::cout << " [ UpdateObjectObservation ] " << std::endl;
+        std::cout << " \n[ UpdateObjectObservation ] " << std::endl;
         UpdateObjectObservation(&mCurrentFrame, pKF, withAssociation);
 
 

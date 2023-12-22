@@ -16,15 +16,17 @@
 */
 
 
-#include<iostream>
-#include<algorithm>
-#include<fstream>
-#include<chrono>
-#include<iomanip>
+#include <iostream>
+#include <algorithm>
+#include <fstream>
+#include <chrono>
+#include <iomanip>
 
-#include<opencv2/core/core.hpp>
+#include <opencv2/core/core.hpp>
 
-#include"System.h"
+#include "System.h"
+
+#include "src/config/Config.h"
 
 using namespace std;
 
@@ -95,7 +97,19 @@ int main(int argc, char **argv)
 
     // Main loop
     cv::Mat imRGB, imD;
-    for(int ni = 0; ni < nImages; ni++)
+
+    int skip_num = Config::Get<int>("Running.skip_num");
+    double total_ratio = Config::Get<double>("Running.total_ratio");
+    cout << "total_ratio = " << total_ratio << std::endl;
+    cout << "nImages = " << nImages << std::endl;
+    cout << "int(total_ratio * (double)nImages) = " << int(total_ratio * (double)nImages) << std::endl;
+
+    int total_num = std::min(int(total_ratio * (double)nImages + 1), nImages);
+    skip_num = std::max(1, skip_num);
+
+    std::cout << "total_num = " << total_num << ", skip_num = " << skip_num << std::endl;
+
+    for(int ni = 0; ni < total_num; ni+=skip_num)
     {
         std::cout << "\n========================================" << std::endl;
         std::cout << "=> Inputting Image " << ni << "/" << nImages << std::endl;

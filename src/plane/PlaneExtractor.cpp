@@ -30,7 +30,7 @@ namespace ORB_SLAM2
         else
             row_start = 0;
 
-        std::cout << "Processing plane extraction, row range : " << row_start << " - " << imDepth.rows << ", Jump: " << jump << std::endl;
+        // std::cout << "Processing plane extraction, row range : " << row_start << " - " << imDepth.rows << ", Jump: " << jump << std::endl;
         // std::cout << "[Config] Row range : " << row_start << " - " << imDepth.rows << std::endl;
         // std::cout << "[Config] Jump : " << jump << std::endl;
         PointCloudPCL::Ptr inputCloud( new PointCloudPCL() );

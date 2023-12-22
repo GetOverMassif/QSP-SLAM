@@ -56,7 +56,12 @@ Objects.maskErrosion: 5
 
 # []
 
-System.UseEllipsoldPoseForDSP.Open: 0
+System.UseEllipsoldPoseForDSP.Open: 1
+Running.skip_num: 4
+total_ratio: 1.0
+
+flip_sample_num: 4
+
 
 # [From EllipsoldSLAM]
 
