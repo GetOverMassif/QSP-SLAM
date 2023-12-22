@@ -34,6 +34,8 @@
 #include <opencv2/opencv.hpp>
 #include <Eigen/Dense>
 
+#include <src/Relationship/Relationship.h>
+
 namespace ORB_SLAM2
 {
 #define FRAME_GRID_ROWS 48
@@ -41,6 +43,9 @@ namespace ORB_SLAM2
 
 class MapPoint;
 class KeyFrame;
+class Relation;
+
+typedef std::vector<Relation> Relations;
 
 class Frame
 {
@@ -55,7 +60,9 @@ public:
             ORBextractor* extractorRight, ORBVocabulary* voc, cv::Mat &K, cv::Mat &distCoef, const float &bf, const float &thDepth);
 
     // Constructor for RGB-D cameras.
-    Frame(const cv::Mat &imGray, const cv::Mat &imDepth, const double &timeStamp, ORBextractor* extractor,ORBVocabulary* voc, cv::Mat &K, cv::Mat &distCoef, const float &bf, const float &thDepth);
+    Frame(const cv::Mat &imGray, const cv::Mat &imDepth, const double &timeStamp, \
+        ORBextractor* extractor,ORBVocabulary* voc, cv::Mat &K, cv::Mat &distCoef, \
+        const float &bf, const float &thDepth, const cv::Mat &imDepth_raw);
 
     // Constructor for Monocular cameras.
     Frame(const cv::Mat &imGray, const double &timeStamp, ORBextractor* extractor,ORBVocabulary* voc, cv::Mat &K, cv::Mat &distCoef, const float &bf, const float &thDepth);
@@ -189,6 +196,10 @@ public:
     // For depth ellipsoid extraction.
     bool mbHaveLocalObject;
     std::vector<g2o::ellipsoid*> mpLocalObjects; // local 3d ellipsoid
+
+    // Store relations
+    bool mbSetRelation;
+    Relations relations;
 
     // Current and Next Frame id.
     static long unsigned int nNextId;

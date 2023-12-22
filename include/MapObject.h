@@ -22,6 +22,7 @@
 #include"KeyFrame.h"
 #include"Frame.h"
 #include"Map.h"
+#include "src/config/Config.h"
 
 namespace ORB_SLAM2 {
 
@@ -64,6 +65,8 @@ public:
     int GetRenderId();
     void SetDynamicFlag();
     bool isDynamic();
+
+    void SetPoseByEllipsold(g2o::ellipsoid* e);
 
 public:
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
@@ -123,6 +126,8 @@ public:
     static bool lId(MapObject* pMO1, MapObject* pMO2){
         return pMO1->mnId < pMO2->mnId;
     }
+    // 有待手动设置外点剔除的距离阈值
+    double outlierThreDis = 1.0;
 
 };
 

@@ -100,6 +100,10 @@ System::System(const string &strVocFile, const string &strSettingsFile, const st
     // Set Object-related variables
     cout << "1/8 py::initialize_interpreter" << std::endl;
     py::initialize_interpreter();
+
+    py::module warn = py::module::import("warnings");
+    warn.attr("filterwarnings")("ignore");
+
     cv::FileStorage fSettings(strSettingsFile, cv::FileStorage::READ);
     cout << "2/8 import sys" << std::endl;
     py::module sys = py::module::import("sys");
@@ -288,8 +292,10 @@ cv::Mat System::TrackRGBD(const cv::Mat &im, const cv::Mat &depthmap, const doub
     }
     }
 
+    // KEY： 加入图像、深度和时间戳
     cv::Mat Tcw = mpTracker->GrabImageRGBD(im,depthmap,timestamp);
     
+    // 更新状态
     unique_lock<mutex> lock2(mMutexState);
     mTrackingState = mpTracker->mState;
     mTrackedMapPoints = mpTracker->mCurrentFrame.mvpMapPoints;
@@ -424,7 +430,7 @@ void System::Shutdown()
 
 
     if(mpViewer)
-        pangolin::BindToContext("ORB-SLAM2: Map Viewer");
+        pangolin::BindToContext("QSP-SLAM: Map Viewer");
 
     PyGILState_Ensure();
 }

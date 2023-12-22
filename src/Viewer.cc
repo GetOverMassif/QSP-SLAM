@@ -62,7 +62,7 @@ void Viewer::Run()
     mbStopped = false;
     int w = 1024;
     int h = 576;
-    pangolin::CreateWindowAndBind("ORB-SLAM2: Map Viewer",w,h);
+    pangolin::CreateWindowAndBind("QSP-SLAM: Map Viewer",w,h);
 
     // 3D Mouse handler requires depth testing to be enabled
     glEnable(GL_DEPTH_TEST);
@@ -76,10 +76,45 @@ void Viewer::Run()
     pangolin::Var<bool> menuShowPoints("menu.Show Points",true,true);
     pangolin::Var<bool> menuShowKeyFrames("menu.Show KeyFrames",true,true);
     pangolin::Var<bool> menuShowGraph("menu.Show Graph",true,true);
-    pangolin::Var<bool> menuShowGroundPlane("menu.Show GroundPlane",true,true);
     pangolin::Var<bool> menuLocalizationMode("menu.Localization Mode",false,true);
     pangolin::Var<bool> menuReset("menu.Reset",false,false);
     pangolin::Var<bool> menuClose("menu.Close",false,false);
+
+    pangolin::Var<bool> menuShowMapObjects("menu.Show MapObjects",true,true);
+    pangolin::Var<bool> menuShowGroundPlane("menu.Show GroundPlane",true,true);
+    pangolin::Var<bool> menuShowEllipsoids("menu.Show Ellipsoids", true, true);
+    pangolin::Var<bool> menuShowPointCloudLists("menu.Show PointCloudLists", true, true);
+
+    pangolin::Var<bool> menuShowEllipsoidsObservation("menu.Ellipsoids-Ob", true, true);
+    // pangolin::Var<bool> menuShowCuboids("menu. - Show Cuboids", false, true);
+    // pangolin::Var<bool> menuShowEllipsoidsDetails("menu. - Show Details", true, true);
+    // pangolin::Var<bool> menuShowPlanes("menu.Show Planes", true, true);
+    // pangolin::Var<bool> menuShowBoundingboxes("menu.Show Bboxes", false, true);
+    // pangolin::Var<bool> menuShowConstrainPlanesBbox("menu.ConstrainPlanes-bbox", false, true);
+    // pangolin::Var<bool> menuShowConstrainPlanesCuboids("menu.ConstrainPlanes-cuboids", false, true);
+    pangolin::Var<double> SliderEllipsoidProbThresh("menu.Ellipsoid Prob", 0.3, 0.0, 1.0);
+    // pangolin::Var<bool> menuShowWorldAxis("menu.Draw World Axis", false, true);
+
+    // pangolin::Var<bool> menuAMeaningLessBar("menu.----------", false, false);
+
+    // pangolin::Var<bool> menuShowOptimizedTraj("menu.Optimized Traj", true, true);
+    // pangolin::Var<bool> menuShowGtTraj("menu.Gt Traj", true, true);
+    // pangolin::Var<bool> menuShowRelationArrow("menu.Relation Arrow", false, true);
+    // pangolin::Var<int> SliderOdometryWeight("menu.Odometry Weight", 40, 0, 40);
+    // pangolin::Var<double> SliderPlaneWeight("menu.Plane Weight", 1, 0, 100);
+    // pangolin::Var<double> SliderPlaneDisSigma("menu.PlaneDisSigma", Config::Get<double>("DataAssociation.PlaneError.DisSigma"), 0.01, 0.5);
+    // pangolin::Var<int> Slider3DEllipsoidScale("menu.3DEllipsoidScale(10^)", log10(Config::Get<double>("Optimizer.Edges.3DEllipsoid.Scale")), -5, 10);
+    // pangolin::Var<int> Slider2DEllipsoidScale("menu.2DEllipsoidScale(10^)", log10(Config::Get<double>("Optimizer.Edges.2D.Scale")), -5, 10);
+    // pangolin::Var<int> SliderUseProbThresh("menu.Use Prob Thresh", 0, 0, 1);
+    // pangolin::Var<int> SliderOptimizeRelationPlane("menu.OptimizeRelationPlane", 0, 0, 1);
+    // pangolin::Var<bool> menuShowOptimizedSupPlanes("menu.Optimized SupPlanes", false, true);
+    // pangolin::Var<bool> menuShowSupPlanesObservation("menu.SupPlanes Observations", false, true);
+    // pangolin::Var<bool> menuOpenQuadricSLAM("menu.Open QuadricSLAM", false, true);
+
+    // pangolin::Var<std::function<void(void)>> menuSaveView("menu.Save View", func_save_view);//设置一个按钮，用于调用function函数
+    // pangolin::Var<std::function<void(void)>> menuLoadView("menu.Load View", func_load_view);//设置一个按钮，用于调用function函数
+
+    // pangolin::Var<bool> menuOpenOptimization("menu.Open Optimization", false, true);
 
     // Define Camera Render Object (for view / scene browsing)
     pangolin::OpenGlRenderState s_cam(
@@ -138,25 +173,49 @@ void Viewer::Run()
         }
 
         d_cam.Activate(s_cam);
+        glClearColor(1.0f,1.0f,1.0f,1.0f);
+
         // Used for object drawer
         Tec = s_cam.GetModelViewMatrix();
         Tec.row(1) = -Tec.row(1);
         Tec.row(2) = -Tec.row(2);
         glClearColor(1.0f,1.0f,1.0f,1.0f);
         mpMapDrawer->DrawCurrentCamera(Twc);
+        /** From ORB-SLAM*/
         if(menuShowKeyFrames || menuShowGraph)
             mpMapDrawer->DrawKeyFrames(menuShowKeyFrames,menuShowGraph);
         if(menuShowPoints)
             mpMapDrawer->DrawMapPoints();
 
+        
         if(menuShowGroundPlane)
             mpMapDrawer->drawPlanes(0); // 0:default.
-        
 
+
+        double ellipsoidProbThresh = SliderEllipsoidProbThresh;
+
+        // draw ellipsoids
+        if(menuShowEllipsoids)
+            mpMapDrawer->drawEllipsoids(ellipsoidProbThresh);
+
+        // draw the result of the single-frame ellipsoid extraction
+        if(menuShowEllipsoidsObservation)
+            mpMapDrawer->drawObservationEllipsoids(ellipsoidProbThresh);
+        
         // mpMapDrawer->drawEllipsoid();
 
+        // draw pointclouds with names
+        // RefreshPointCloudOptions();
+        // mpMapDrawer->drawPointCloudWithOptions(mmPointCloudOptionMap);
+
+        if(menuShowPointCloudLists)
+            mpMapDrawer->drawPointCloudLists();
+
+
         mpObjectDrawer->ProcessNewObjects();
-        mpObjectDrawer->DrawObjects(bFollow, Tec);
+
+        if(menuShowMapObjects)
+            mpObjectDrawer->DrawObjects(bFollow, Tec);
 
         // 如果是RGBD模式，则绘制深度图对应的点云
         if (mpTracker->mSensor == System::RGBD) {
@@ -266,6 +325,17 @@ void Viewer::Release()
 {
     unique_lock<mutex> lock(mMutexStop);
     mbStopped = false;
+}
+
+void Viewer::RefreshPointCloudOptions()
+{
+    // generate options from mmPointCloudOptionMenus, pointclouds with names will only be drawn when their options are activated.
+    std::map<std::string,bool> options;
+    for( auto pair : mmPointCloudOptionMenus)
+        options.insert(make_pair(pair.first, pair.second->Get()));
+    
+    mmPointCloudOptionMap.clear();
+    mmPointCloudOptionMap = options;
 }
 
 }

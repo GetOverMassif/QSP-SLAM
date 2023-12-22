@@ -82,10 +82,16 @@ bool EllipsoidExtractor::GetResult() {
     return mResult;
 }
 
+/**
+ * 获取bbox内的点云，使用统计滤波滤除率群点
+ * 转换到世界坐标系，使用支撑平面/曼哈顿平面进行滤波
+ * 计算点云中点，并基于中点使用欧几里德快速聚类筛选物体点
+*/
 pcl::PointCloud<PointType>::Ptr EllipsoidExtractor::ExtractPointCloud(cv::Mat &depth, Eigen::Vector4d &bbox, Eigen::VectorXd &pose, camera_intrinsic &camera) {
     clock_t time_1_start = clock();
 
     assert(mbSetPlane && "Please set the supporting plane first.");
+
 
     double depth_range = Config::ReadValue<double>("EllipsoidExtractor_DEPTH_RANGE", 6);
     g2o::SE3Quat campose_wc;
@@ -97,11 +103,24 @@ pcl::PointCloud<PointType>::Ptr EllipsoidExtractor::ExtractPointCloud(cv::Mat &d
     // PointCloud* pPoints_local_downsample = new PointCloud;
     // DownSamplePointCloudOnly(*pPoints_local, *pPoints_local_downsample, 0.02);
 
+    // VisualizePointCloud("Points_local", pPoints_local, Vector3d(0, 0.5, 0), 2);
+    // std::cout << "*****************************" << std::endl;
+    // std::cout << "Showing Points_local, press [ENTER] to continue ... " << std::endl;
+    // std::cout << "*****************************" << std::endl;
+    // getchar();
+
+    std::cout << "campose_wc = " << campose_wc.to_homogeneous_matrix().matrix() << std::endl;
+
     // 产生两组可视化点云 world, world_downsample
-    PointCloud *pPoints_world = transformPointCloud(pPoints_local, &campose_wc);
-    // PointCloud* pPoints_world_downsample = transformPointCloud(pPoints_local_downsample, &campose_wc);
-    VisualizePointCloud("Points_world", pPoints_world, Vector3d(0, 0.5, 0), 2);
+    // PointCloud *pPoints_world = transformPointCloud(pPoints_local, &campose_wc);
+    // PointCloud *pPoints_world_downsample = transformPointCloud(pPoints_local_downsample, &campose_wc);
+    // VisualizePointCloud("Points_world", pPoints_world, Vector3d(0, 0.5, 0), 2);
     // VisualizePointCloud("Points_world_downsample", pPoints_world_downsample, Vector3d(0,0.8,0), 2);
+
+    // std::cout << "*****************************" << std::endl;
+    // std::cout << "Showing Points_world, press [ENTER] to continue ... " << std::endl;
+    // std::cout << "*****************************" << std::endl;
+    // getchar();
 
     // 在此滤除离群点
     clock_t time_1_1_outliers_filter_start = clock();
@@ -132,6 +151,7 @@ pcl::PointCloud<PointType>::Ptr EllipsoidExtractor::ExtractPointCloud(cv::Mat &d
     clock_t time_1_1_outliers_filter_end = clock();
 
     // transform to the world coordinate.
+    // 经过滤波的世界坐标系点云
     PointCloud *pPoints_global = transformPointCloud(pCloudFiltered, &campose_wc);
     delete pPoints_local;
     pPoints_local = NULL;
@@ -139,7 +159,13 @@ pcl::PointCloud<PointType>::Ptr EllipsoidExtractor::ExtractPointCloud(cv::Mat &d
 
     // 新添加的可视化: 滤波后
     PointCloud *pCloudFilteredWorld = transformPointCloud(pCloudFiltered, &campose_wc);
-    VisualizePointCloud("CloudFiltered", pCloudFilteredWorld, Vector3d(0, 1.0, 0), 2);
+    // VisualizePointCloud("CloudFiltered", pCloudFilteredWorld, Vector3d(0, 1.0, 0), 2);
+
+    // std::cout << "*****************************" << std::endl;
+    // std::cout << "Showing CloudFiltered, press [ENTER] to continue ... " << std::endl;
+    // std::cout << "*****************************" << std::endl;
+    // getchar();
+
     delete pCloudFiltered;
     pCloudFiltered = NULL;
 
@@ -147,16 +173,24 @@ pcl::PointCloud<PointType>::Ptr EllipsoidExtractor::ExtractPointCloud(cv::Mat &d
     clock_t time_2_getPointsDownsampleTransToWorld = clock();
 
     PointCloud *pPoints_planeFiltered;
-    if (!mbOpenMHPlanesFilter)
+    if (!mbOpenMHPlanesFilter){    // 使用支撑平面进行滤波
+        std::cout << "ApplySupportingPlaneFilter" << std::endl;
         pPoints_planeFiltered = ApplySupportingPlaneFilter(pPoints_global);
+    }
     else {
+        std::cout << "ApplyMHPlanesFilter" << std::endl;    // 使用曼哈顿平面进行滤波
         std::vector<g2o::plane *> vMHPlanes = mvpMHPlanes;
         vMHPlanes.push_back(mpPlane);
         pPoints_planeFiltered = ApplyMHPlanesFilter(pPoints_global, vMHPlanes);
     }
     clock_t time_3_SupportingPlaneFilter = clock();
 
-    VisualizePointCloud("planeFiltered", pPoints_planeFiltered, Vector3d(1.0, 0, 0), 2);
+    // VisualizePointCloud("planeFiltered", pPoints_planeFiltered, Vector3d(1.0, 0, 0), 2);
+    // std::cout << "*****************************" << std::endl;
+    // std::cout << "Showing CloudCloud planeFiltered, press [ENTER] to continue ... " << std::endl;
+    // std::cout << "*****************************" << std::endl;
+    // getchar();
+
     clock_t time_4_VisualizePointCloud = clock();
 
     if (pPoints_planeFiltered->size() < 1) {
@@ -186,6 +220,7 @@ pcl::PointCloud<PointType>::Ptr EllipsoidExtractor::ExtractPointCloud(cv::Mat &d
         return NULL;
     }
 
+    // 计算中点
     Vector3d center;
     bool bCenter = GetCenter(depth, bbox, pose, camera, center);
     if (!bCenter) {
@@ -195,23 +230,28 @@ pcl::PointCloud<PointType>::Ptr EllipsoidExtractor::ExtractPointCloud(cv::Mat &d
         return NULL;
     }
     clock_t time_5_GetCenter = clock();
+    std::cout << "center = " << center << std::endl;
 
+    // 使用快速欧几里德聚类进行滤波
     mDebugCenter = center;
     PointCloud *pPointsEuFiltered = ApplyEuclideanFilter(pPoints_sampled, center);
     // delete pPoints_sampled; pPoints_sampled = NULL;
 
     if (miEuclideanFilterState > 0) {
+        std::cout << "Fail to filter by EuclideanFilter." << std::endl;
         miSystemState = 2; // fail to filter
         return NULL;
     }
     clock_t time_6_ApplyEuclideanFilter = clock();
+
+    std::cout << "pPointsEuFiltered.size() = " << pPointsEuFiltered->size() << std::endl;
 
     // we have gotten the object points in the world coordinate
     pcl::PointCloud<PointType>::Ptr clear_cloud_ptr = QuadricPointCloudToPclXYZ(*pPointsEuFiltered);
 
     mpPoints = pPointsEuFiltered;
     VisualizePointCloud("EuclideanFiltered", mpPoints, Vector3d(0.4, 0, 1.0), 2);
-    ;
+
     clock_t time_7_VisualizePointCloud = clock();
 
     // output: time efficiency
@@ -352,16 +392,21 @@ g2o::ellipsoid EllipsoidExtractor::EstimateLocalEllipsoid(cv::Mat &depth, Eigen:
     mResult = false;
 
     clock_t time_start = clock();
-    // 1. Get the object points after supporting plane filter and euclidean filter in the world coordinate
+    // 1. Get the object points after supporting plane filter 
+    //      and euclidean filter in the world coordinate
+    //  获得支撑平面过滤和快速欧几里德聚类后的（世界坐标系）物体点
     pcl::PointCloud<PointType>::Ptr pCloudPCL = ExtractPointCloud(depth, bbox, pose, camera);
     if (miSystemState > 0)
         return e;
     clock_t time_1_ExtractPointCloud = clock();
 
-    // process the principle components analysis to get the rotation matrix, scale, and center point of the point cloud
+    // process the principle components analysis to get the rotation matrix, 
+    // scale, and center point of the point cloud
+    // 使用主成分分析获得点云的旋转矩阵、尺度和中心点
     PCAResult data = ProcessPCA(pCloudPCL);
 
     // adjust the rotation matrix to be right-handed
+    // 将旋转矩阵调整到右手系
     AdjustChirality(data);
     // adjust the x,y,z order
     AlignZAxisToGravity(data);
@@ -373,12 +418,15 @@ g2o::ellipsoid EllipsoidExtractor::EstimateLocalEllipsoid(cv::Mat &depth, Eigen:
     // ORB_SLAM2::PointCloud* pObjectCloud = pObjectClearCloud;    // world coordinate
 
     // downsample to estimate symmetry.
+    // 降采样以估计对称性
     double grid_size_for_symmetry = Config::ReadValue<double>("EllipsoidExtraction.Symmetry.GridSize");
     ORB_SLAM2::PointCloud *pObjectCloud = new ORB_SLAM2::PointCloud;
     DownSamplePointCloudOnly(*pObjectClearCloud, *pObjectCloud, grid_size_for_symmetry);
     VisualizePointCloud("Points For Sym", pObjectCloud, Vector3d(0.5, 0.5, 0.0), 6);
 
-    // construct a normalized rotation matrix using the normal of the supporting plane and the normal of the symmetry plane.
+    // construct a normalized rotation matrix using the normal 
+    // of the supporting plane and the normal of the symmetry plane.
+    // 使用支撑平面的法向量和对称平面的法向量构建一个归一化的旋转矩阵
     Vector3d rot_vec_z;
     if (mbSetPlane)
         rot_vec_z = mpPlane->param.head(3).normalized();
@@ -396,7 +444,8 @@ g2o::ellipsoid EllipsoidExtractor::EstimateLocalEllipsoid(cv::Mat &depth, Eigen:
     g2o::SE3Quat *pSE3Two = new g2o::SE3Quat;
     Eigen::Quaterniond quat_wo(rotMat_wo);
     pSE3Two->setRotation(quat_wo);
-    pSE3Two->setTranslation(center); // it is the center of the old object points; it's better to use the center of the new complete points
+    pSE3Two->setTranslation(center); // it is the center of the old object points;  
+                                    // it's better to use the center of the new complete points
     g2o::SE3Quat SE3Tow(pSE3Two->inverse());
     ORB_SLAM2::PointCloud *pObjectCloudNormalized = transformPointCloud(pObjectCloud, &SE3Tow); // normalized coordinate
     // VisualizePointCloud("normalizedPoints", pObjectCloudNormalized, Vector3d(0,0.4,0), 2);
@@ -404,11 +453,12 @@ g2o::ellipsoid EllipsoidExtractor::EstimateLocalEllipsoid(cv::Mat &depth, Eigen:
     clock_t time_2_partPCA = clock();
 
     // begin symmetry plane estimation.
+    // 开始对称平面估计
     SymmetryOutputData dataSymOutput;
     dataSymOutput.result = false;
     bool runSymmetry = false;
     if (mbOpenSymmetry) {
-        // 1. Check symmetry type
+        // 1. Check symmetry type 检查对称类型
         bool hasSymmetry = (mmLabelSymmetry.find(label) != mmLabelSymmetry.end());
         int symmetryType = -1;
         if (hasSymmetry) {
@@ -417,10 +467,11 @@ g2o::ellipsoid EllipsoidExtractor::EstimateLocalEllipsoid(cv::Mat &depth, Eigen:
                 runSymmetry = true; // have valid symmetry type
         }
         if (runSymmetry) {
-            // 3. initialize the symmetry solver
+            // 3. initialize the symmetry solver 初始化对称求解器
             Symmetry ext;
 
             // Get a depth map whose values store the straight distances between the 3d points and camera center
+            // 获得一个深度图，它的值存储了3D点和相机中心的直线距离
             cv::Mat projDepth = ext.getProjDepthMat(depth, camera);
             g2o::SE3Quat campose_wc;
             campose_wc.fromVector(pose.tail(7));
@@ -468,6 +519,7 @@ g2o::ellipsoid EllipsoidExtractor::EstimateLocalEllipsoid(cv::Mat &depth, Eigen:
                 // so we need a new transformation to move back the object points to the normalized coordinate
 
                 // get the new center of the objects with mirrored points
+                // 
                 Vector3d centerCombined = GetPointcloudCenter(pObjectCloudNormalized);
 
                 // to world coordinate
@@ -652,9 +704,12 @@ ORB_SLAM2::PointCloud *EllipsoidExtractor::ApplySupportingPlaneFilter(ORB_SLAM2:
 //  and their average 3D positions will be taken as the output.
 bool EllipsoidExtractor::GetCenter(cv::Mat &depth, Eigen::Vector4d &bbox, Eigen::VectorXd &pose, camera_intrinsic &camera, Vector3d &center) {
     double depth_range = Config::ReadValue<double>("EllipsoidExtractor_DEPTH_RANGE");
+    cout << "[EllipsoidExtractor::GetCenter] depth_range = " << depth_range << std::endl;
     // get the center of the bounding box
     int x = int((bbox(0) + bbox(2)) / 2.0);
     int y = int((bbox(1) + bbox(3)) / 2.0);
+
+    // std::cout << "bbox = " << bbox.transpose().matrix() << std::endl;
 
     int point_num = 10; // sample 10 * 10 points
     int x_delta = std::abs(bbox(0) - bbox(2)) / 4.0 / point_num;
@@ -666,6 +721,7 @@ bool EllipsoidExtractor::GetCenter(cv::Mat &depth, Eigen::Vector4d &bbox, Eigen:
         for (int y_id = -point_num / 2; y_id < point_num / 2; y_id++) {
             int x_ = x + x_id * x_delta;
             int y_ = y + y_id * y_delta;
+            // cout << "x_ = " << x_ << ", y_ = " << y_ << std::endl; 
             ushort *ptd = depth.ptr<ushort>(y_);
             ushort d = ptd[x_];
 
@@ -674,7 +730,7 @@ bool EllipsoidExtractor::GetCenter(cv::Mat &depth, Eigen::Vector4d &bbox, Eigen:
             // if the depth value is invalid, ignore this point
             if (p.z <= 0.1 || p.z > depth_range)
                 continue;
-
+            // cout << "p.z = " << p.z << std::endl;
             p.x = (x_ - camera.cx) * p.z / camera.fx;
             p.y = (y_ - camera.cy) * p.z / camera.fy;
             cloud.points.push_back(p);
@@ -901,6 +957,7 @@ void EllipsoidExtractor::OpenSymmetry() {
 
 g2o::ellipsoid EllipsoidExtractor::GetEllipsoidFromNomalizedPointCloud(ORB_SLAM2::PointCloud *pCloud) {
     g2o::ellipsoid e_zero_normalized;
+    // 注意，这里是以规范化PCA的模式进行处理的
     PCAResult dataCenterPCA = ProcessPCANormalized(pCloud); // find the max value along x,y,z axis
     e_zero_normalized = ConstructEllipsoid(dataCenterPCA);
     return e_zero_normalized;

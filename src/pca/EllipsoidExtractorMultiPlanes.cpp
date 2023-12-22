@@ -128,7 +128,6 @@ MatrixXd GenerateBboxPlanes(g2o::SE3Quat &campose_wc, Eigen::Vector4d &bbox, Mat
 
 MatrixXd getVectorFromPlanesHomo(MatrixXd &planes) {
     int cols = planes.cols();
-
     MatrixXd planes_vector(10, 0);
 
     for (int i = 0; i < cols; i++) {
@@ -334,6 +333,8 @@ double EllipsoidExtractor::NormalVoter(pcl::PointCloud<PointType>::Ptr &pCloudPC
 
     // Create an empty kdtree representation, and pass it to the normal estimation object.
     // Its content will be filled inside the object, based on the given input dataset (as no other search surface is given).
+    // 创建一个空的KD树，将它传递给法向量估计对象
+    // 将基于输入的数据集在对象内部填充KD树的内容
     pcl::search::KdTree<PointType>::Ptr tree(new pcl::search::KdTree<PointType>());
     ne.setSearchMethod(tree);
 
@@ -348,21 +349,17 @@ double EllipsoidExtractor::NormalVoter(pcl::PointCloud<PointType>::Ptr &pCloudPC
     // std::cout << "[debug] KSearchNum: " << KSearchNum << std::endl;
     ne.setKSearch(30);
 
-    // Compute the features
+    // 计算得到法向量结果，全部投影到xy平面上（可以绘制）
+    // 对这些xy向量计算角度，在[-pi,+pi]之间进行投票获得直方图（绘制并显示）
+    // 最终选出投票最多的，计算对应的偏航角
     ne.compute(*cloud_normals);
-
-    // 开始计算一张二值图.
     int normal_num = cloud_normals->size();
     std::vector<cv::Point2d> vps;
     vps.resize(normal_num);
     for (int i = 0; i < normal_num; i++) {
         pcl::Normal pn = (*cloud_normals)[i];
         Vector3d pnormal(pn.normal_x, pn.normal_y, pn.normal_z);
-
-        // 在xy平面的投影
         cv::Point2d p_xy(pnormal[0], pnormal[1]);
-
-        // 全部存起来. 最后绘制
         vps[i] = p_xy;
     }
     // VisualizeNormals(vps);
@@ -375,11 +372,9 @@ double EllipsoidExtractor::NormalVoter(pcl::PointCloud<PointType>::Ptr &pCloudPC
     for (int i = 0; i < normal_num; i++) {
         cv::Point2d n_xy = vps[i];
         double yaw = atan2(n_xy.y, n_xy.x); // [-pi,+pi]
-
         int bin_id = round((yaw + CV_PI) / CV_PI * 180.0);
         bin_id = MAX(bin_id, 0);
         bin_id = MIN(bin_id, bin_size - 1);
-
         bins_num[bin_id]++;
     }
 
@@ -450,6 +445,7 @@ MatrixXd TransformPlanes(MatrixXd &planeMat, g2o::SE3Quat &T) {
 double CalculateProbability(g2o::ellipsoid &e_local, Vector4d &bbox, Matrix3d &calibMat) {
     // 开始写.
     g2o::SE3Quat Tcw;
+    // 获得椭球体投影到图像上的矩形包围框：先投影获得一个椭圆，然后计算椭圆外包框
     Vector4d rect = e_local.getBoundingBoxFromProjection(Tcw, calibMat);
 
     // 与bbox求IoU
@@ -673,7 +669,6 @@ void GenerateConstrainPlanesToEllipsoid(g2o::ellipsoid &e_local_normalized, Vect
     // mPlanesParam 当前6个平面. +2个前后, (如何在svd中固定已有的旋转??)
     // 或者能否用优化方式, 构建一个小优化, 固定 rot 调节scale,center;
     // 这样得到的用于两个目的: 1) 初始化 2) 数据关联.
-    // g2o::ellipsoid e_global_multiplanes = OptimizeEllipsoidUsingPlanes(e_global_normalized, mPlanesParam);
 
     // 1) 获得 ellipsoid 外接矩形的 Constrainplanes
     // std::vector<g2o::ConstrainPlane*> CPlanesCuboids = GenerateConstrainPlanesOfCuboids(e_local_normalized, campose_wc, calib, depth.rows, depth.cols);
@@ -684,6 +679,19 @@ void GenerateConstrainPlanesToEllipsoid(g2o::ellipsoid &e_local_normalized, Vect
     std::vector<g2o::ConstrainPlane *> CPlanesTotal;
     // CPlanesTotal.insert(CPlanesTotal.end(), CPlanesCuboids.begin(), CPlanesCuboids.end());
     CPlanesTotal.insert(CPlanesTotal.end(), CPlanesBbox.begin(), CPlanesBbox.end());
+
+    // mPlanesParam
+    MatrixXd mPlanesParam;
+    mPlanesParam.resize(CPlanesTotal.size(), 4);
+    for (int i = 0; i < CPlanesTotal.size(); i++) {
+        // CPlanesTotal[i]->toVector() 返回的是一个九位的向量，平面参数为后四个
+        mPlanesParam.row(i) = CPlanesTotal[i]->toVector().segment(5,4).transpose();
+    }
+    std::cout << "mPlanesParam = " << mPlanesParam.matrix() << std::endl;
+    std::cout << "Press Enter to continue....." << std::endl;
+    // g2o::ellipsoid e_global_multiplanes = OptimizeEllipsoidUsingPlanes(e_global_normalized, mPlanesParam);
+    // g2o::ellipsoid e_global_multiplanes = OptimizeEllipsoidUsingPlanes(e_local_normalized, mPlanesParam);
+
 
     // 确保切平面的法向量指向椭球体的中心
     e_local_normalized.addConstrainPlanes(CPlanesTotal);
@@ -696,11 +704,13 @@ void GenerateConstrainPlanesToEllipsoid(g2o::ellipsoid &e_local_normalized, Vect
 // 2. 将点云转换到重力坐标系( Z轴沿重力方向, 中心为物体中心点 )
 // 3. ...
 g2o::ellipsoid EllipsoidExtractor::EstimateLocalEllipsoidUsingMultiPlanes(cv::Mat &depth, Eigen::Vector4d &bbox, int label, double prob, Eigen::VectorXd &pose, camera_intrinsic &camera) {
+    std::cout << "In EllipsoidExtractor::EstimateLocalEllipsoidUsingMultiPlanes" << std::endl;
     g2o::ellipsoid e;
     miSystemState = 0;                  // reset the state
     mSymmetryOutputData.result = false; // reset
     mResult = false;
 
+    // 如果没有设置地平面，则退出
     if (!mbSetPlane) {
         std::cerr << " Please set ground plane first." << std::endl;
         return e;
@@ -709,15 +719,21 @@ g2o::ellipsoid EllipsoidExtractor::EstimateLocalEllipsoidUsingMultiPlanes(cv::Ma
     clock_t time_start = clock();
     // 1. Get the object points after supporting plane filter and euclidean filter in the world coordinate
     // 注意: 该过程由于进行了与世界平面的操作, 所以位于世界坐标系下.
+
+    // 通过降采样、统计滤波、平面筛选、中点欧几里德快速聚类等步骤，提取世界坐标系下的物体点云。
     pcl::PointCloud<PointType>::Ptr pCloudPCL = ExtractPointCloud(depth, bbox, pose, camera);
     clock_t time_1_ExtractPointCloud = clock();
-    if (miSystemState > 0)
+    if (miSystemState > 0) {
+        cout << "return because miSystemState = " << miSystemState << std::endl;
         return e;
+    }
 
     // 搭建世界系描述下的物体重力坐标系
     // gravity 系: 位于物体中心, Z轴与重力方向对齐.
     // 转化之后，点云的正方向即z轴, 即世界系重力方向.
     // get supporting plane
+
+    // 计算点云包围框，计算重力坐标系齐次变换，及该坐标系下的点云
     VectorXd sup_plane = mpPlane->param;
     Eigen::Vector4d centroid;
     pcl::compute3DCentroid(*pCloudPCL, centroid);
@@ -730,16 +746,26 @@ g2o::ellipsoid EllipsoidExtractor::EstimateLocalEllipsoidUsingMultiPlanes(cv::Ma
     pcl::transformPointCloud(*pCloudPCL, *pCloudPCLGravity, transform_gw);
 
     // 可视化: 重力系下的物体
-    // ORB_SLAM2::PointCloud* pObjectCloudGravity = pclXYZToQuadricPointCloudPtr(pCloudPCLGravity); // normalized coordinate
-    // // mpMap->AddPointCloudList("cloud_gravity", pObjectCloudGravity, 0);
-    // delete pObjectCloudGravity; pObjectCloudGravity = NULL;
+    // ORB_SLAM2::PointCloud *pObjectCloudGravity = pclXYZToQuadricPointCloudPtr(pCloudPCLGravity); // normalized coordinate
+    // mpMap->AddPointCloudList("cloud_gravity", pObjectCloudGravity, 0);
 
-    // 开始计算朝向: 使用法向量投票器
-    // 计算该点云的 normal voters
+    // std::cout << "*****************************" << std::endl;
+    // std::cout << "Showing pObjectCloudGravity, press [ENTER] to continue ... " << std::endl;
+    // std::cout << "*****************************" << std::endl;
+    // getchar();
+
+    // // todo: 测试，有待解除注释
+    // delete pObjectCloudGravity;
+    // pObjectCloudGravity = NULL;
+
+    // 对点云使用法向量投票器，计算偏航角度
+    std::cout << "Computing cloud_normalized" << std::endl;
     double yaw = NormalVoter(pCloudPCLGravity); // 该函数获得一个位于 XY 平面内的, 三维法向量. 可与 Z轴组完整旋转矩阵.
 
     // 通过yaw角度将 Gravity - > normalized
+    // 进一步计算规范化变换
     g2o::SE3Quat Tgn = GenerateTransformNormalToGravity(yaw);
+
 
     Eigen::Matrix4d transform_ng = Tgn.inverse().to_homogeneous_matrix();
     pcl::PointCloud<PointType>::Ptr pCloudPCLNormalized(new pcl::PointCloud<PointType>);
@@ -747,10 +773,17 @@ g2o::ellipsoid EllipsoidExtractor::EstimateLocalEllipsoidUsingMultiPlanes(cv::Ma
     ORB_SLAM2::PointCloud *pObjectCloudNormalized = pclXYZToQuadricPointCloudPtr(pCloudPCLNormalized); // normalized coordinate
 
     // 可视化: 物体重力坐标系下，转角对齐后的点云
-    // mpMap->AddPointCloudList("cloud_normalized", pObjectCloudNormalized, 0);
+    mpMap->AddPointCloudList("cloud_normalized", pObjectCloudNormalized, 0);
+
+    // std::cout << "*****************************" << std::endl;
+    // std::cout << "Showing pObjectCloudNormalized, press [ENTER] to continue ... " << std::endl;
+    // std::cout << "*****************************" << std::endl;
+    // getchar();
 
     // 基于PCA结果生成最小包围盒顶点. 位于相机坐标系内.
+    // 从规范化的点云中获取椭球体
     g2o::ellipsoid e_zero_normalized = GetEllipsoidFromNomalizedPointCloud(pObjectCloudNormalized);
+    // todo: 测试，有待解除注释
     delete pObjectCloudNormalized;
     pObjectCloudNormalized = NULL;
 
@@ -761,15 +794,31 @@ g2o::ellipsoid EllipsoidExtractor::EstimateLocalEllipsoidUsingMultiPlanes(cv::Ma
     g2o::SE3Quat Tcn = campose_wc.inverse() * Twn;
     g2o::ellipsoid e_local_normalized = e_zero_normalized.transform_from(Tcn);
 
+    // 可视化: 物体重力坐标系下，转角对齐后的点云
+    mpMap->addEllipsoid(&e_local_normalized);
+
+    // std::cout << "*****************************" << std::endl;
+    // std::cout << "Showing ellipsoid e_local_normalized, press [ENTER] to continue ... " << std::endl;
+    // std::cout << "*****************************" << std::endl;
+    // getchar();
+
     // -------------- 到此已获得相机坐标系下的椭球体!
 
     // 接下来添加 ConstrainPlanes.
     Matrix3d calib = CameraToCalibMatrix(camera);
+    // 生成约束平面(ellipsold, bbox, depth...)，可以在这一过程中增加基于约束平面的优化
+    // 存储在 e_local_normalized 中
     GenerateConstrainPlanesToEllipsoid(e_local_normalized, bbox, depth, campose_wc, calib);
     VisualizeConstrainPlanes(e_local_normalized, campose_wc, mpMap); // 中点定在全局坐标系
+    // std::cout << "*****************************" << std::endl;
+    // std::cout << "Showing Constrain Planes, press [ENTER] to continue ... " << std::endl;
+    // std::cout << "*****************************" << std::endl;
+    // getchar();
+
 
     // 评估本次提取的概率 : 投影回来的矩形与 bbox 的 IoU 作为规律.
     double prob_3d = CalculateProbability(e_local_normalized, bbox, calib);
+    std::cout << "prob_3d = " << prob_3d << std::endl;
 
     // calculate the probability of the single-frame ellipsoid estimation
     e_local_normalized.prob_3d = prob_3d;

@@ -274,6 +274,7 @@ void LocalMapping::CreateNewObjectsFromDetections()
     }
 }
 
+//
 void LocalMapping::ProcessDetectedObjects()
 {
     std::cout << "[ LocalMapping - ProcessDetectedObjects ]" << std::endl;
@@ -290,7 +291,6 @@ void LocalMapping::ProcessDetectedObjects()
 
     // std::cout << " => " << "mvpObjectDetections.size() = " << mvpObjectDetections.size() << std::endl;
     std::cout << " => " << "KF" << mpCurrentKeyFrame->mnId << ", mvpObjectDetections.size() = " << mvpObjectDetections.size() << std::endl;
-
 
     // 处理当前帧的所有detection
 
@@ -337,16 +337,29 @@ void LocalMapping::ProcessDetectedObjects()
         bool isShortInternal = numKFsPassedSinceInit < 15 and (mpCurrentKeyFrame->mnId >= 3);
         std::string condition_str = "numKFsPassedSinceInit < 15 and (mpCurrentKeyFrame->mnId >= 3)";
 
-        // 只在前50帧进行PCA初始位姿估计
+        // bool use_ellipsold_pose_for_shape_optimization = true;
+
+        // 只在前50帧进行PCA初始位姿估计， 后面使用得到的网格模型过滤地图点外点
         if (numKFsPassedSinceInit < 50) {
             std::cout << "ComputeCuboidPCA" << std::endl;
             pMO->ComputeCuboidPCA(numKFsPassedSinceInit < 15);
         }
+        // if (numKFsPassedSinceInit < 50) {
+        //     if (!use_ellipsold_pose_for_shape_optimization || mpCurrentKeyFrame->mpLocalObjects[det_i] == NULL) {
+        //         std::cout << "ComputeCuboidPCA" << std::endl;
+        //         pMO->ComputeCuboidPCA(numKFsPassedSinceInit < 15);
+        //     }
+        //     else{
+        //         // Method 2: 使用来自椭球体的位姿信息
+        //         pMO->SetPoseByEllipsold(mpCurrentKeyFrame->mpLocalObjects[det_i]);
+        //     }
+        // }
         else { // when we have relative good object shape
             pMO->RemoveOutliersModel();
         }
         
         // only begin to reconstruct the object if it is observed for enough amoubt of time (15 KFs)
+        // 只在观测间隔了足够数量
         if(isShortInternal) {
             std::cout << "  Conitinue because " << condition_str << std::endl;
             continue;
@@ -506,9 +519,18 @@ void LocalMapping::ProcessDetectedObjects()
 
             // std::cout << "pMO->reconstructed = " << pMO->reconstructed << std::endl;
 
-            std::cout << "Reconstruction successed" << std::endl;
+            // auto Sim3Tco = pyMapObject.attr("t_cam_obj").cast<Eigen::Matrix4f>();
 
-            auto Sim3Tco = pyMapObject.attr("t_cam_obj").cast<Eigen::Matrix4f>();
+            auto t_cam_obj = pyMapObject.attr("t_cam_obj");
+            // if (py::is_none(t_cam_obj)) {
+            if (t_cam_obj.is_none()) {
+                std::cout << "Output t_cam_obj == None, reconstruction failed." << std::endl;
+                continue;
+            }
+            auto Sim3Tco = t_cam_obj.cast<Eigen::Matrix4f>();
+
+            std::cout << "Reconstruction successed" << std::endl;
+            
             det->SetPoseMeasurementSim3(Sim3Tco);
             // Sim3, SE3, Sim3
             Eigen::Matrix4f Sim3Two = SE3Twc * Sim3Tco;

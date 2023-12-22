@@ -241,9 +241,13 @@ std::vector<MapPoint*> MapObject::GetMapPointsOnObject()
     return vector<MapPoint *>(map_points.begin(), map_points.end());
 }
 
+// 对物体地图点进行简单过滤，如果
 void MapObject::RemoveOutliersSimple()
 {
     // First pass, remove all the outliers marked by ORB-SLAM
+    // 首先去除所有被ORB-SLAM标注的外点
+
+    // 统计计算所有内点的平均值
     int n_pts = 0;
     Eigen::Vector3f x3D_mean = Eigen::Vector3f::Zero();
     for (auto pMP : GetMapPointsOnObject())
@@ -266,6 +270,7 @@ void MapObject::RemoveOutliersSimple()
     }
 
     // Second pass, remove obvious outliers
+    // 距离大于1m则直接过滤
     x3D_mean /= n_pts;
     for (auto pMP : GetMapPointsOnObject())
     {
@@ -277,6 +282,7 @@ void MapObject::RemoveOutliersSimple()
     }
 }
 
+// 使用网格模型的顶点来过滤外点
 void MapObject::RemoveOutliersModel()
 {
     // sanity check: too few number of vertices
@@ -320,6 +326,7 @@ void MapObject::RemoveOutliersModel()
         }
     }
 }
+
 
 void MapObject::ComputeCuboidPCA(bool updatePose)
 {
@@ -398,6 +405,7 @@ void MapObject::ComputeCuboidPCA(bool updatePose)
     Eigen::Vector3f cuboid_centre_w = R * cuboid_centre_o;
 
     // Remove outliers using computed PCA box
+    // 使用PCA包围盒过滤外点
     int num_outliers = 0;
     float s = 1.2;
     for (auto pMP : mvpMapPoints)
@@ -432,6 +440,28 @@ void MapObject::ComputeCuboidPCA(bool updatePose)
         T.topRightCorner(3, 1) = cuboid_centre_w;
         SetObjectPoseSim3(T);
     }
+}
+
+void MapObject::SetPoseByEllipsold(g2o::ellipsoid* e)
+{
+
+    // SE3Quat pose;  // rigid body transformation, object in world coordinate
+    // Vector3d scale; // a,b,c : half length of axis x,y,z
+
+    Eigen::Matrix4f T = Converter::toMatrix4f(e->pose);
+
+    cout << "T = \n" << T.matrix() << endl;
+
+    Vector3d& scale = e->scale;
+    float l = scale.norm();
+
+    cout << "T = \n" << T.matrix() << endl;
+
+    T.topLeftCorner(3, 3) = 0.40 * l * T.topLeftCorner(3, 3);
+    cout << "T = \n" << T.matrix() << endl;
+    // cout << pow(T.topLeftCorner(3, 3).determinant(), 1./3) << endl;
+    // T.topRightCorner(3, 1) = cuboid_centre_w;
+    SetObjectPoseSim3(T);
 }
 
 void MapObject::AddMapPoints(MapPoint *pMP)

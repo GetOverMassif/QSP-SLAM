@@ -29,6 +29,11 @@
 #include "System.h"
 #include <mutex>
 
+#include <pybind11/embed.h>
+#include <pybind11/eigen.h>
+
+namespace py = pybind11;
+
 namespace ORB_SLAM2
 {
 
@@ -141,6 +146,8 @@ protected:
     std::mutex mMutexAccept;
 
     int nKFInserted;
+
+    bool use_ellipsold_pose_for_shape_optimization;
 };
 
 } //namespace ORB_SLAM

@@ -64,7 +64,6 @@ namespace evo
         double aver_dis_yaw_arb;
         double aver_dis_yaw_arb_valid;
         double aver_IoU_aligned_arb;
-
         double mid_iou;
         double mid_iou_aligned;
         double mid_dis_trans;
@@ -72,9 +71,7 @@ namespace evo
         double mid_dis_yaw_arb;
         double mid_dis_yaw_arb_valid;
         double mid_iou_aligned_arb;
-
         double rmse;
-
         double precision;
         double recall;
         double F1;

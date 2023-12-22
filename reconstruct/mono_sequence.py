@@ -98,8 +98,8 @@ class Frame:
         img_h, img_w, _ = self.img_rgb.shape
         masks_2d = det_2d["pred_masks"]
         bboxes_2d = det_2d["pred_boxes"]
-        labels_2d = det_2d[""]
-        probs_2d = det_2d[""]
+        labels_2d = det_2d["pred_labels"]
+        probs_2d = det_2d["pred_probs"]
 
         # If no 2D detections, return right away
         if masks_2d.shape[0] == 0:

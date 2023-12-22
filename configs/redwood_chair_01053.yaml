@@ -54,6 +54,11 @@ Camera.scale: 1250
 DetectorConfigPath: configs/config_redwood_chair_01053.json
 Objects.maskErrosion: 5
 
+
+# []
+
+System.UseEllipsoldPoseForDSP.Open: 0
+
 # [From EllipsoldSLAM]
 
 # -----------------------------
@@ -65,7 +70,9 @@ MonocularInfer.Init.Dis: 5
 #   Semantic  Prior
 # -----------------------------
 #
-System.MonocularInfer.Open: 1
+# System.MonocularInfer.Open: 1
+
+System.MonocularInfer.Open: 0
 Dataset.Path.PriTable: "./config/pritable.txt"
 
 SemanticPrior.PriorD: 1
@@ -116,7 +123,7 @@ Optimizer.Optimize.Num: 5
 # ------------------------------
 #  Symmetry Estimation
 # ------------------------------
-# Whether open symmetry estimation
+# Whether open symmetry estimation 是否开启对称性估计
 EllipsoidExtraction.Symmetry.Open: 0
 
 # Downsample grid size. Extremely influence the time and efficiency.

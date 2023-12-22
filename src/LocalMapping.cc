@@ -40,6 +40,8 @@ LocalMapping::LocalMapping(System *pSys, Map *pMap, ObjectDrawer* pObjectDrawer,
     pyMeshExtractor = optim.attr("MeshExtractor")(pSys->pyDecoder, pSys->pyCfg.attr("optimizer").attr("code_len"), pSys->pyCfg.attr("voxels_dim"));
     mpLastKeyFrame = static_cast<KeyFrame*>(NULL);
     nLastReconKFID = 0;
+
+    use_ellipsold_pose_for_shape_optimization = Config::Get<int>("System.UseEllipsoldPoseForDSP.Open") > 0;
 }
 
 void LocalMapping::SetLoopCloser(LoopClosing* pLoopCloser)
@@ -128,7 +130,6 @@ bool LocalMapping::RunOneTime()
                     // std::cout << "!!!!!!!!!!!!!!!!!!!!!CreateNewObjectsFromDetections" << std::endl;
                     CreateNewObjectsFromDetections();
                 }
-                    
                 // reconstruction
                 // std::cout << "!!!!!!!!!!!!!!!!!!!!!ProcessDetectedObjects" << std::endl;
                 ProcessDetectedObjects();

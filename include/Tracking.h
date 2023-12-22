@@ -49,6 +49,8 @@
 #include <src/plane/PlaneExtractorManhattan.h>
 #include <src/config/Config.h>
 
+#include <src/Relationship/Relationship.h>
+
 #include <mutex>
 #include <ctime>
 
@@ -68,6 +70,12 @@ class PlaneExtractorManhattan;
 class Initializer;
 class Optimizer;
 class Symmetry;
+
+enum OBJECT_MODEL
+{
+    POINT_MODEL = 0,
+    QUADRIC_MODEL = 1
+};
 
 class Tracking
 {  
@@ -106,11 +114,14 @@ public:
     void AssociateObjectsByProjection(KeyFrame *pKF);  // assocating detection to object by projecting map points
     void SetImageNames(vector<string>& vstrImageFilenamesRGB);
 
+    void TaskRelationship(ORB_SLAM2::Frame* pFrame);
+    void RefineObjectsWithRelations(ORB_SLAM2::Frame *pFrame);
+
     void ManageMemory();
     /** --------------------------------
      * Object Observation 物体观测相关
      * ---------------------------------*/
-    void UpdateObjectObservation(ORB_SLAM2::Frame *pFrame, bool withAssociation);
+    void UpdateObjectObservation(ORB_SLAM2::Frame *pFrame, KeyFrame* pKF, bool withAssociation);
     /** --------------------------------
      * Ellipsoid 椭球体相关
      * ---------------------------------*/
@@ -126,8 +137,12 @@ public:
 
     void VisualizeManhattanPlanes();
 
+
+    // void TaskRelationship(EllipsoidSLAM::Frame* pFrame);
+    // void RefineObjectsWithRelations(EllipsoidSLAM::Frame *pFrame);
+
     // void Update3DObservationDataAssociation(EllipsoidSLAM::Frame* pFrame, std::vector<int>& associations, std::vector<bool>& KeyFrameChecks);
-    void UpdateDepthEllipsoidEstimation(ORB_SLAM2::Frame* pFrame, bool withAssociation);
+    void UpdateDepthEllipsoidEstimation(ORB_SLAM2::Frame* pFrame, KeyFrame* pKF, bool withAssociation);
     // void UpdateDepthEllipsoidUsingPointModel(EllipsoidSLAM::Frame* pFrame);
 
 public:
@@ -301,6 +316,9 @@ protected:
     PlaneExtractorManhattan* pPlaneExtractorManhattan;
     int miMHPlanesState; // 0: Closed 1: estimating 2: estimated
 
+    RelationExtractor* mpRelationExtractor;
+
+    // std::vector<g2o::SE3Quat> mvSavedFramePosesTwc;
 
     bool mbDepthEllipsoidOpened;
     bool mbOpenOptimization;

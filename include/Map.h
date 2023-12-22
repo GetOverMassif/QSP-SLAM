@@ -127,6 +127,9 @@ public:
     std::vector<MapObject*> GetAllMapObjects();
 
     // Lj
+    void addEllipsoid(ellipsoid* pObj);
+    std::vector<ellipsoid*> GetAllEllipsoids();
+
     void addPlane(plane* pPlane, int visual_group = 0);
     std::vector<plane*> GetAllPlanes();
     void clearPlanes();

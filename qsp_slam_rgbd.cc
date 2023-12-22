@@ -47,11 +47,6 @@ int main(int argc, char **argv)
         return 1;
     }
 
-    // cv::FileStorage fSettings(string(argv[2]), cv::FileStorage::READ);
-
-    // float fps = fSettings["Camera.fps"];
-
-    // Retrieve paths to images
     vector<string> vstrImageFilenamesRGB;
     vector<string> vstrImageFilenamesD;
     vector<double> vTimestamps;
@@ -85,7 +80,6 @@ int main(int argc, char **argv)
 
     // Create SLAM system. It initializes all system threads and gets ready to process frames.
     ORB_SLAM2::System SLAM(argv[1], argv[2], argv[3], msensor);
-    // ORB_SLAM2::System SLAM(argv[1], argv[2], argv[3], ORB_SLAM2::System::MONOCULAR);
 
     SLAM.SetImageNames(vstrImageFilenamesRGB);
 
@@ -109,8 +103,8 @@ int main(int argc, char **argv)
         std::chrono::steady_clock::time_point t1_read = std::chrono::steady_clock::now();
 
         //! 读取图像
-        imRGB = cv::imread(string(argv[3])+"/"+vstrImageFilenamesRGB[ni],CV_LOAD_IMAGE_UNCHANGED);
-        imD = cv::imread(string(argv[3])+"/"+vstrImageFilenamesD[ni],CV_LOAD_IMAGE_UNCHANGED);
+        imRGB = cv::imread(string(argv[3])+"/"+vstrImageFilenamesRGB[ni], CV_LOAD_IMAGE_UNCHANGED);
+        imD = cv::imread(string(argv[3])+"/"+vstrImageFilenamesD[ni], CV_LOAD_IMAGE_UNCHANGED);
 
         std::chrono::steady_clock::time_point t2_read = std::chrono::steady_clock::now();
         double t_read = std::chrono::duration_cast<std::chrono::duration<double> >(t2_read - t1_read).count();

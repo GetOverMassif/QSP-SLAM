@@ -247,9 +247,22 @@ cv::Mat Tracking::GrabImageStereo(const cv::Mat &imRectLeft, const cv::Mat &imRe
 
 cv::Mat Tracking::GrabImageRGBD(const cv::Mat &imRGB,const cv::Mat &imD, const double &timestamp)
 {
+/**
+    #define CV_8U   0
+    #define CV_8S   1
+    #define CV_16U  2
+    #define CV_16S  3
+    #define CV_32S  4
+    #define CV_32F  5
+    #define CV_64F  6
+    #define CV_16F  7
+*/
+
     mImGray = imRGB;
     mImDepth = imD;
     cv::Mat imDepth = imD;
+
+    std::cout << "imDepth.type() = " << imDepth.type() << std::endl;
 
     if(mImGray.channels()==3)
     {
@@ -268,9 +281,9 @@ cv::Mat Tracking::GrabImageRGBD(const cv::Mat &imRGB,const cv::Mat &imD, const d
 
     if((fabs(mDepthMapFactor-1.0f)>1e-5) || imDepth.type()!=CV_32F)
         imDepth.convertTo(imDepth, CV_32F, mDepthMapFactor);
-
+    
     // clock_t time_0_start = clock();
-    mCurrentFrame = Frame(mImGray,imDepth,timestamp,mpORBextractorLeft,mpORBVocabulary,mK,mDistCoef,mbf,mThDepth);
+    mCurrentFrame = Frame(mImGray,imDepth,timestamp,mpORBextractorLeft,mpORBVocabulary,mK,mDistCoef,mbf,mThDepth,imD);
     // clock_t time_frame_creation = clock();
     // cout << " -- time_frame_creation: " <<(double)(time_frame_creation - time_0_start) / CLOCKS_PER_SEC << "s" << endl;
     Track();
@@ -1160,25 +1173,39 @@ void Tracking::CreateNewKeyFrame()
     else if (mSensor == System::RGBD)
     {
         std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
-        
         mvpFrames.push_back(&mCurrentFrame);
+
+        // 首先进行物体检测，得到 label, bbox, mask, prob 等数据
+        std::cout << " [ GetObjectDetectionsRGBD ]" << std::endl;
         GetObjectDetectionsRGBD(pKF);
 
+        // 将这些结果也设置到对应的普通帧Frame中（这里是为了适用椭球体SLAM需求，有待未来优化）
         mCurrentFrame.SetObservations(pKF);
 
         // 获取完检测之后更新物体观测
         // 是否直接使用物体检测中的InstanceID
         // bool withAssociation = true;
         bool withAssociation = false;
-        // todo：在这里进行物体观测的更新
-        UpdateObjectObservation(&mCurrentFrame, withAssociation);
+
+        /** todo：在这里进行物体观测的更新
+         *  包括地面提取、深度图椭球估计、关联曼哈顿平面估计、
+        */
+        std::cout << " [ UpdateObjectObservation ] " << std::endl;
+        UpdateObjectObservation(&mCurrentFrame, pKF, withAssociation);
+
+
+        // if(mbDynamicOpenOptimization){
+        //     NonparamOptimization(); // Optimize data associations,objects,landmarks.        
+        // }
 
         ManageMemory();
 
+        // 如果地图存在物体，则通过地图点将新的观测与物体建立关联，并且补充地图点
         //DetectObjects(pKF);
         if (!mpMap->GetAllMapObjects().empty())
         {
             // AssociateObjects(pKF);
+            // 将物体检测关联到地图物体，并补充物体地图点
             AssociateObjectsByProjection(pKF);
         }
         

@@ -30,13 +30,14 @@
 #include "KeyFrameDatabase.h"
 #include "ObjectDetection.h"
 #include "MapObject.h"
+#include "core/Ellipsoid.h"
 
 #include <mutex>
 
-#include <pybind11/embed.h>
-#include <pybind11/eigen.h>
+// #include <pybind11/embed.h>
+// #include <pybind11/eigen.h>
 
-namespace py = pybind11;
+// namespace py = pybind11;
 
 class MapObject;
 
@@ -196,6 +197,11 @@ public:
     const int mnMaxY;
     const cv::Mat mK;
 
+    // For depth ellipsoid extraction.
+    // todo: mpLocalObjects may need a mutex?
+    bool mbHaveLocalObject;
+    std::vector<g2o::ellipsoid*> mpLocalObjects; // local 3d ellipsoid
+
     // Variables used in object-based graph optimization
     int nObj;
     std::vector<MapObject*> mvpMapObjects; // Associated objects
@@ -253,6 +259,7 @@ protected:
     std::mutex mMutexConnections;
     std::mutex mMutexFeatures;
     std::mutex mMutexObjects;
+
 };
 
 } //namespace ORB_SLAM
