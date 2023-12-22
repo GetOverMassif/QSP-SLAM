@@ -33,11 +33,25 @@ find_package(OpenCV 3.4.1 REQUIRED)
 find_package(Eigen3 3.4.0 REQUIRED)
 find_package(Pangolin REQUIRED)
 
-set(Pangolin_DIR "/home/lj/Documents/DSC-SLAM/Thirdparty/Pangolin/build")
+# set(Pangolin_DIR "/home/lj/Documents/DSC-SLAM/Thirdparty/Pangolin/build")
 
-set(CONDA_ENV "/home/lj/anaconda3/envs/dsp-slam2")
+set(CONDA_ENV "/home/lj/anaconda3/envs/dsp-slam")
 
-set(DSC_SLAM_DIR "/home/lj/Documents/DSC-SLAM")
+# Set Python libraries
+set(PYTHON_LIBRARIES ${CONDA_ENV}/lib/libpython3.7m.so)
+
+# Set Python include directories
+set(PYTHON_INCLUDE_DIRS ${CONDA_ENV}/include/python3.7m)
+
+# Set Python executable
+set(PYTHON_EXECUTABLE ${CONDA_ENV}/bin/python3.7)
+
+# Pass the options to CMake
+add_compile_options(
+  -DPYTHON_LIBRARIES=${PYTHON_LIBRARIES}
+  -DPYTHON_INCLUDE_DIRS=${PYTHON_INCLUDE_DIRS}
+  -DPYTHON_EXECUTABLE=${PYTHON_EXECUTABLE}
+)
 
 if(DEFINED ENV{PCL_DIR})
    message("Environment variable PCL_DIR: " $ENV{PCL_DIR})
@@ -52,13 +66,12 @@ ADD_DEFINITIONS( ${PCL_DEFINITIONS} )
 INCLUDE_DIRECTORIES( ${PCL_INCLUDE_DIRS}  )
 LINK_LIBRARIES( ${PCL_LIBRARY_DIRS} )
 
-
 include_directories(
     ${PROJECT_SOURCE_DIR}
     ${PROJECT_SOURCE_DIR}/include
     ${PROJECT_SOURCE_DIR}/include/core
-    ${DSC_SLAM_DIR}/Thirdparty/g2o
-    ${DSC_SLAM_DIR}/Thirdparty/DBoW2
+    ${PROJECT_SOURCE_DIR}/Thirdparty/g2o
+    ${PROJECT_SOURCE_DIR}/Thirdparty/DBoW2
     ${EIGEN3_INCLUDE_DIR}
     ${Pangolin_INCLUDE_DIRS}
 )
@@ -139,7 +152,7 @@ target_link_libraries(${PROJECT_NAME}
         ${OpenCV_LIBS}
         ${EIGEN3_LIBS}
         ${Pangolin_LIBRARIES}
-        ${DSC_SLAM_DIR}/Thirdparty/DBoW2/lib/libDBoW2.so
+        ${PROJECT_SOURCE_DIR}/Thirdparty/DBoW2/lib/libDBoW2.so
         ${PROJECT_SOURCE_DIR}/Thirdparty/g2o/lib/libg2o.so
         # ${PYTHON_LIBRARIES}
 
