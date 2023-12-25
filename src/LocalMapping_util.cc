@@ -29,12 +29,23 @@ namespace ORB_SLAM2
 void LocalMapping::MapObjectCulling()
 {
     // Check Recent Added MapObjects
+    /**
+     * 检查最新添加的地图物体
+    */
+
     list<MapObject*>::iterator lit = mlpRecentAddedMapObjects.begin();
     const unsigned long int nCurrentKFid = mpCurrentKeyFrame->mnId;
 
     const int cnThObs = 2;
 
     // Treat static and dynamic objects differently
+    /**
+     * 对静态和动态物体采用不同的处理：
+     * （1) 动态物体：当超过两帧未观测到，则设置物体 Bad，从最近添加物体列表中剔除
+     * （2) 物体isBad，剔除
+     * （3）超过2帧未观测到,且物体观测数量大于等于cnThObs，剔除
+     * （4) 超过3帧未观测到
+    */
     while(lit != mlpRecentAddedMapObjects.end())
     {
         MapObject* pMO = *lit;
@@ -114,6 +125,10 @@ void LocalMapping::GetNewObservations()
             Eigen::Vector2f dist2D; dist2D << dist3D[0], dist3D[2];
             Eigen::Vector<double , 6> e = (Tco.inverse() * Zco).log();
 
+            /**
+             * 如果是动态物体，计算物体运动速度
+             * 更新物体位姿、速度
+            */
             if (pMO->isDynamic()) // if associated with a dynamic object
             {
                 auto motion = pMO->SE3Tow * Tcw.inverse() * SE3Tco;
@@ -124,6 +139,13 @@ void LocalMapping::GetNewObservations()
             }
             else // associated with a static object
             {
+                /**
+                 * 如果是静态物体，计算距离差值和位姿差值的范数是否在阈值范围内
+                 * （1）是： 保持静止属性
+                 * （2）否：如果变化很大，可能是动态物体/错误关联
+                 *       - 如果观测数量小于等于2,设置为动态
+                 *       - 否则设置该帧观测为新，去除该关键帧与该物体之间的关联
+                */
                 if (dist2D.norm() < 1.0 && e.norm() < 1.5) // if the change of translation is very small, then it really is a static object
                 {
                     det->SetPoseMeasurementSE3(SE3Tco);
@@ -158,6 +180,11 @@ void LocalMapping::CreateNewMapObjects()
     PyThreadStateLock PyThreadLock;
 
     // cout << "LocalMapping: Started new objects creation" << endl;
+
+    /**
+     * 获取关键帧位姿、物体观测，遍历物体观测
+     * （1）
+    */
 
     auto SE3Twc = Converter::toMatrix4f(mpCurrentKeyFrame->GetPoseInverse());
     auto mvpObjectDetections = mpCurrentKeyFrame->GetObjectDetections();
@@ -282,6 +309,8 @@ void LocalMapping::ProcessDetectedObjects()
     // std::cout << "Ready to reconstruct_object" << std::endl;
     // std::cout << "Press [ENTER] to continue ... " << std::endl;
     // key = getchar();
+
+    /** 获取当前关键帧的位姿信息、物体检测和地图物体 */
     auto SE3Twc = Converter::toMatrix4f(mpCurrentKeyFrame->GetPoseInverse());
     auto SE3Tcw = Converter::toMatrix4f(mpCurrentKeyFrame->GetPose());
     cv::Mat Rcw = mpCurrentKeyFrame->GetRotation();
@@ -292,20 +321,26 @@ void LocalMapping::ProcessDetectedObjects()
     // std::cout << " => " << "mvpObjectDetections.size() = " << mvpObjectDetections.size() << std::endl;
     std::cout << " => " << "KF" << mpCurrentKeyFrame->mnId << ", mvpObjectDetections.size() = " << mvpObjectDetections.size() << std::endl;
 
-    // 处理当前帧的所有detection
-
+    // 处理当前关键帧的所有detection
     for (int det_i = 0; det_i < mvpObjectDetections.size(); det_i++)
     {
-        // std::cout << "det_i " << det_i << std::endl;
+        std::cout << "det_i " << det_i << ": " << std::endl;
         // std::cout << "Press [ENTER] to continue ... " << std::endl;
         // key = getchar();
 
         auto det = mvpObjectDetections[det_i];
 
         // If the detection is associated with an existing map object, we consider 2 different situations:
-        // 1. the object has been reconstructed: update observations 
-        // 2. the object has not been reconstructed:
-        // check if it's ready for reconstruction, reconstruct if it's got enough points
+        // 1. 物体已经被重建： 更新观测 
+        // 2. 物体尚未被重建： 检查是否准备好重建，如果有足够多点则进行重建
+        
+        /**
+         * 如果:
+         *   (1) 该检测尚未与地图物体关联 
+         *   (2) 该检测包含的特征点数量较少
+         *   (3) 该检测关联的物体为NULL
+         * 则 continue
+        */ 
 
         if (det->isNew) {
             std::cout << "  Conitinue because det->isNew" << std::endl;
@@ -317,41 +352,55 @@ void LocalMapping::ProcessDetectedObjects()
             continue;
         }
 
-        // 只处理有关联物体的观测
         MapObject *pMO = mvpAssociatedObjects[det_i];
         if (!pMO) {
             std::cout << "  Conitinue because !pMO" << std::endl;
             continue;
         }
 
-        // We only consider the object in the middle
+        /** 这里人为规定了只考虑编号为0（中间的）的物体 */
         if (pMO->mnId != 0) {
             std::cout << "  Conitinue because pMO->mnId != 0" << std::endl;
             continue;
         }
-
-        std::cout << "mpCurrentKeyFrame->mnId = " << mpCurrentKeyFrame->mnId << std::endl;
-        std::cout << "pMO->mpRefKF->mnId = " << pMO->mpRefKF->mnId << std::endl;
 
         std::cout << "use_ellipsold_pose_for_shape_optimization = " << \
             use_ellipsold_pose_for_shape_optimization << std::endl;
 
         int numKFsPassedSinceInit = int(mpCurrentKeyFrame->mnId - pMO->mpRefKF->mnId);
 
+        std::cout << "pMO's mpRefKF / curKF / passedKF = " \
+                  << pMO->mpRefKF->mnId << " / " \
+                  << mpCurrentKeyFrame->mnId << " / " << numKFsPassedSinceInit << std::endl;
+
         // bool isShortInternal = numKFsPassedSinceInit < 15;
         // std::string condition_str = "numKFsPassedSinceInit < 15";
+
         bool isShortInternal = numKFsPassedSinceInit < 15 and (mpCurrentKeyFrame->mnId >= 3);
         std::string condition_str = "numKFsPassedSinceInit < 15 and (mpCurrentKeyFrame->mnId >= 3)";
 
+
+        // bool use_ellipsold_pose_for_shape_optimization = true;
+        
         // bool use_ellipsold_pose_for_shape_optimization = true;
 
-        // 只在前50帧进行PCA初始位姿估计， 后面使用得到的网格模型过滤地图点外点
-        // if (numKFsPassedSinceInit < 50) {
-        //     std::cout << "ComputeCuboidPCA" << std::endl;
-        //     pMO->ComputeCuboidPCA(numKFsPassedSinceInit < 15);
-        // }
-        if (numKFsPassedSinceInit < 50) {
-            if (!use_ellipsold_pose_for_shape_optimization || mpCurrentKeyFrame->mpLocalObjects[det_i] == NULL) {
+
+        /**
+         * 在物体被初始化的时间间隔的过程中：
+         * （1) 少于 50 帧（尚未获得较好形状）：持续进行初始位姿设置
+         * （2) 大于 50 帧（有较好形状）：仅进行外点剔除
+         * 
+         *  
+         * 需要增加逻辑：
+         * （1) 第一次设置位姿时，直接使用椭球体位姿
+         *       物体在隐式形状优化过程中选择了最佳朝向。
+         * （2）在非首次的处理过程中，如何使用椭球体位姿？
+         *       
+         */
+
+        if (numKFsPassedSinceInit < 50 && !pMO->reconstructed) {
+            if (!use_ellipsold_pose_for_shape_optimization || \
+                mpCurrentKeyFrame->mpLocalObjects[det_i] == NULL) {
                 std::cout << "ComputeCuboidPCA" << std::endl;
                 pMO->ComputeCuboidPCA(numKFsPassedSinceInit < 15);
             }
@@ -362,16 +411,20 @@ void LocalMapping::ProcessDetectedObjects()
             }
         }
         else { // when we have relative good object shape
+            std::cout << "RemoveOutliersModel" << std::endl;
             pMO->RemoveOutliersModel();
         }
         
-        // only begin to reconstruct the object if it is observed for enough amoubt of time (15 KFs)
-        // 只在观测间隔了足够数量
-        if(isShortInternal) {
-            std::cout << "  Conitinue because " << condition_str << std::endl;
-            continue;
-        }
+        // // only begin to reconstruct the object if it is observed for enough amoubt of time (15 KFs)
+        // // 只在观测间隔了足够数量
+        // if(isShortInternal) {
+        //     std::cout << "  Conitinue because " << condition_str << std::endl;
+        //     continue;
+        // }
 
+        /**
+         * 为了减少优化次数，只在 passedKF 为5的倍数时处理
+        */
         if ((numKFsPassedSinceInit - 15) % 5 != 0) {
             std::cout << "  Conitinue because (numKFsPassedSinceInit - 15) % 5 != 0" << std::endl;
             continue;
@@ -383,10 +436,7 @@ void LocalMapping::ProcessDetectedObjects()
 
         std::vector<MapPoint*> points_on_object = pMO->GetMapPointsOnObject();
         int n_points = points_on_object.size();
-
-
         int n_valid_points = 0;
-        
 
         for (auto pMP : points_on_object)
         {
@@ -415,11 +465,10 @@ void LocalMapping::ProcessDetectedObjects()
                 continue;
             n_rays++;
         }
-        // cout << "Object " << pMO->mnId << ": " << n_points << " points observed, " << "with " << n_valid_points << " valid points, and " << n_rays << " rays" << endl;
-
+        cout << "Object " << pMO->mnId << ": " << n_points << " points observed, " << "with " << n_valid_points << " valid points, and " << n_rays << " rays" << endl;
 
         // Surface points
-        std::cout << " =>" << "n_valid_points: " << n_valid_points << ", n_rays: " << n_rays << std::endl;
+        // std::cout << " =>" << "n_valid_points: " << n_valid_points << ", n_rays: " << n_rays << std::endl;
         if (n_valid_points >= 50 && n_rays > 20)
         {   
             //！获取surface_points_cam
@@ -448,7 +497,6 @@ void LocalMapping::ProcessDetectedObjects()
             //！ 获取ray_pixels和depth_obs
             Eigen::MatrixXf ray_pixels = Eigen::MatrixXf::Zero(n_rays, 2);
             Eigen::VectorXf depth_obs = Eigen::VectorXf::Zero(n_rays);
-
             int k_i = 0;
             for (auto point_idx : det->GetFeaturePoints())
             {
@@ -477,35 +525,33 @@ void LocalMapping::ProcessDetectedObjects()
             // 转换到相机坐标系的射线向量
             Eigen::MatrixXf fg_rays(n_rays, 3);
             Eigen::Matrix3f invK = Converter::toMatrix3f(mpTracker->GetCameraIntrinsics()).inverse();
-            
+
             for (int i = 0; i  < n_rays; i++)
             {
                 auto x = u_hom.row(i).transpose();
                 fg_rays.row(i) = (invK * x).transpose();
             }
-
             Eigen::MatrixXf rays(fg_rays.rows() + det->background_rays.rows(), 3);
             rays << fg_rays, det->background_rays;
-            
-            std::cout << "Ready to reconstruct_object" << std::endl;
-            // std::cout << "Press [ENTER] to continue ... " << std::endl;
-            // key = getchar();
+
+            /**
+             * 表面点与射线数据准备完毕，下面进行物体重建
+             * 
+            */
+            std::cout << "!!! Ready to reconstruct_object !!!" << std::endl;
 
             PyThreadStateLock PyThreadLock;
 
-            std::cout << "Before reconstruct_object" << std::endl;
-
             std::cout << "mpCurrentKeyFrame->pose = \n" << SE3Tcw.matrix() << std::endl;
             std::cout << "pMO->Sim3Two = \n" << pMO->Sim3Two.matrix() << std::endl;
-
-            std::cout << "Reconstruct_object: " << std::endl;
 
             auto Sim3Two_pMO = pMO->Sim3Two;
 
             auto pyMapObject = pyOptimizer.attr("reconstruct_object")
                     (SE3Tcw * Sim3Two_pMO, surface_points_cam, rays, depth_obs, pMO->vShapeCode);
 
-            std::cout << "Loss: " << pyMapObject.attr("loss").cast<float>() << std::endl;
+            std::cout << "0 rad, is_good: " << pyMapObject.attr("is_good").cast<bool>()\
+                      << ", loss: " << pyMapObject.attr("loss").cast<float>() << std::endl;
 
             auto& pyMapObjectLeastLoss = pyMapObject;
 
@@ -535,19 +581,23 @@ void LocalMapping::ProcessDetectedObjects()
                     float loss_least = pyMapObjectLeastLoss.attr("loss").cast<float>();
                     float loss_flipped = pyMapObjectFlipped.attr("loss").cast<float>();
 
-                    std::cout << "recon_state = " << recon_state << std::endl;
-                    std::cout << "recon_state_flipped = " << recon_state_flipped << std::endl;
-                    std::cout << "loss_least = " << loss_least << std::endl;
-                    std::cout << "loss_flipped = " << loss_flipped << std::endl;
+                    std::cout << double(i_rot) * flip_sample_angle
+                            <<  " rad, is_good: " << pyMapObjectFlipped.attr("is_good").cast<bool>()\
+                            << ", loss: " << pyMapObjectFlipped.attr("loss").cast<float>() << std::endl;
 
                     // 如果先前的重建失败 / 当前重建成功且loss更小
                     if (!recon_state || \
                         (loss_least > loss_flipped && recon_state_flipped)) {
-                        std::cout << "Rotate y axis" << double(i_rot) * flip_sample_angle << " rad" << std::endl;
+                        std::cout << "! Rotate y axis by " << double(i_rot) * flip_sample_angle << " rad" << std::endl;
                         pyMapObjectLeastLoss = pyMapObjectFlipped;
                     }
                 }
                 // todo: to Judge whether good orientation has been found
+                std::cout << "Losses: ";
+                for (auto &loss: losses) {
+                    std::cout << loss << ",";
+                }
+                std::cout << std::endl;
             }
 
             auto t_cam_obj = pyMapObjectLeastLoss.attr("t_cam_obj");
@@ -583,62 +633,20 @@ void LocalMapping::ProcessDetectedObjects()
                 code = pyMapObjectLeastLoss.attr("code").cast<Eigen::Vector<float, 64>>();
             }
 
-            // pMO->UpdateReconstruction(Sim3Two, code);
-
-            // pMO->UpdateReconstruction(pMO->Sim3Two, code);
-
-            std::cout << "Ready to reconstruct_object" << std::endl;
-            std::cout << "Press [ENTER] to continue ... " << std::endl;
-            key = getchar();
-            std::cout << "Press [ENTER] to continue ... " << std::endl;
-            key = getchar();
-
-            // auto Sim3Two_fix = pMO->Sim3Two;
-
-            // for (int i_rot = 0; i_rot < flip_sample_num; i_rot++) {
-            //     std::cout << "i_rot = " << i_rot << std::endl;
-            //     std::cout << "Rotate y axis" << double(i_rot) * flip_sample_angle << " rad" << std::endl;
-            //     // 这里的pMO->Sim3Two发生了变化
-            //     auto flipped_Two = Sim3Two_fix;
-            //     Eigen::Matrix3f Ry = Eigen::AngleAxisf((double)i_rot * flip_sample_angle, \
-            //                                 Eigen::Vector3f(0,1,0)).matrix();
-
-            //     std::cout << "Two = \n" << flipped_Two << std::endl;
-            //     std::cout << "Ry = \n" << Ry << std::endl;
-
-            //     flipped_Two.topLeftCorner(3,3) = flipped_Two.topLeftCorner(3,3) * Ry;
-
-            //     std::cout << "flipped_Two = \n" << flipped_Two << std::endl;
-
-            //     pMO->UpdateReconstruction(flipped_Two, code);
-
-            //     auto pyMesh = pyMeshExtractor.attr("extract_mesh_from_code")(code);
-
-            //     pMO->vertices = pyMesh.attr("vertices").cast<Eigen::MatrixXf>();
-            //     pMO->faces = pyMesh.attr("faces").cast<Eigen::MatrixXi>();
-            //     pMO->reconstructed = true;
-            //     pMO->AddObservation(mpCurrentKeyFrame, det_i);
-            //     mpCurrentKeyFrame->AddMapObject(pMO, det_i);
-            //     mpObjectDrawer->AddObject(pMO);
-
-            //     nLastReconKFID = int(mpCurrentKeyFrame->mnId);
-
-            //     std::cout << "Press [ENTER] to continue ... " << std::endl;
-            //     key = getchar();
-            // }
-
-
+            /**
+             * 更新物体属性： 
+             * - 位姿、编码、网格顶点、网格面片、
+             * - 是否已重建、（关键帧，检测索引）
+             * 向 当前关键帧、物体绘制器 添加物体
+            */
             pMO->UpdateReconstruction(Sim3Two, code);
-
             auto pyMesh = pyMeshExtractor.attr("extract_mesh_from_code")(code);
-
             pMO->vertices = pyMesh.attr("vertices").cast<Eigen::MatrixXf>();
             pMO->faces = pyMesh.attr("faces").cast<Eigen::MatrixXi>();
             pMO->reconstructed = true;
             pMO->AddObservation(mpCurrentKeyFrame, det_i);
             mpCurrentKeyFrame->AddMapObject(pMO, det_i);
             mpObjectDrawer->AddObject(pMO);
-            std::cout << "mpObjectDrawer->AddObject(pMO);" << std::endl;
 
             mlpRecentAddedMapObjects.push_back(pMO);
 

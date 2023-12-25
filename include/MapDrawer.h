@@ -79,7 +79,7 @@ public:
     // void SE3ToOpenGLCameraMatrixOrigin(g2o::SE3Quat &matIn, pangolin::OpenGlMatrix &M); // don't inverse matIn
     void GetCurrentOpenGLCameraMatrix(pangolin::OpenGlMatrix &M);
 
-    void drawPointCloudLists(); // draw all the point cloud lists 
+    void drawPointCloudLists(float pointSize=1); // draw all the point cloud lists 
     void drawPointCloudWithOptions(const std::map<std::string,bool> &options); // draw the point cloud lists with options opened
 
     // void drawBoundingboxes();

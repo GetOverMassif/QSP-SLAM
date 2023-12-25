@@ -62,7 +62,8 @@ public:
     // Constructor for RGB-D cameras.
     Frame(const cv::Mat &imGray, const cv::Mat &imDepth, const double &timeStamp, \
         ORBextractor* extractor,ORBVocabulary* voc, cv::Mat &K, cv::Mat &distCoef, \
-        const float &bf, const float &thDepth, const cv::Mat &imDepth_raw);
+        const float &bf, const float &thDepth, \
+        const cv::Mat &imRGB, const cv::Mat &imDepth_raw);
 
     // Constructor for Monocular cameras.
     Frame(const cv::Mat &imGray, const double &timeStamp, ORBextractor* extractor,ORBVocabulary* voc, cv::Mat &K, cv::Mat &distCoef, const float &bf, const float &thDepth);

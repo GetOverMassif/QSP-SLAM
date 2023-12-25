@@ -78,7 +78,7 @@ include_directories(
 
 # You need to set to your own Python paths
 add_subdirectory(pybind11)
-# add_subdirectory(/home/lj/Documents/DSC-SLAM/pybind11)
+
 # include_directories(/home/lj/Documents/DSC-SLAM/pybind11)
 
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/lib)
@@ -161,7 +161,7 @@ target_link_libraries(${PROJECT_NAME}
         symmetry
         EllipsoidExtractor
         PlaneExtractor
-        # dense_builder
+        dense_builder
         Polygon
         Relationship
         )
@@ -180,7 +180,7 @@ target_link_libraries(qsp_slam_rgbd ${PROJECT_NAME})
 
 # add modules
 # add_subdirectory(src/tum_rgbd)
-# add_subdirectory(src/dense_builder)
+add_subdirectory(src/dense_builder)
 add_subdirectory(src/symmetry)
 add_subdirectory(src/config)
 add_subdirectory(src/pca)

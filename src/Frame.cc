@@ -120,14 +120,14 @@ Frame::Frame(const cv::Mat &imLeft, const cv::Mat &imRight, const double &timeSt
 // todo: 其他模式有待更新
 Frame::Frame(const cv::Mat &imGray, const cv::Mat &imDepth, const double &timeStamp, \
         ORBextractor* extractor,ORBVocabulary* voc, cv::Mat &K, cv::Mat &distCoef, const float &bf, const float &thDepth, \
-        const cv::Mat &imDepth_raw // 这里有待优化的更优雅一点，暂时没有想到更便捷地修改方式
+        const cv::Mat &imRGB, const cv::Mat &imDepth_raw // 这里有待优化的更优雅一点，暂时没有想到更便捷地修改方式
         )
     :mpORBvocabulary(voc),mpORBextractorLeft(extractor),mpORBextractorRight(static_cast<ORBextractor*>(NULL)),
      mTimeStamp(timeStamp), mK(K.clone()),mDistCoef(distCoef.clone()), mbf(bf), mThDepth(thDepth)
 {
     // timestamp = timestamp_;
     // todo: 这里的imGray世纪不是BGR格式
-    rgb_img = imGray.clone();
+    rgb_img = imRGB.clone();
     frame_img = imDepth_raw.clone(); // 这里的imDepth已经不是原始格式了
 
     mbHaveLocalObject = false;

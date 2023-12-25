@@ -82,16 +82,17 @@ bool LocalMapping::RunOneTime()
     {
         // cout << "Process new keyframe in local mapping" << endl;
 
-        // BoW conversion and insertion in Map
+        // 创建新的关键帧，BoW转换，插入地图
         ProcessNewKeyFrame();
-        // Check recent MapPoints
+        // 对地图点进行检测、剔除
         MapPointCulling();
-        // Triangulate new MapPoints
+        // 三角化新的地图点
         CreateNewMapPoints();
 
         if(!CheckNewKeyFrames())
         {
             // Find more matches in neighbor keyframes and fuse point duplications
+            // 在相邻关键帧中寻找更多匹配关系，融合到重复的点
             SearchInNeighbors();
         }
 
@@ -102,11 +103,11 @@ bool LocalMapping::RunOneTime()
 
         if (mpTracker->mSensor == System::STEREO)
         {
-            // Get new observations for map objects
+            // 获得地图物体的新的观测：检查动静态属性，将物体观测与地图物体建立关联
             GetNewObservations();
-            // Recent MapObjects Culling
+            // 对最近的地图物体进行剔除: 对 mlpRecentAddedMapObjects 进行剔除操作
             MapObjectCulling();
-            // Create new MapObjects
+            // 创建新的地图物体：
             CreateNewMapObjects();
         }
         else if (mpTracker->mSensor == System::MONOCULAR)
@@ -129,11 +130,10 @@ bool LocalMapping::RunOneTime()
             {
                 // todo: 这里人为规定了只创建一次物体
                 if (mpMap->GetAllMapObjects().empty()) {
-                    // std::cout << "!!!!!!!!!!!!!!!!!!!!!CreateNewObjectsFromDetections" << std::endl;
                     CreateNewObjectsFromDetections();
                 }
                 // reconstruction
-                // std::cout << "!!!!!!!!!!!!!!!!!!!!!ProcessDetectedObjects" << std::endl;
+                // 
                 ProcessDetectedObjects();
             }
         }

@@ -51,6 +51,8 @@
 
 #include <src/Relationship/Relationship.h>
 
+#include <src/dense_builder/builder.h>
+
 #include <mutex>
 #include <ctime>
 
@@ -144,6 +146,9 @@ public:
     // void Update3DObservationDataAssociation(EllipsoidSLAM::Frame* pFrame, std::vector<int>& associations, std::vector<bool>& KeyFrameChecks);
     void UpdateDepthEllipsoidEstimation(ORB_SLAM2::Frame* pFrame, KeyFrame* pKF, bool withAssociation);
     // void UpdateDepthEllipsoidUsingPointModel(EllipsoidSLAM::Frame* pFrame);
+
+    Builder* GetBuilder();
+    bool SavePointCloudMap(const string& path);
 
 public:
 
@@ -296,6 +301,9 @@ protected:
 
     //Color order (true RGB, false BGR, ignored if grayscale)
     bool mbRGB;
+
+    Builder* mpBuilder;     // a dense pointcloud builder from visualization
+
 
     list<MapPoint*> mlpTemporalPoints;
 

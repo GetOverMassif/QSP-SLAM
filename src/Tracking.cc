@@ -123,6 +123,8 @@ Tracking::Tracking(System *pSys, ORBVocabulary* pVoc, FrameDrawer *pFrameDrawer,
     mbDepthEllipsoidOpened = false;
     mbOpenOptimization = true;
 
+    mpBuilder = new Builder();
+    mpBuilder->setCameraIntrinsic(mCalib, mCamera.scale);
 
     int nRGB = fSettings["Camera.RGB"];
     mbRGB = nRGB;
@@ -283,12 +285,34 @@ cv::Mat Tracking::GrabImageRGBD(const cv::Mat &imRGB,const cv::Mat &imD, const d
         imDepth.convertTo(imDepth, CV_32F, mDepthMapFactor);
     
     // clock_t time_0_start = clock();
-    mCurrentFrame = Frame(mImGray,imDepth,timestamp,mpORBextractorLeft,mpORBVocabulary,mK,mDistCoef,mbf,mThDepth,imD);
+    mCurrentFrame = Frame(mImGray,imDepth,timestamp,mpORBextractorLeft,mpORBVocabulary,mK,mDistCoef,mbf,mThDepth,imRGB,imD);
     // clock_t time_frame_creation = clock();
     // cout << " -- time_frame_creation: " <<(double)(time_frame_creation - time_0_start) / CLOCKS_PER_SEC << "s" << endl;
     Track();
     // clock_t time_track = clock();
     // cout << " -- time_track: " <<(double)(time_track - time_frame_creation) / CLOCKS_PER_SEC << "s" << endl;
+
+    // [A visualization tool] When Builder is opened, it generates local pointcloud from depth and rgb images of current frame,
+    // and global pointcloud by simply adding local pointcloud in world coordinate and then downsampling them for visualization. 
+    bool mbOpenBuilder = Config::Get<int>("Visualization.Builder.Open") > 0;
+    if(mbOpenBuilder)
+    {
+        double depth_range = Config::ReadValue<double>("EllipsoidExtractor_DEPTH_RANGE");   // Only consider pointcloud within depth_range
+
+        if(!mCurrentFrame.rgb_img.empty()){    // RGB images are needed.
+            Eigen::VectorXd pose = mCurrentFrame.cam_pose_Twc.toVector();
+            mpBuilder->processFrame(mCurrentFrame.rgb_img, mCurrentFrame.frame_img, pose, depth_range);
+
+            mpBuilder->voxelFilter(0.01);   // Down sample threshold; smaller the finer; depend on the hardware.
+            PointCloudPCL::Ptr pCloudPCL = mpBuilder->getMap();
+            PointCloudPCL::Ptr pCurrentCloudPCL = mpBuilder->getCurrentMap();
+
+            auto pCloud = pclToQuadricPointCloudPtr(pCloudPCL);
+            auto pCloudLocal = pclToQuadricPointCloudPtr(pCurrentCloudPCL);
+            mpMap->AddPointCloudList("Builder.Global Points", pCloud);
+            mpMap->AddPointCloudList("Builder.Local Points", pCloudLocal);
+        }
+    }
 
     return mCurrentFrame.mTcw.clone();
 }

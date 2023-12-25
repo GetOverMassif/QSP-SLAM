@@ -81,6 +81,11 @@
         "numericaldiff": "cpp",
         "__mutex_base": "cpp",
         "__split_buffer": "cpp",
-        "queue": "cpp"
+        "queue": "cpp",
+        "__bit_reference": "cpp",
+        "__hash_table": "cpp",
+        "__tree": "cpp",
+        "__locale": "cpp",
+        "stack": "cpp"
     }
 }

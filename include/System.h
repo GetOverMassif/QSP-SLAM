@@ -164,6 +164,13 @@ public:
 
     void SetImageNames(vector<string>& vstrImageFilenamesRGB);
 
+
+    Map* getMap();
+    MapDrawer* getMapDrawer();
+    FrameDrawer* getFrameDrawer();
+    Viewer* getViewer();
+    Tracking* getTracker();
+
     // Python related stuff
     inline void InitThread()
     {

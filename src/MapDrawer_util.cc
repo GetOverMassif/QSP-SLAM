@@ -368,7 +368,7 @@ void MapDrawer::drawLine(const Vector3d& start, const Vector3d& end, const Vecto
     glPopMatrix();
 }
 
-void MapDrawer::drawPointCloudLists()
+void MapDrawer::drawPointCloudLists(float pointSize)
 {
     auto pointLists = mpMap->GetPointCloudList();
 
@@ -387,7 +387,9 @@ void MapDrawer::drawPointCloudLists()
             // std::cout << "pPoints->size() = " << pPoints->size() << std::endl;
             // std::cout << "(&p) == NULL = " << ((&p)==NULL ) << std::endl;
             // std::cout << "p.x = " << p.x << std::endl;
-            glPointSize( p.size );
+
+            glPointSize( pointSize );
+            // glPointSize( p.size );
             glBegin(GL_POINTS);
             glColor3d(p.r/255.0, p.g/255.0, p.b/255.0);
             glVertex3d(p.x, p.y, p.z);
@@ -395,7 +397,7 @@ void MapDrawer::drawPointCloudLists()
 
         }
     }
-    glPointSize( 1 );
+    glPointSize( pointSize );
 
     glPopMatrix();
 }

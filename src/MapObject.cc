@@ -284,7 +284,7 @@ void MapObject::RemoveOutliersSimple()
     }
 }
 
-// 使用网格模型的顶点来过滤外点
+// 使用网格模型的顶点（添加一定系数）来过滤外点
 void MapObject::RemoveOutliersModel()
 {
     // sanity check: too few number of vertices

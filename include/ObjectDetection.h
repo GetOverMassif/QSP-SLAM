@@ -53,8 +53,8 @@ public:
     std::vector<int> mvKeysIndices;
     int nRays;
     int nPts;
-    bool isNew;
-    bool isGood;
+    bool isNew;  // 记录是否已经与一个地图物体关联
+    bool isGood;  // 记录是否有足够多关联特征点
     std::mutex mMutexFeatures;
     std::mutex mMutexDetection;
 

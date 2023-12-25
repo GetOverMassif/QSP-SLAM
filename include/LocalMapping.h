@@ -135,7 +135,7 @@ protected:
 
     std::mutex mMutexNewKFs;
 
-    bool mbAbortBA;
+    bool mbAbortBA;  // 
 
     bool mbStopped;
     bool mbStopRequested;

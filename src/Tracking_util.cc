@@ -1115,4 +1115,17 @@ void Tracking::ManageMemory()
 
 }
 
+bool Tracking::SavePointCloudMap(const string& path)
+{
+    std::cout << "Save pointcloud Map to : " << path << std::endl;
+    mpBuilder->saveMap(path);
+
+    return true;
+}
+
+Builder* Tracking::GetBuilder()
+{
+    return mpBuilder;
+}
+
 }

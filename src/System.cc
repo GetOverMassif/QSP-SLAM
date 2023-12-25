@@ -607,4 +607,24 @@ void System::SetImageNames(vector<string>& vstrImageFilenamesRGB)
     mpTracker->SetImageNames(vstrImageFilenamesRGB);
 }
 
+Map* System::getMap() {
+    return mpMap;
+}
+
+MapDrawer* System::getMapDrawer() {
+    return mpMapDrawer;
+}
+
+FrameDrawer* System::getFrameDrawer() {
+    return mpFrameDrawer;
+}
+
+Viewer* System::getViewer() {
+    return mpViewer;
+}
+
+Tracking* System::getTracker() {
+    return mpTracker;
+}
+
 } //namespace ORB_SLAM

@@ -1,5 +1,10 @@
 %YAML:1.0
 
+Dataset.Type: "Redwood"
+Dataset.Path.Root: "/home/lj/Documents/dataset/RedwoodOS/data/rgbd/01053"
+Dataset.Path.Map: "./dataset.pcd"
+
+
 frame_by_frame: 1  # 1: True, 0: False
 Tracking.frame_by_frame: 1  # 1: True, 0: False
 
@@ -58,8 +63,8 @@ Objects.maskErrosion: 5
 # []
 
 System.UseEllipsoldPoseForDSP.Open: 1
-Running.skip_num: 4
-Running.total_ratio: 1.0
+Running.skip_num: 5
+Running.total_ratio: 0.2
 
 flip_sample_num: 4
 
@@ -180,7 +185,7 @@ Tracking.KeyFrameCheck.Close: 1
 
 # Visualization
 Visualization.Builder.Open: 1
-Visualization.Builder.Global.Open: 0
+Visualization.Builder.Global.Open: 1
 
 # when >0, filter using dis to groundplane
 Visualization.Map.Filter.DisThresh: 2.3

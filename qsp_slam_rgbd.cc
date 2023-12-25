@@ -33,7 +33,7 @@ using namespace std;
 /**
  * @brief 加载图像
  * 
- * @param[in] strAssociationFilename    关联文件的访问路径
+ * @param[in] strAssociationFilename     关联文件的访问路径
  * @param[out] vstrImageFilenamesRGB     彩色图像路径序列
  * @param[out] vstrImageFilenamesD       深度图像路径序列
  * @param[out] vTimestamps               时间戳
@@ -60,13 +60,11 @@ int main(int argc, char **argv)
 
     int nImages = vstrImageFilenamesRGB.size();
 
-    if(vstrImageFilenamesRGB.empty())
-    {
+    if(vstrImageFilenamesRGB.empty()){
         cerr << endl << "No images found in provided path." << endl;
         return 1;
     }
-    else if(vstrImageFilenamesD.size()!=vstrImageFilenamesRGB.size())
-    {
+    else if(vstrImageFilenamesD.size()!=vstrImageFilenamesRGB.size()){
         cerr << endl << "Different number of images for rgb and depth." << endl;
         return 1;
     }
@@ -82,6 +80,28 @@ int main(int argc, char **argv)
 
     // Create SLAM system. It initializes all system threads and gets ready to process frames.
     ORB_SLAM2::System SLAM(argv[1], argv[2], argv[3], msensor);
+
+    string strSettingsFile = argv[2];
+
+
+    //  path_to_dataset [path_to_map]
+    string dataset_path = Config::Get<string>("Dataset.Path.Root");
+    string dataset_path_map = Config::Get<string>("Dataset.Path.Map");
+    if(dataset_path_map.size()>0)
+    {
+        if(dataset_path_map[0]=='.')    // 相对路径
+            dataset_path_map = dataset_path + "/" + dataset_path_map.substr(2);
+    }
+    string dataset_path_savedir = dataset_path + "/result/";
+
+    string strDetectionDir = dataset_path + "/bbox/";
+
+    std::cout << "- settings file: " << strSettingsFile << std::endl;
+    std::cout << "- dataset_path: " << dataset_path << std::endl;
+    std::cout << "- strDetectionDir: " << strDetectionDir << std::endl;
+    string dataset_type = Config::Get<string>("Dataset.Type");
+    std::cout << "- dataset_type : " << dataset_type << std::endl;
+
 
     SLAM.SetImageNames(vstrImageFilenamesRGB);
 
@@ -100,9 +120,8 @@ int main(int argc, char **argv)
 
     int skip_num = Config::Get<int>("Running.skip_num");
     double total_ratio = Config::Get<double>("Running.total_ratio");
-    cout << "total_ratio = " << total_ratio << std::endl;
+
     cout << "nImages = " << nImages << std::endl;
-    cout << "int(total_ratio * (double)nImages) = " << int(total_ratio * (double)nImages) << std::endl;
 
     int total_num = std::min(int(total_ratio * (double)nImages + 1), nImages);
     skip_num = std::max(1, skip_num);
@@ -112,7 +131,7 @@ int main(int argc, char **argv)
     for(int ni = 0; ni < total_num; ni+=skip_num)
     {
         std::cout << "\n========================================" << std::endl;
-        std::cout << "=> Inputting Image " << ni << "/" << nImages << std::endl;
+        std::cout << "=> Inputting Image " << ni << "/" << total_num << std::endl;
 
         std::chrono::steady_clock::time_point t1_read = std::chrono::steady_clock::now();
 
@@ -124,7 +143,6 @@ int main(int argc, char **argv)
         double t_read = std::chrono::duration_cast<std::chrono::duration<double> >(t2_read - t1_read).count();
 
         cout << " Reading Image costs: " << t_read << "s" << endl;
-
 
         double tframe = vTimestamps[ni];
 
@@ -201,11 +219,17 @@ int main(int argc, char **argv)
     
     SLAM.SaveKeyFrameTrajectoryTUM(traj_path);
 
+    // Save pointcloud
+    bool mbOpenBuilder = Config::Get<int>("Visualization.Builder.Open") == 1;
+    if(mbOpenBuilder)
+        SLAM.getTracker()->SavePointCloudMap(dataset_path_savedir+"map.pcd");
+
+
     // cv::waitKey(0);
     // cv::destroyAllWindows();
 
-    // Stop all threads
-    SLAM.Shutdown();
+    // // Stop all threads
+    // SLAM.Shutdown();
 
     // Tracking time statistics
     sort(vTimesTrack.begin(),vTimesTrack.end());
@@ -218,6 +242,13 @@ int main(int argc, char **argv)
     cout << "median tracking time: " << vTimesTrack[nImages/2] << endl;
     cout << "mean tracking time: " << totaltime/nImages << endl;
 
+    cout << "Use Ctrl+C to quit." << endl;
+    
+    while(1);
+
+    // SLAM.Shutdown();
+
+    cout << "End." << endl;
     return 0;
 }
 

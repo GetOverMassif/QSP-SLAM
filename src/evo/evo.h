@@ -11,8 +11,8 @@
 
 #include <core/Ellipsoid.h>
 #include <core/Geometry.h>
-#include <core/System.h>
-#include <core/Map.h>
+#include <System.h>
+#include <Map.h>
 
 #include "Example/interface/func/func.h"
 
@@ -20,12 +20,17 @@
 
 #include <boost/algorithm/string.hpp>
 
+// #include <pybind11/embed.h>
+// #include <pybind11/eigen.h>
+
+// namespace py = pybind11;
+
 using namespace std;
 using namespace Eigen;
-using namespace EllipsoidSLAM;
+using namespace ORB_SLAM2;
 
-EllipsoidSLAM::System *pSLAM;
-EllipsoidSLAM::Map *pMap;
+ORB_SLAM2::System *pSLAM;
+ORB_SLAM2::Map *pMap;
 
 namespace evo
 {

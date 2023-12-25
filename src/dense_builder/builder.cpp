@@ -28,7 +28,7 @@ void Builder::processFrame(cv::Mat &rgb, cv::Mat &depth, Eigen::VectorXd &pose, 
     mpCurrentMap = pGlobalPointCloud;
 
     // add to map
-    bool bGlobalMap = EllipsoidSLAM::Config::Get<int>("Visualization.Builder.Global.Open") == 1;
+    bool bGlobalMap = ORB_SLAM2::Config::Get<int>("Visualization.Builder.Global.Open") == 1;
     if(bGlobalMap)
         addPointCloudToMap(pGlobalPointCloud);
 
@@ -122,7 +122,10 @@ void Builder::addPointCloudToMap(PointCloudPCL::Ptr pPointCloud){
 }
 
 void Builder::saveMap(const string& path){
-  if(mpMap->points.size() < 1) return;
+  if(mpMap->points.size() < 1) {
+    std::cout << "Return because mpMap->points.size() < 1." << std::endl;
+    return;
+  }
   pcl::io::savePCDFile<PointT>(path, *mpMap, true);
   std::cerr << "Saved " << mpMap->points.size () << " data points to " << path << std::endl;
 }
@@ -137,4 +140,6 @@ void Builder::voxelFilter(double grid_size){
     PointCloudPCL::Ptr tmp( new PointCloudPCL() );
     voxel.filter( *tmp );
     pcl::copyPointCloud(*tmp, *mpMap);
+
+    std::cout << "mpMap->points.size() = " << mpMap->points.size() << std::endl;
 }

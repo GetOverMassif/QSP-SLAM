@@ -93,6 +93,8 @@ void Viewer::Run()
     // pangolin::Var<bool> menuShowConstrainPlanesBbox("menu.ConstrainPlanes-bbox", false, true);
     // pangolin::Var<bool> menuShowConstrainPlanesCuboids("menu.ConstrainPlanes-cuboids", false, true);
     pangolin::Var<double> SliderEllipsoidProbThresh("menu.Ellipsoid Prob", 0.3, 0.0, 1.0);
+    pangolin::Var<float> SliderPointCloudListSize("menu.Pointcloud Size", 1.0, 0.5, 5.0);
+
     // pangolin::Var<bool> menuShowWorldAxis("menu.Draw World Axis", false, true);
 
     // pangolin::Var<bool> menuAMeaningLessBar("menu.----------", false, false);
@@ -208,8 +210,9 @@ void Viewer::Run()
         // RefreshPointCloudOptions();
         // mpMapDrawer->drawPointCloudWithOptions(mmPointCloudOptionMap);
 
+        float pointcloudSize = SliderPointCloudListSize;
         if(menuShowPointCloudLists)
-            mpMapDrawer->drawPointCloudLists();
+            mpMapDrawer->drawPointCloudLists(pointcloudSize);
 
 
         mpObjectDrawer->ProcessNewObjects();
