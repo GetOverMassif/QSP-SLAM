@@ -11,7 +11,7 @@
 
 #include <core/Ellipsoid.h>
 #include <core/Geometry.h>
-#include <System.h>
+// #include <System.h>
 #include <Map.h>
 
 #include "Example/interface/func/func.h"
@@ -29,7 +29,7 @@ using namespace std;
 using namespace Eigen;
 using namespace ORB_SLAM2;
 
-ORB_SLAM2::System *pSLAM;
+// ORB_SLAM2::System *pSLAM;
 ORB_SLAM2::Map *pMap;
 
 namespace evo
@@ -85,7 +85,7 @@ namespace evo
     };
 
     bool Evaluate(MatrixXd &refObjMat, MatrixXd &estObjMat, MatrixXd &gtTrajMat, MatrixXd &estTrajMat, StaticResult &output,
-                std::map<int, COMPARE_RESULT>& output_results, EllipsoidSLAM::Map *pMap = NULL, bool manual_check = false, bool filter_sym = false,
+                std::map<int, COMPARE_RESULT>& output_results, ORB_SLAM2::Map *pMap = NULL, bool manual_check = false, bool filter_sym = false,
                 bool use_id_to_associate = false);
 
     void OutputResult(ostream &fio, StaticResult &staticResult, std::map<int, COMPARE_RESULT> &results, MatrixXd &refObjMat);
@@ -95,9 +95,9 @@ namespace evo
 
     double getYawError(g2o::ellipsoid &e1, g2o::ellipsoid &e2);
 
-    void VisualizeEllipsoidsInMat(MatrixXd &mat, const Vector3d &color, EllipsoidSLAM::Map *pMap, bool show_instance, bool show_in_observation = false);
+    void VisualizeEllipsoidsInMat(MatrixXd &mat, const Vector3d &color, ORB_SLAM2::Map *pMap, bool show_instance, bool show_in_observation = false);
 
 
     std::map<int, std::map<double, int>> VisualizeAndRevisedAssociations(const std::map<int, std::map<double, int>>& objObs, 
-        const std::vector<Frame*> &vpFrames, MatrixXd& refObjMat, EllipsoidSLAM::Map* pMap);
+        const std::vector<Frame*> &vpFrames, MatrixXd& refObjMat, ORB_SLAM2::Map* pMap);
 }

@@ -42,7 +42,7 @@ namespace ORB_SLAM2 {
             else
             {
                 pos->second = double(value);
-            }            
+            }
         }
 
         // ReadValue function reads parameter value set by SetValue function, and return default value if it does not exist
@@ -71,6 +71,8 @@ namespace ORB_SLAM2 {
             Config::mConfig->mFile[key] >> m;
             return m;            
         }
+
+        static void CheckParams( const string& filename );
 
     private:
         Config(){};

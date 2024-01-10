@@ -1,5 +1,8 @@
 %YAML:1.0
 
+CreateSingleObject: 1
+
+# [Dataset Path]
 Dataset.Type: "Redwood"
 Dataset.Path.Root: "/home/lj/Documents/dataset/RedwoodOS/data/rgbd/01053"
 Dataset.Path.Map: "./dataset.pcd"
@@ -14,7 +17,7 @@ System.output: KeyFrameTrajectoryRGBD.txt
 # System.mode: MONOCULAR
 # System.output: KeyFrameTrajectoryMONO.txt
 
-System.LocalMappingInSameThread: 1 
+System.LocalMappingInSameThread: 1
 
 #---------------------------
 # Camera Parameters. 
@@ -60,11 +63,9 @@ DetectorConfigPath: configs/config_redwood_chair_01053.json
 Objects.maskErrosion: 5
 
 
-# []
-
 System.UseEllipsoldPoseForDSP.Open: 1
 Running.skip_num: 5
-Running.total_ratio: 0.2
+Running.total_ratio: 1.0
 
 flip_sample_num: 4
 
@@ -95,7 +96,7 @@ SemanticPrior.GroundWeight: 2
 Optimizer.Edges.3DConstrain.PlaneAngle.Sigma: 100
 EllipsoidExtractor.SupportingPlaneFilter.DisThresh: 0.03
 
-#10
+# 10
 Dataset.Jumpframe: 5
 
 # Use gt
@@ -109,7 +110,7 @@ DataAssociation.DPAlpha: 0.1
 DataAssociation.PlaneError.DisSigma: 0.5
 
 # ------------------------------------
-#  Single-frame ellipsoid estimation
+#  单帧椭球体估计： Single-frame ellipsoid estimation
 # ------------------------------------
 # Pointcloud segmentation parameters
 EllipsoidExtraction.Euclidean.ClusterTolerance: 0.1
@@ -130,7 +131,7 @@ Optimizer.PartialObservation.Open: 1
 Optimizer.NonparametricDA.Num: 1
 Optimizer.Optimize.Num: 5
 # ------------------------------
-#  Symmetry Estimation
+#  对称性估计： Symmetry Estimation
 # ------------------------------
 # Whether open symmetry estimation 是否开启对称性估计
 EllipsoidExtraction.Symmetry.Open: 0
@@ -150,7 +151,7 @@ SymmetrySolver.Sigma: 0.1
 
 
 # -------------------------
-# Ground Plane Extraction
+# 地平面提取参数： Ground Plane Extraction
 # -------------------------
 Plane.MinSize: 1000
 Plane.AngleThreshold: 3.0
@@ -191,18 +192,15 @@ Visualization.Builder.Global.Open: 1
 Visualization.Map.Filter.DisThresh: 2.3
 
 #------------------
-# ORB Parameters
+# ORB相关参数： ORB Parameters
 #------------------
 
 # ORB Extractor: Number of features per image
 ORBextractor.nFeatures: 4000
-
 # ORB Extractor: Scale factor between levels in the scale pyramid
 ORBextractor.scaleFactor: 1.2
-
 # ORB Extractor: Number of levels in the scale pyramid
 ORBextractor.nLevels: 8
-
 # ORB Extractor: Fast threshold
 # Image is divided in a grid. At each cell FAST are extracted imposing a minimum response.
 # Firstly we impose iniThFAST. If no corners are detected we impose a lower value minThFAST
@@ -211,7 +209,7 @@ ORBextractor.iniThFAST: 12
 ORBextractor.minThFAST: 7
 
 #--------------------------------------------------------------------------------------------
-# Viewer Parameters
+# 显示界面参数： Viewer Parameters
 #--------------------------------------------------------------------------------------------
 Viewer.KeyFrameSize: 0.1  # originally 0.6
 Viewer.KeyFrameLineWidth: 2

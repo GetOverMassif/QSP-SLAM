@@ -100,39 +100,40 @@ bool Map::AddPointCloudList(const string &name, PointCloud *pCloud, int type) {
         std::cout << "NULL point cloud." << std::endl;
         return false;
     }
-    std::cout << "!!!!Map's pointcloud now: \n";
-    for (auto &pair: mmPointCloudLists) {
-        auto strPoints = pair.first;
-        std::cout << strPoints << "," << std::endl;
-    }
+    // std::cout << "!!!!Map's pointcloud now: \n";
+    // for (auto &pair: mmPointCloudLists) {
+    //     auto strPoints = pair.first;
+    //     std::cout << strPoints << "," << std::endl;
+    // }
 
-    cout << "[Map::AddPointCloudList] " << name << std::endl;
+    // cout << "[Map::AddPointCloudList] " << name << std::endl;
+
     // Check repetition
     if (mmPointCloudLists.find(name) != mmPointCloudLists.end()) {
         // Exist
-        std::cout << "Exist" << std::endl;
+        // std::cout << "Exist" << std::endl;
         auto pCloudInMap = mmPointCloudLists[name];
         if (pCloudInMap == NULL) {
-            std::cout << "Error: the cloud " << name << " has been deleted." << std::endl;
+            // std::cout << "Error: the cloud " << name << " has been deleted." << std::endl;
             return false;
         }
 
         if (type == 0) {
-            // replace it.
+            // replace it. 
+            // std::cout << "Replace mmPointCloudLists:" << name << std::endl;
             pCloudInMap->clear(); // release it
             mmPointCloudLists[name] = pCloud;
-            std::cout << "Replace mmPointCloudLists:" << name << std::endl;
         } else if (type == 1) {
             // add together
+            // std::cout << "pCloudInMap->push_back(p), " << name << std::endl;
             for (auto &p : *pCloud)
                 pCloudInMap->push_back(p);
-            std::cout << "pCloudInMap->push_back(p), " << name << std::endl;
         } else {
-            std::cout << "Wrong type : " << type << std::endl;
+            // std::cout << "Wrong type : " << type << std::endl;
         }
         return false;
     } else {
-        std::cout << "Insert pointcloud :" << name << std::endl;
+        // std::cout << "Insert pointcloud :" << name << std::endl;
         mmPointCloudLists.insert(make_pair(name, pCloud));
         return true;
     }
@@ -142,13 +143,13 @@ bool Map::AddPointCloudList(const string &name, PointCloud *pCloud, int type) {
 bool Map::DeletePointCloudList(const string &name, int type) {
     unique_lock<mutex> lock(mMutexMap);
 
-    std::cout << "!!!!!!!!!Ready to delete pointcloud: " << name << std::endl;
+    // std::cout << "!!!!!!!!!Ready to delete pointcloud: " << name << std::endl;
 
     if (type == 0) // complete matching: the name must be the same
     {
         auto iter = mmPointCloudLists.find(name);
         if (iter != mmPointCloudLists.end()) {
-            std::cout << "Exist " << std::endl;
+            // std::cout << "Exist " << std::endl;
             PointCloud *pCloud = iter->second;
             if (pCloud != NULL) {
                 delete pCloud;
@@ -157,7 +158,7 @@ bool Map::DeletePointCloudList(const string &name, int type) {
             mmPointCloudLists.erase(iter);
             return true;
         } else {
-            std::cerr << "PointCloud name " << name << " doesn't exsit. Can't delete it." << std::endl;
+            // std::cerr << "PointCloud name " << name << " doesn't exsit. Can't delete it." << std::endl;
             return false;
         }
     } else if (type == 1) // partial matching
@@ -319,6 +320,15 @@ void Map::addEllipsoid(ellipsoid *pObj) {
 vector<ellipsoid *> Map::GetAllEllipsoids() {
     unique_lock<mutex> lock(mMutexMap);
     return mspEllipsoids;
+}
+
+
+void Map::ShowMapInfo()
+{
+    unique_lock<mutex> lock(mMutexMap);
+    std::cout << "\n[Map Info]" << std::endl;
+    int obj_num = mspMapObjects.size();
+    std::cout << obj_num << " objects" << std::endl;
 }
 
 } // namespace ORB_SLAM2

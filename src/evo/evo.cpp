@@ -89,7 +89,7 @@ namespace evo
         Eigen::Matrix4d Q2_star = e2.generateQuadric();
         Eigen::Matrix4d Q2 = Q2_star.inverse();
 
-        EllipsoidSLAM::PointCloud *pCloud = new EllipsoidSLAM::PointCloud;
+        ORB_SLAM2::PointCloud *pCloud = new ORB_SLAM2::PointCloud;
         for (double x = x_min; x < x_max; x += resolution)
         {
             for (double y = y_min; y < y_max; y += resolution)
@@ -140,7 +140,7 @@ namespace evo
 
                     total_num++;
 
-                    EllipsoidSLAM::PointXYZRGB p;
+                    ORB_SLAM2::PointXYZRGB p;
                     p.x = x;
                     p.y = y;
                     p.z = z;
@@ -195,7 +195,6 @@ namespace evo
             
             std::cout << "Show result of sampling for IoU ... Push any key to continue ... " << std::endl;
             getchar();
-
         }
 
         // 输出结果.
@@ -794,7 +793,7 @@ namespace evo
         return tGt;
     }
 
-    void VisualizeEllipsoidsInMat(MatrixXd &mat, const Vector3d &color, EllipsoidSLAM::Map *pMap, bool show_instance, bool show_in_observation)
+    void VisualizeEllipsoidsInMat(MatrixXd &mat, const Vector3d &color, ORB_SLAM2::Map *pMap, bool show_instance, bool show_in_observation)
     {
         int num = mat.rows();
         for (int i = 0; i < num; i++)
@@ -823,7 +822,7 @@ namespace evo
         return;
     }
 
-    void DrawAlignLines(MatrixXd &estObjMat, MatrixXd &refObjMat, std::vector<int> &vAlignEstToRef, EllipsoidSLAM::Map *pMap) // 绘制关联线.
+    void DrawAlignLines(MatrixXd &estObjMat, MatrixXd &refObjMat, std::vector<int> &vAlignEstToRef, ORB_SLAM2::Map *pMap) // 绘制关联线.
     {
         // std::cout << "ref obj mat: " << endl << refObjMat << endl;
         for (int i = 0; i < estObjMat.rows(); i++)
@@ -851,7 +850,7 @@ namespace evo
     }
 
     // 都在同一个坐标系下 : ref 坐标系
-    void VisualizeEllipsoidsWithAssociations(MatrixXd &estObjMat, MatrixXd &refObjMat, std::vector<int> &vAlignEstToRef, EllipsoidSLAM::Map *pMap)
+    void VisualizeEllipsoidsWithAssociations(MatrixXd &estObjMat, MatrixXd &refObjMat, std::vector<int> &vAlignEstToRef, ORB_SLAM2::Map *pMap)
     {
         if (pMap == NULL)
             return;
@@ -1176,7 +1175,7 @@ namespace evo
     // 添加变量 use_id_to_associate: 若为真，则不调用自动关联，而以首位id直接关联
     bool Evaluate(MatrixXd &refObjMat, MatrixXd &estObjMat, MatrixXd &gtTrajMat, MatrixXd &estTrajMat, 
                 StaticResult &output_staticResult, std::map<int, COMPARE_RESULT>& output_results,
-                  EllipsoidSLAM::Map *pMap, bool manual_check, bool filter_sym, bool use_id_to_associate)
+                  ORB_SLAM2::Map *pMap, bool manual_check, bool filter_sym, bool use_id_to_associate)
     {
         int refNum = refObjMat.rows();
         int estNum_ori = estObjMat.rows();
@@ -1357,7 +1356,7 @@ namespace evo
     }
 
 // std::map<int, std::map<double, int>> VisualizeAndRevisedAssociations(const std::map<int, std::map<double, int>>& objObs, 
-//         const std::vector<Frame*> &vpFrames, MatrixXd& refObjMat, EllipsoidSLAM::Map* pMap)
+//         const std::vector<Frame*> &vpFrames, MatrixXd& refObjMat, ORB_SLAM2::Map* pMap)
 // {
 //     int obj_num = objObs.size();
 

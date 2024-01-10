@@ -3,7 +3,7 @@
 // 2020-6-3 by LZW
 
 #include "include/core/NonparamDA.h"
-#include "include/core/Optimizer.h"
+#include "Optimizer.h"
 #include "include/core/Ellipsoid.h"
 #include "include/core/SupportingPlane.h"
 #include "include/core/ConstrainPlane.h"

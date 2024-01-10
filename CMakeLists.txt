@@ -117,6 +117,10 @@ add_library(${PROJECT_NAME} SHARED
     src/ObjectDrawer.cc
     src/ObjectRenderer.cc
 
+    src/Labeller.cc
+
+    # src/VLab.cc
+
     src/core/Ellipsoid.cpp
     src/core/Geometry.cpp
     src/core/Plane.cpp
@@ -128,11 +132,13 @@ add_library(${PROJECT_NAME} SHARED
 #     src/core/SemanticLabel.cpp
     src/core/PriorInfer.cpp
 
+
 )
 
 add_library(utils SHARED
     src/utils/matrix_utils.cpp
     src/utils/dataprocess_utils.cpp
+    src/utils/file_operate.cpp
 )
 
 target_link_libraries(utils
@@ -164,6 +170,7 @@ target_link_libraries(${PROJECT_NAME}
         dense_builder
         Polygon
         Relationship
+        # tools
         )
 
 # set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR})
@@ -178,8 +185,16 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR})
 add_executable(qsp_slam_rgbd qsp_slam_rgbd.cc)
 target_link_libraries(qsp_slam_rgbd ${PROJECT_NAME})
 
+
+# set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR})
+add_executable(label_tool label_tool.cc)
+target_link_libraries(label_tool ${PROJECT_NAME})
+
+
+add_executable(pcd2bin src/tools/pcd2bin.cc)
+target_link_libraries(pcd2bin ${PROJECT_NAME})
+
 # add modules
-# add_subdirectory(src/tum_rgbd)
 add_subdirectory(src/dense_builder)
 add_subdirectory(src/symmetry)
 add_subdirectory(src/config)
@@ -187,5 +202,16 @@ add_subdirectory(src/pca)
 add_subdirectory(src/plane)
 add_subdirectory(src/Polygon)
 add_subdirectory(src/Relationship)
+add_subdirectory(src/tum_rgbd)
+
+# add_subdirectory(src/semantic-data-association-tool)
+
+# add_subdirectory(src/eval)
+
 # add_subdirectory(src/evo)
 # add_subdirectory(src/Prior)
+
+# add_subdirectory(Example/interface)
+
+
+# add_subdirectory(src/tools)

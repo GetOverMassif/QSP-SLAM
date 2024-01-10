@@ -44,6 +44,8 @@ LocalMapping::LocalMapping(System *pSys, Map *pMap, ObjectDrawer* pObjectDrawer,
     use_ellipsold_pose_for_shape_optimization = Config::Get<int>("System.UseEllipsoldPoseForDSP.Open") > 0;
     flip_sample_num = Config::Get<int>("flip_sample_num");
     flip_sample_angle = 2 * M_PI / (double)flip_sample_num;
+
+    create_single_object = Config::Get<int>("CreateSingleObject");
 }
 
 void LocalMapping::SetLoopCloser(LoopClosing* pLoopCloser)
@@ -73,6 +75,8 @@ bool LocalMapping::RunWhileNewKeyFrame()
 
 bool LocalMapping::RunOneTime()
 {
+    mpMap->ShowMapInfo();
+    
     // Tracking will see that Local Mapping is busy
     SetAcceptKeyFrames(false);
     // // cout << "set not accept keyframes" << endl;
@@ -101,6 +105,7 @@ bool LocalMapping::RunOneTime()
         nKFInserted++;
         // cout << "Number of KF inserted: " << nKFInserted << endl;
 
+        // 双目 + Lidar模式
         if (mpTracker->mSensor == System::STEREO)
         {
             // 获得地图物体的新的观测：检查动静态属性，将物体观测与地图物体建立关联
@@ -109,6 +114,7 @@ bool LocalMapping::RunOneTime()
             MapObjectCulling();
             // 创建新的地图物体：
             CreateNewMapObjects();
+            // 
         }
         else if (mpTracker->mSensor == System::MONOCULAR)
         {
@@ -128,12 +134,13 @@ bool LocalMapping::RunOneTime()
         {
             if (mpTracker->mState != Tracking::NOT_INITIALIZED)
             {
-                // todo: 这里人为规定了只创建一次物体
-                if (mpMap->GetAllMapObjects().empty()) {
+                // todo: 这里人为规定了只创建一次物体, 
+                if (mpMap->GetAllMapObjects().empty() || !create_single_object) {
+                    // cout << "\n[ CreateNewObjectsFromDetections ]" << std::endl;
                     CreateNewObjectsFromDetections();
                 }
-                // reconstruction
-                // 
+
+                // cout << "\n[ ProcessDetectedObjects ]" << std::endl;
                 ProcessDetectedObjects();
             }
         }

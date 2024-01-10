@@ -188,6 +188,8 @@ Tracking::Tracking(System *pSys, ORBVocabulary* pVoc, FrameDrawer *pFrameDrawer,
 
     frame_by_frame = fSettings["frame_by_frame"].isNamed();
 
+    minimum_match_to_associate = fSettings["MinimumMatchToAssociate"];
+
 }
 
 void Tracking::SetLocalMapper(LocalMapping *pLocalMapper)
@@ -264,7 +266,7 @@ cv::Mat Tracking::GrabImageRGBD(const cv::Mat &imRGB,const cv::Mat &imD, const d
     mImDepth = imD;
     cv::Mat imDepth = imD;
 
-    std::cout << "imDepth.type() = " << imDepth.type() << std::endl;
+    // std::cout << "imDepth.type() = " << imDepth.type() << std::endl;
 
     if(mImGray.channels()==3)
     {
@@ -301,6 +303,8 @@ cv::Mat Tracking::GrabImageRGBD(const cv::Mat &imRGB,const cv::Mat &imD, const d
 
         if(!mCurrentFrame.rgb_img.empty()){    // RGB images are needed.
             Eigen::VectorXd pose = mCurrentFrame.cam_pose_Twc.toVector();
+            cv::imshow("mCurrentFrame.rgb_img", mCurrentFrame.rgb_img);
+            cv::waitKey(20);
             mpBuilder->processFrame(mCurrentFrame.rgb_img, mCurrentFrame.frame_img, pose, depth_range);
 
             mpBuilder->voxelFilter(0.01);   // Down sample threshold; smaller the finer; depend on the hardware.
@@ -1150,12 +1154,20 @@ bool Tracking::NeedNewKeyFrame()
 
 void Tracking::CreateNewKeyFrame()
 {
-    if (frame_by_frame) {
+    
+    bool frame_by_frame_state = false;
+    {
+        unique_lock<mutex> (mMutexFrameByFrame);
+        frame_by_frame_state = frame_by_frame;
+    }
+
+    if (frame_by_frame_state) {
         char key;
         std::cout << "Creating new KeyFrame" << std::endl;
         std::cout << "Press [ENTER] to continue ... , [y] to autonomous mode" << std::endl;
         key = getchar();
-        if (key=='y') {
+        if (key=='y' or key=='Y') {
+            unique_lock<mutex> (mMutexFrameByFrame);
             frame_by_frame = false;
         }
     }
@@ -1165,6 +1177,7 @@ void Tracking::CreateNewKeyFrame()
 
     KeyFrame* pKF = new KeyFrame(mCurrentFrame,mpMap,mpKeyFrameDB);
 
+    // 双目模式： 双目+激光雷达点云
     if (mSensor == System::STEREO)
     {
         GetObjectDetectionsLiDAR(pKF);
@@ -1199,10 +1212,20 @@ void Tracking::CreateNewKeyFrame()
         std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
         mvpFrames.push_back(&mCurrentFrame);
 
-        // 首先进行物体检测，得到 label, bbox, mask, prob 等数据
-        std::cout << "\n [ GetObjectDetectionsRGBD ]" << std::endl;
-        GetObjectDetectionsRGBD(pKF);
+        // Step1: 首先进行地面检测
+        // [1] process MHPlanes estimation
+        TaskGroundPlane();
 
+        if (miGroundPlaneState != 2) {
+            std::cout << "Ground is not detected yet." << std::endl;
+        }
+        else{
+            // Step2: 如果有地面检测到
+            // 首先进行物体检测，得到 label, bbox, mask, prob 等数据
+            std::cout << "\n [ GetObjectDetectionsRGBD ]" << std::endl;
+            GetObjectDetectionsRGBD(pKF);
+        }
+        
         // 将这些结果也设置到对应的普通帧Frame中（这里是为了适用椭球体SLAM需求，有待未来优化）
         mCurrentFrame.SetObservations(pKF);
 

@@ -5,7 +5,9 @@
         "name": "C++ Launch",
         "type": "cppdbg",
         "request": "launch",
-        "program": "${workspaceFolder}/qsp_slam_rgbd",
+        // "program": "${workspaceFolder}/qsp_slam_rgbd",
+        // "program": "${workspaceFolder}/label_tool",
+        "program": "${workspaceFolder}/instanceAnnotation",
         "args": [
             // "Vocabulary/ORBvoc.bin",
             // "configs/tum_fr1_desk.yaml",
@@ -19,11 +21,20 @@
             // "/media/lj/TOSHIBA/dataset/RedwoodOS/data/rgbd/01053/associate.txt",
             // "map/redwood/01053"
 
-            "Vocabulary/ORBvoc.bin",
-            "configs/redwood_monitor_01041.yaml",
-            "/media/lj/TOSHIBA/dataset/RedwoodOS/data/rgbd/01041",
-            "/media/lj/TOSHIBA/dataset/RedwoodOS/data/rgbd/01041/associate.txt",
-            "map/redwood/01041"
+            // "Vocabulary/ORBvoc.bin",
+            // "configs/redwood_monitor_01041.yaml",
+            // "/media/lj/TOSHIBA/dataset/RedwoodOS/data/rgbd/01041",
+            // "/media/lj/TOSHIBA/dataset/RedwoodOS/data/rgbd/01041/associate.txt",
+            // "map/redwood/01041"
+
+            // "Vocabulary/ORBvoc.bin",
+            // // "configs/tum_fr2_dishes.yaml",
+            // "configs/redwood_chair_01053.yaml",
+            // "/home/lj/Documents/dataset/TUM/rgbd_dataset_freiburg2_dishes",
+            // "/home/lj/Documents/dataset/TUM/rgbd_dataset_freiburg2_dishes/associate.txt",
+            // "map/tum/fr2_dishes"
+
+
         ],
         "stopAtEntry": true,
         "cwd": "${workspaceFolder}",

@@ -62,6 +62,7 @@ def read_file_list(filename):
     dict -- dictionary of (stamp,data) tuples
     
     """
+    # print(f"Read filename = {filename}")
     file = open(filename)
     data = file.read()
     lines = data.replace(","," ").replace("\t"," ").split("\n") 
@@ -105,43 +106,50 @@ def associate(first_list, second_list, offset, max_difference):
     matches.sort()
     return matches
 
-if __name__ == '__main__':
-    print("hello")
-    # parse command line
-    parser = argparse.ArgumentParser(description='''
-    This script takes two data files with timestamps and associates them   
-    ''')
-    parser.add_argument('first_file', help='first text file (format: timestamp data)')
-    parser.add_argument('second_file', help='second text file (format: timestamp data)')
-    parser.add_argument('--first_only', help='only output associated lines from first file', action='store_true')
-    parser.add_argument('--offset', help='time offset added to the timestamps of the second file (default: 0.0)',default=0.0)
-    parser.add_argument('--max_difference', help='maximally allowed time difference for matching entries (default: 0.02)',default=0.02)
-    parser.add_argument('-s', '--save_path', default=None)
-    args = parser.parse_args()
+def readAndAssociate(first_file, second_file, save_path=None, offset=0.0, max_difference=0.02, first_only=False):
+    first_list = read_file_list(first_file)
+    second_list = read_file_list(second_file)
 
-    first_list = read_file_list(args.first_file)
-    second_list = read_file_list(args.second_file)
-
-    if args.save_path==None:
-        save_path = osp.join(osp.dirname(args.first_file), "associate.txt")
-    elif args.save_path.endwith('.txt'):
-        save_path = args.save_path
+    if save_path==None:
+        save_path = osp.join(osp.dirname(first_file), "associate.txt")
+    elif save_path.endwith('.txt'):
+        save_path = save_path
     else:
-        save_path = osp.join(args.save_path, "associate.txt")
+        save_path = osp.join(save_path, "associate.txt")
 
-    matches = associate(first_list, second_list, float(args.offset), float(args.max_difference))
+    matches = associate(first_list, second_list, float(offset), float(max_difference))
 
 
     f = open(save_path, 'w')
 
-    if args.first_only:
+    if first_only:
         for a,b in matches:
             # print("%f %s"%(a," ".join(first_list[a])))
             f.write("%f %s\n"%(a," ".join(first_list[a])))
     else:
         for a,b in matches:
             # print("%f %s %f %s"%(a," ".join(first_list[a]),b-float(args.offset)," ".join(second_list[b])))
-            f.write("%f %s %f %s\n"%(a," ".join(first_list[a]),b-float(args.offset)," ".join(second_list[b])))
+            f.write("%f %s %f %s\n"%(a," ".join(first_list[a]),b-float(offset)," ".join(second_list[b])))
     
     f.close()
+
+if __name__ == '__main__':
+    # print("hello")
+    # parse command line
+    parser = argparse.ArgumentParser(description='''
+    This script takes two data files with timestamps and associates them   
+    ''')
+    parser.add_argument('-f1','first_file', help='first text file (format: timestamp data)')
+    parser.add_argument('-f2','second_file', help='second text file (format: timestamp data)')
+    parser.add_argument('--first_only', help='only output associated lines from first file', action='store_true')
+    parser.add_argument('--offset', help='time offset added to the timestamps of the second file (default: 0.0)',default=0.0)
+    parser.add_argument('--max_difference', help='maximally allowed time difference for matching entries (default: 0.02)',default=0.02)
+    parser.add_argument('-s', '--save_path', default=None)
+    args = parser.parse_args()
+
+    associate(args.first_file, args.second_file, \
+              args.save_path, args.offset, args.max_difference, args.first_only)
+
+
+
     

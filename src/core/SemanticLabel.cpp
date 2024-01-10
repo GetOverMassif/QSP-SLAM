@@ -69,7 +69,7 @@ std::set<std::string> GenerateValidLabelsForDataset(const string& dataset_type)
 
 bool CheckLabelOnGround(int label)
 {
-    string dataset_type = EllipsoidSLAM::Config::Get<string>("Dataset.Type");
+    string dataset_type = ORB_SLAM2::Config::Get<string>("Dataset.Type");
 
     std::set<std::string> validLabels = GenerateValidLabelsForDataset(dataset_type);
 

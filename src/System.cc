@@ -77,6 +77,8 @@ System::System(const string &strVocFile, const string &strSettingsFile, const st
     Config::Init();
     Config::SetParameterFile(strSettingsFile);
 
+    //TODO:这里有待优化
+    Config::CheckParams("configs/standard_param.yaml");
 
     //Load ORB Vocabulary
     cout << endl << "Loading ORB Vocabulary. This could take a while..." << endl;
@@ -109,6 +111,7 @@ System::System(const string &strVocFile, const string &strSettingsFile, const st
     py::module sys = py::module::import("sys");
     cout << "3/8 sys.path.append(\"./\")" << std::endl;
     sys.attr("path").attr("append")("./");
+    sys.attr("path").attr("append")("./reconstruct");
     cout << "4/8 import reconstruct.utils as io_utils" << std::endl;
     py::module io_utils = py::module::import("reconstruct.utils");
     string pyCfgPath = fSettings["DetectorConfigPath"].string();
@@ -521,7 +524,7 @@ void System::SaveKeyFrameTrajectoryTUM(const string &filename)
             continue;
 
         cv::Mat R = pKF->GetRotation().t();
-        vector<float> q = Converter::toQuaternion(R);
+        vector<float> q = Converter::toQuaternion(R); // qx, qy, qz, qw
         cv::Mat t = pKF->GetCameraCenter();
         f << setprecision(6) << pKF->mTimeStamp << setprecision(7) << " " << t.at<float>(0) << " " << t.at<float>(1) << " " << t.at<float>(2)
           << " " << q[0] << " " << q[1] << " " << q[2] << " " << q[3] << endl;

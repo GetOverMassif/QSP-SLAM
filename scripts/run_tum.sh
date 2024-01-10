@@ -8,11 +8,24 @@
 ### 
 
 
-# TUM_ID=
+# ./qsp_slam_rgbd Vocabulary/ORBvoc.bin configs/tum_fr1_desk.yaml \
+# /media/lj/TOSHIBA/dataset/TUM/fr1_desk/rgbd_dataset_freiburg1_desk \
+# configs/associations/fr1_desk.txt \
+# map/tum/fr1_desk
+
+# configs/redwood_chair_01053.yaml \
+
+# dishes # configs/tum_fr2_dishes.yaml \
+./qsp_slam_rgbd \
+Vocabulary/ORBvoc.bin \
+configs/tum_fr2_dishes.yaml \
+/home/lj/Documents/dataset/TUM/rgbd_dataset_freiburg2_dishes \
+/home/lj/Documents/dataset/TUM/rgbd_dataset_freiburg2_dishes/associate.txt \
+map/tum/fr2_dishes
 
 
-./qsp_slam_rgbd Vocabulary/ORBvoc.bin configs/tum_fr1_desk.yaml \
-/media/lj/TOSHIBA/dataset/TUM/fr1_desk/rgbd_dataset_freiburg1_desk \
-configs/associations/fr1_desk.txt \
-map/tum/fr1_desk
-
+# REDWOOD_SCAN_ID=01053
+# ./qsp_slam_rgbd Vocabulary/ORBvoc.bin configs/redwood_chair_01053.yaml \
+# $DATASET_PATH/RedwoodOS/data/rgbd/$REDWOOD_SCAN_ID  \
+# $DATASET_PATH/RedwoodOS/data/rgbd/$REDWOOD_SCAN_ID/associate.txt \
+# map/redwood/$REDWOOD_SCAN_ID

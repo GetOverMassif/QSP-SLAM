@@ -80,6 +80,8 @@ void Viewer::Run()
     pangolin::Var<bool> menuReset("menu.Reset",false,false);
     pangolin::Var<bool> menuClose("menu.Close",false,false);
 
+    pangolin::Var<bool> menuPause("menu.Pause",false,false);
+
     pangolin::Var<bool> menuShowMapObjects("menu.Show MapObjects",true,true);
     pangolin::Var<bool> menuShowGroundPlane("menu.Show GroundPlane",true,true);
     pangolin::Var<bool> menuShowEllipsoids("menu.Show Ellipsoids", true, true);
@@ -233,6 +235,11 @@ void Viewer::Run()
 //        cv::resize(im, scaled_im, cv::Size(0, 0), scale, scale);
         cv::imshow("QSP-SLAM: Current Frame", im);
         cv::waitKey(mT);
+
+        if(menuPause) {
+            mpTracker->SetFrameByFrame();
+            menuPause = false;
+        }
 
         if(menuReset)
         {

@@ -22,6 +22,7 @@ import torch
 from reconstruct.loss_utils import get_rays, get_time
 from reconstruct.utils import ForceKeyErrorDict
 from reconstruct import get_detectors
+from contents import object_classes, object_classes_on_ground, object_classes_on_table
 
 
 class Frame:
@@ -39,12 +40,16 @@ class Frame:
         self.detector_2d = sequence.detector_2d
         self.min_mask_area = self.configs.min_mask_area
 
+        self.data_type = sequence.data_type
+
         if sequence.data_type == "Redwood":
-            self.object_class = "chairs"
+            self.object_class = ["chairs"]
         elif sequence.data_type == "Freiburg":
-            self.object_class = "cars"
+            self.object_class = ["cars"]
         elif sequence.data_type == "MultiObject":
-            self.object_class = "tv_monitor"
+            self.object_class = ["tv_monitor"]
+        elif sequence.data_type == "AllObjectsOnTable":
+            self.object_class = object_classes_on_table
         
         # elif sequence.data_type=='Tum':
         #     self.object_class = "monitor"
@@ -87,14 +92,18 @@ class Frame:
     def get_detections(self):
         # Get 2D Detection and background rays
         t1 = get_time()
+    
         if self.online:
-            det_2d = self.detector_2d.make_prediction(self.img_bgr, object_class=self.object_class)
+            det_2d = self.detector_2d.make_prediction(self.img_bgr, object_classes=self.object_class)
         else:
             label_path2d = os.path.join(self.lbl2d_dir, "%06d.lbl" % self.frame_id)
             det_2d = torch.load(label_path2d)
         t2 = get_time()
         print("2D detctor takes %f seconds" % (t2 - t1))
         # print(f"self.img_rgb.shape = {self.img_rgb.shape}")
+
+        # print(f"det_2d.size = {len(det_2d["pred_labels"])}")
+
         img_h, img_w, _ = self.img_rgb.shape
         masks_2d = det_2d["pred_masks"]
         bboxes_2d = det_2d["pred_boxes"]
@@ -105,32 +114,61 @@ class Frame:
         if masks_2d.shape[0] == 0:
             return
 
-        # For redwood and freiburg cars, we only focus on the object in the middle
-        max_id = np.argmax(masks_2d.sum(axis=-1).sum(axis=-1))
-        mask_max = masks_2d[max_id, ...].astype(np.float32) * 255.
-        bbox_max = bboxes_2d[max_id, ...]
-        label_max = labels_2d[max_id, ...]
-        prob_max = probs_2d[max_id, ...]
+        if self.data_type in ["Redwood", "Freiburg"]:
+            # For redwood and freiburg cars, we only focus on the object in the middle
+            # 这里只找出了masks_2d最大的一个实例
+            max_id = np.argmax(masks_2d.sum(axis=-1).sum(axis=-1))
+            mask_max = masks_2d[max_id, ...].astype(np.float32) * 255.
+            bbox_max = bboxes_2d[max_id, ...]
+            label_max = labels_2d[max_id, ...]
+            prob_max = probs_2d[max_id, ...]
 
-        non_surface_pixels = self.pixels_sampler(bbox_max, mask_max.astype(np.bool8))
-        if non_surface_pixels.shape[0] > 200:
-            sample_ind = np.linspace(0, non_surface_pixels.shape[0]-1, 200).astype(np.int32)
-            non_surface_pixels = non_surface_pixels[sample_ind, :]
+            non_surface_pixels = self.pixels_sampler(bbox_max, mask_max.astype(np.bool8))
+            if non_surface_pixels.shape[0] > 200:
+                sample_ind = np.linspace(0, non_surface_pixels.shape[0]-1, 200).astype(np.int32)
+                non_surface_pixels = non_surface_pixels[sample_ind, :]
 
-        distortion_coef = np.array([self.k1, self.k2, 0.0, 0.0, 0.0])
-        non_surface_pixels_undistort = cv2.undistortPoints(non_surface_pixels.reshape(1, -1, 2).astype(np.float32), self.K, distortion_coef, P=self.K).squeeze()
-        background_rays_undist = get_rays(non_surface_pixels_undistort, self.invK).astype(np.float32)
-        instance = ForceKeyErrorDict()
-        instance.bbox = bbox_max
-        instance.mask = mask_max
-        instance.background_rays = background_rays_undist
-        instance.label = label_max
-        instance.prob = prob_max
+            distortion_coef = np.array([self.k1, self.k2, 0.0, 0.0, 0.0])
+            non_surface_pixels_undistort = cv2.undistortPoints(non_surface_pixels.reshape(1, -1, 2).astype(np.float32), self.K, distortion_coef, P=self.K).squeeze()
+            background_rays_undist = get_rays(non_surface_pixels_undistort, self.invK).astype(np.float32)
+            instance = ForceKeyErrorDict()
+            instance.bbox = bbox_max
+            instance.mask = mask_max
+            instance.background_rays = background_rays_undist
+            instance.label = label_max
+            instance.prob = prob_max
+            self.instances = [instance]
+        
+        else:
+            num_det = len(labels_2d)
+            self.instances = []
+            for i_det in range(num_det):
+                instance = ForceKeyErrorDict()
+                bbox = bboxes_2d[i_det, ...]
+                mask = masks_2d[i_det, ...].astype(np.float32) * 255.
+                label = labels_2d[i_det, ...]
+                prob = probs_2d[i_det, ...]
 
-        self.instances = [instance]
+                non_surface_pixels = self.pixels_sampler(bbox, mask.astype(np.bool8))
+                if non_surface_pixels.shape[0] > 200:
+                    sample_ind = np.linspace(0, non_surface_pixels.shape[0]-1, 200).astype(np.int32)
+                    non_surface_pixels = non_surface_pixels[sample_ind, :]
+
+                distortion_coef = np.array([self.k1, self.k2, 0.0, 0.0, 0.0])
+                non_surface_pixels_undistort = cv2.undistortPoints(non_surface_pixels.reshape(1, -1, 2).astype(np.float32), self.K, distortion_coef, P=self.K).squeeze()
+                background_rays_undist = get_rays(non_surface_pixels_undistort, self.invK).astype(np.float32)
+
+                instance.bbox = bbox
+                instance.mask = mask
+                instance.label = label
+                instance.prob = prob
+
+                instance.background_rays = background_rays_undist
+
+                self.instances.append(instance)
 
 
-valid_data_types = ["Redwood", "Freiburg", "MultiObject"]
+valid_data_types = ["Redwood", "Freiburg", "MultiObject", "AllObjectsOnTable"]
 
 class MonoSequence:
     def __init__(self, data_dir, configs):

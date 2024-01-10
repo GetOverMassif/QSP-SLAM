@@ -31,8 +31,9 @@ namespace ORB_SLAM2 {
 
 void VisualizeRelations(Relations& rls, Map* pMap, g2o::SE3Quat &Twc, std::vector<PointCloudPCL>& vPlanePoints);
 
-/*
+/**
  * Tracking utils for stereo+lidar on KITTI
+ * 获得双目+激光雷达点云的检测结果，创建对应的物体观测和地图物体，添加到相应关键帧中
  */
 void Tracking::GetObjectDetectionsLiDAR(KeyFrame *pKF) {
 
@@ -43,6 +44,9 @@ void Tracking::GetObjectDetectionsLiDAR(KeyFrame *pKF) {
     std::cout << "frame_name = " << frame_name << std::endl;
 
     // py::list detections = mpSystem->pySequence.attr("get_frame_by_id")(pKF->mnFrameId);
+
+    // 这里的检测结果中会直接包含 T_cam_obj, scale, surface_points, rays, depth, mask, depth (激光雷达点云在python程序中处理)
+
     py::list detections = mpSystem->pySequence.attr("get_frame_by_name")(pKF->mnFrameId, frame_name);
 
     for (auto det : detections) {
@@ -60,6 +64,7 @@ void Tracking::GetObjectDetectionsLiDAR(KeyFrame *pKF) {
             rays_mat = rays.cast<Eigen::MatrixXf>();
             depth = det.attr("depth").cast<Eigen::VectorXf>();
         }
+
         // Create C++ detection instance
         auto o = new ObjectDetection(Sim3Tco, pts, rays_mat, depth);
         pKF->mvpDetectedObjects.push_back(o);
@@ -68,8 +73,18 @@ void Tracking::GetObjectDetectionsLiDAR(KeyFrame *pKF) {
     pKF->mvpMapObjects = vector<MapObject *>(pKF->nObj, static_cast<MapObject *>(NULL));
 }
 
+
+/**
+ * （双目+Lidar）物体数据关联
+ *  建立观测与地图物体之间的关联
+ * 
+*/
 void Tracking::ObjectDataAssociation(KeyFrame *pKF)
 {
+
+    /**
+     * 首先获取局部（近邻）关键帧中的地图物体，通过修改 mnAssoRefID 的方式避免多次添加同一物体
+    */
     vector<MapObject *> vpLocalMapObjects;
     // Loop over all the local frames to find matches
     for (KeyFrame *plKF : mvpLocalKeyFrames)
@@ -88,18 +103,29 @@ void Tracking::ObjectDataAssociation(KeyFrame *pKF)
             }
         }
     }
+
     if (vpLocalMapObjects.empty())
         return;
 
+    /**
+     * 获取这一帧的Tcw, Detections
+     * 遍历这些 Detections, 对于每个Detection 遍历局部物体：
+     *  - 如果为空/isbad： dist设置为1000
+     *  - 如果为静态物体： 通过计算3D距离、2D距离，保存到dist中
+     * 找到dist中最近距离的物体
+    */
     Eigen::Matrix4f Tcw = Converter::toMatrix4f(mCurrentFrame.mTcw);
     Eigen::Matrix3f Rcw = Tcw.topLeftCorner<3, 3>();
     Eigen::Vector3f tcw = Tcw.topRightCorner<3, 1>();
     auto vDetections = pKF->mvpDetectedObjects;
+
+
     // loop over all the detections.
     for (int i = 0; i < pKF->nObj; i++)
     {
         auto det = vDetections[i];
         Eigen::Vector3f transDet = det->tco;
+        // 记录每个地图物体与 det 之间的距离
         vector<float> dist;
 
         for (auto pObj : vpLocalMapObjects)
@@ -128,6 +154,16 @@ void Tracking::ObjectDataAssociation(KeyFrame *pKF)
         }
         float minDist = *min_element(dist.begin(), dist.end());
 
+        /**
+         * 如果距离小于5,认为关联上，进一步判断：
+         * - 观测的点数是否达到一定数量
+         * - 该关键帧是否已经关联过该物体
+         *   - 否： 设置距离，向关键帧添加物体，向物体添加观测
+         *   - 是： 比较距离，如果距离更小，则更改关联的观测，原来与物体关联的观测重新设置 is_new
+         * 
+         * 如果距离大于5,认为is_new，关联地图点数大于50认为isGood
+        */
+
         // Start with a loose threshold
         if (minDist < 5.0)
         {
@@ -135,8 +171,10 @@ void Tracking::ObjectDataAssociation(KeyFrame *pKF)
             if (det->nPts < 25)
                 det->isGood = false;
 
+            // 局部地图物体idx
             int idx = min_element(dist.begin(), dist.end()) - dist.begin();
             MapObject *pMO = vpLocalMapObjects[idx];
+
             if (!pKF->mdAssociatedObjects.count(pMO)) {
                 pKF->mdAssociatedObjects[pMO] = minDist;
                 pKF->AddMapObject(pMO, i);
@@ -151,6 +189,7 @@ void Tracking::ObjectDataAssociation(KeyFrame *pKF)
                     vDetections[detId]->isNew = true;
                     pKF->AddMapObject(pMO, i);
                     pMO->AddObservation(pKF, i);
+                    // 这里无需移除PMO原先设置的观测，AddObservation中每个物体仅会与一个 detection id 建立联系
                 }
             }
         }
@@ -263,11 +302,13 @@ void Tracking::GetObjectDetectionsRGBD(KeyFrame *pKF)
     py::list detections = mpSystem->pySequence.attr("get_frame_by_name")(pKF->mnFrameId, frame_name);
 
     int num_dets = detections.size();
+
+    std::cout << "Detects " << num_dets << " objects Observations." << std::endl;
+
     // No detections, return immediately
     if (num_dets == 0)
         return;
 
-    std::cout << "Detects " << num_dets << " objects Observations." << std::endl;
     for (int detected_idx = 0; detected_idx < num_dets; detected_idx++)
     {
         auto det = new ObjectDetection();
@@ -328,7 +369,7 @@ void Tracking::GetObjectDetectionsRGBD(KeyFrame *pKF)
 */
 void Tracking::AssociateObjectsByProjection(ORB_SLAM2::KeyFrame *pKF)
 {
-    std::cout << "[ Tracking - AssociateObjectsByProjection ]" << std::endl;
+    std::cout << "\n[ Tracking - AssociateObjectsByProjection ]" << std::endl;
     // => Step 1: 获取该关键帧关联的地图点、物体检测
     auto mvpMapPoints = pKF->GetMapPointMatches();
     // Try to match and triangulate key-points with last key-frame
@@ -368,6 +409,7 @@ void Tracking::AssociateObjectsByProjection(ORB_SLAM2::KeyFrame *pKF)
         //           获取对应的物体指针，将物体、检测添加到关键帧，
         //           设置该 det->isNew = false
         //           将其他的检测关联地图点设置与物体关联
+
         if (!observed_object_id.empty())
         {
             // Find object that has the most matches
@@ -382,41 +424,49 @@ void Tracking::AssociateObjectsByProjection(ORB_SLAM2::KeyFrame *pKF)
 
             // associated object
             // todo: 这里的关联方式过于粗糙，只要有相同地图点就关联到一起了
-            auto pMO = mpMap->GetMapObject(object_id_max_matches);
-            pKF->AddMapObject(pMO, d_i);
-            detKF1->isNew = false;
 
-            // add newly detected feature points to object
-            int newly_matched_points = 0;
-            for (int k_i : detKF1->GetFeaturePoints()) {
-                auto pMP = mvpMapPoints[k_i];
-                if (pMP && !pMP->isBad())
-                {
-                    // new map points
-                    if (pMP->object_id < 0)
+            if (max_matches > minimum_match_to_associate)
+            {
+                // std::cout << ""
+                auto pMO = mpMap->GetMapObject(object_id_max_matches);
+                pKF->AddMapObject(pMO, d_i);
+                detKF1->isNew = false;
+
+                // add newly detected feature points to object
+                int newly_matched_points = 0;
+                for (int k_i : detKF1->GetFeaturePoints()) {
+                    auto pMP = mvpMapPoints[k_i];
+                    if (pMP && !pMP->isBad())
                     {
-                        pMP->in_any_object = true;
-                        pMP->object_id = object_id_max_matches;
-                        pMO->AddMapPoints(pMP);
-                        newly_matched_points++;
-                    }
-                    else
-                    {
-                        // if pMP is already associate to a different object, set bad flag
-                        // 一个特征点在不同帧可以在不同物体的mask内
-                        if (pMP->object_id != object_id_max_matches)
-                            pMP->SetBadFlag();
+                        // new map points
+                        if (pMP->object_id < 0)
+                        {
+                            pMP->in_any_object = true;
+                            pMP->object_id = object_id_max_matches;
+                            pMO->AddMapPoints(pMP);
+                            newly_matched_points++;
+                        }
+                        else
+                        {
+                            // if pMP is already associate to a different object, set bad flag
+                            // 一个特征点在不同帧可以在不同物体的mask内
+                            if (pMP->object_id != object_id_max_matches)
+                                pMP->SetBadFlag();
+                        }
                     }
                 }
+                cout <<  "Matches: " << max_matches << ", New points: " << newly_matched_points << ", Keypoints: " <<
+                    detKF1->mvKeysIndices.size() << ", Associated to object by projection " << object_id_max_matches
+                    << endl << endl;
+                /*cout <<  "Matches: " << max_matches << ", New points: " << newly_matched_points << ", Keypoints: " <<
+                    detKF1->mvKeysIndices.size() << ", Associated to object by projection " << object_id_max_matches
+                    << endl << endl;*/
             }
-            cout <<  "Matches: " << max_matches << ", New points: " << newly_matched_points << ", Keypoints: " <<
-                 detKF1->mvKeysIndices.size() << ", Associated to object by projection " << object_id_max_matches
-                 << endl << endl;
-            /*cout <<  "Matches: " << max_matches << ", New points: " << newly_matched_points << ", Keypoints: " <<
-                 detKF1->mvKeysIndices.size() << ", Associated to object by projection " << object_id_max_matches
-                 << endl << endl;*/
+            else
+            {
+                std::cout << "No association because of few MP shared" << std::endl;
+            }
         }
-
     }
 }
 
@@ -458,8 +508,9 @@ void Tracking::UpdateObjectObservation(ORB_SLAM2::Frame *pFrame, KeyFrame* pKF, 
     // // [0] 刷新可视化
     // ClearVisualization();
 
-    // [1] process MHPlanes estimation
-    TaskGroundPlane();
+    // // [1] process MHPlanes estimation
+    // TaskGroundPlane();
+    
     // clock_t time_1_TaskGroundPlane = clock();
 
     // // New task : for Manhattan Planes
@@ -469,11 +520,16 @@ void Tracking::UpdateObjectObservation(ORB_SLAM2::Frame *pFrame, KeyFrame* pKF, 
     // [2] process single-frame ellipsoid estimation
     // clock_t time_3_UpdateDepthEllipsoidEstimation, time_4_TaskRelationship, time_5_RefineObjectsWithRelations;
     if(!use_infer_detection){
+        /**
+         * 使用深度图像估计物体椭球体
+        */
         UpdateDepthEllipsoidEstimation(pFrame, pKF, withAssociation);
         // time_3_UpdateDepthEllipsoidEstimation = clock();
 
         // [3] Extract Relationship
-        // 
+        /**
+         * 构建椭球体与曼哈顿平面之间的关联关系
+        */
         TaskRelationship(pFrame);
         // time_4_TaskRelationship = clock();
 
@@ -661,6 +717,8 @@ void VisualizeCuboidsPlanesInImages(g2o::ellipsoid& e, const g2o::SE3Quat& campo
 
 // Process Ellipsoid Estimation for every boundingboxes in current frame.
 // Finally, store 3d Ellipsoids into the member variable mpLocalObjects of pFrame.
+// 为当前帧中的每个包围框处理椭球体估计
+// 最后，将3D椭球体存储到每一帧的成员变量mpLocalObjects中
 void Tracking::UpdateDepthEllipsoidEstimation(ORB_SLAM2::Frame* pFrame, KeyFrame* pKF, bool withAssociation)
 {
     if( !mbDepthEllipsoidOpened ) return;
@@ -893,7 +951,7 @@ void Tracking::RefineObjectsWithRelations(ORB_SLAM2::Frame *pFrame)
     std::cout << "Refine result : " << success_num << " objs." << std::endl;
 }
 
-// void Tracking::UpdateDepthEllipsoidUsingPointModel(EllipsoidSLAM::Frame* pFrame)
+// void Tracking::UpdateDepthEllipsoidUsingPointModel(ORB_SLAM2::Frame* pFrame)
 // {
 //     if( !mbDepthEllipsoidOpened ) return;
     
@@ -978,7 +1036,7 @@ void Tracking::RefineObjectsWithRelations(ORB_SLAM2::Frame *pFrame)
 
 // }
 
-// void Tracking::GenerateObservationStructure(EllipsoidSLAM::Frame* pFrame)
+// void Tracking::GenerateObservationStructure(ORB_SLAM2::Frame* pFrame)
 // {
 //     // 本存储结构以物体本身观测为索引.
 //     // pFrame->meas;
@@ -1126,6 +1184,12 @@ bool Tracking::SavePointCloudMap(const string& path)
 Builder* Tracking::GetBuilder()
 {
     return mpBuilder;
+}
+
+void Tracking::SetFrameByFrame()
+{
+    unique_lock<mutex> (mMutexFrameByFrame);
+    frame_by_frame = true;
 }
 
 }

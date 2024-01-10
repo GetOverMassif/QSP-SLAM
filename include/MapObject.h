@@ -88,7 +88,7 @@ public:
     KeyFrame *mpRefKF;
     KeyFrame *mpNewestKF;
     long unsigned int mnBALocalForKF;
-    long unsigned int mnAssoRefID;
+    long unsigned int mnAssoRefID;  // 
     long unsigned int mnFirstKFid;
 
     // variables used for loop closing

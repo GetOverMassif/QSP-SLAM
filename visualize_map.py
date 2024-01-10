@@ -24,6 +24,20 @@ from reconstruct.utils import color_table, get_configs
 import subprocess
 
 
+def quaternion_to_rotation_matrix(qvec):
+    # 规范化四元数
+    qvec = qvec / np.linalg.norm(qvec)
+
+    # 计算旋转矩阵元素
+    w, x, y, z = qvec
+    rotation_matrix = np.array([
+        [1 - 2*y**2 - 2*z**2, 2*x*y - 2*w*z, 2*x*z + 2*w*y],
+        [2*x*y + 2*w*z, 1 - 2*x**2 - 2*z**2, 2*y*z - 2*w*x],
+        [2*x*z - 2*w*y, 2*y*z + 2*w*x, 1 - 2*x**2 - 2*y**2]
+    ])
+
+    return rotation_matrix
+
 def config_parser():
     parser = argparse.ArgumentParser()
     parser.add_argument('-m', '--map_dir', type=str, required=True, help='path to map directory')
@@ -62,18 +76,22 @@ if __name__ == "__main__":
     vis = o3d.visualization.Visualizer()
     vis.create_window()
 
-    # Add geometries to map
-    filenames = os.listdir(objects_dir)
-    for item in filenames:
-        if not item.endswith("ply"):
-            continue
-        obj_id = int(item.split(".")[0])
-        mesh = o3d.io.read_triangle_mesh(os.path.join(objects_dir, "%d.ply" % obj_id))
-        mesh.compute_vertex_normals()
-        pose = np.load(os.path.join(objects_dir, "%d.npy" % obj_id))
-        mesh.transform(pose)
-        mesh.paint_uniform_color(color_table[obj_id % len(color_table)])
-        vis.add_geometry(mesh)
+    # Add MapObjects to map
+    showMapObject = False
+    if showMapObject:
+        filenames = os.listdir(objects_dir)
+        for item in filenames:
+            if not item.endswith("ply"):
+                continue
+            obj_id = int(item.split(".")[0])
+            mesh = o3d.io.read_triangle_mesh(os.path.join(objects_dir, "%d.ply" % obj_id))
+            mesh.compute_vertex_normals()
+            pose = np.load(os.path.join(objects_dir, "%d.npy" % obj_id))
+            mesh.transform(pose)
+            mesh.paint_uniform_color(color_table[obj_id % len(color_table)])
+            vis.add_geometry(mesh)
+
+    
     # Add background points
     with open(os.path.join(args.map_dir, "MapPoints.txt"), "r") as f_pts:
         lines = f_pts.readlines()
@@ -96,9 +114,37 @@ if __name__ == "__main__":
     map_pcd.points = o3d.utility.Vector3dVector(pts)
     map_pcd.colors = o3d.utility.Vector3dVector(colors)
     vis.add_geometry(map_pcd)
+    # vis.draw_geometries_with_editing(map_pcd)
+
     # Add coordinate frame for reference
     coor_frame = o3d.geometry.TriangleMesh.create_coordinate_frame().scale(configs.viewer.frame_size, np.array([0., 0., 0.]))
     vis.add_geometry(coor_frame)
+
+    # Add map.pcd if any
+    dense_map_file = osp.join(args.map_dir, "map.pcd")
+    if osp.exists(dense_map_file):
+        dense_map_pcd = o3d.io.read_point_cloud(dense_map_file)
+        vis.add_geometry(dense_map_pcd)
+
+    # Add trajectory
+    trajectory_file = osp.join(args.map_dir, "KeyFrameTrajectory.txt")
+    if osp.exists(trajectory_file):
+        with open(trajectory_file, 'r') as f:
+            lines = f.readlines()
+            for line in lines:
+                params = [float(x) for x in line.split(' ')]
+                # print(f"params = {params}")
+                tvec = params[1:4]
+                qvec = params[4:]
+                T = np.eye(4)
+                T[:3,3] = tvec
+                T[:3,:3] = quaternion_to_rotation_matrix(qvec)
+                coor_scale = 0.1 * configs.viewer.frame_size
+                frame = o3d.geometry.TriangleMesh.create_coordinate_frame().scale(coor_scale, np.array([0., 0., 0.]))
+                frame.transform(T)
+
+                vis.add_geometry(frame)
+
     # must be put after adding geometries
     set_view(vis, dist=configs.viewer.distance, theta=configs.viewer.tilt * np.pi / 180)
     vis.run()

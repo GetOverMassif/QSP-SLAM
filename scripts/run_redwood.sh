@@ -55,4 +55,3 @@ map/redwood/$REDWOOD_SCAN_ID
 # $DATASET_PATH/RedwoodOS/data/rgbd/$REDWOOD_SCAN_ID  \
 # $DATASET_PATH/RedwoodOS/data/rgbd/$REDWOOD_SCAN_ID/associate.txt \
 # map/redwood/$REDWOOD_SCAN_ID
-

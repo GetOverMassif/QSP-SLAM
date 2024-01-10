@@ -86,6 +86,8 @@
         "__hash_table": "cpp",
         "__tree": "cpp",
         "__locale": "cpp",
-        "stack": "cpp"
+        "stack": "cpp",
+        "locale": "cpp",
+        "__node_handle": "cpp"
     }
 }

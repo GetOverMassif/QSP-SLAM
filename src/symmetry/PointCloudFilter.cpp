@@ -129,7 +129,6 @@ ORB_SLAM2::PointCloud *pclToQuadricPointCloudPtr(PointCloudPCL::Ptr &pCloud) {
         p.z = pT.z;
         cloud.push_back(p);
     }
-
     return cloudPtr;
 }
 

@@ -121,10 +121,14 @@ public:
 
     // Object SLAM
     std::set<MapObject*> mspMapObjects;
+
     void AddMapObject(MapObject* pMO);
     void EraseMapObject(MapObject* pMO);
     MapObject* GetMapObject(int object_id);
     std::vector<MapObject*> GetAllMapObjects();
+
+    // 显示地图信息（如物体）
+    void ShowMapInfo();
 
     // Lj
     void addEllipsoid(ellipsoid* pObj);

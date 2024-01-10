@@ -20,5 +20,7 @@ def get_sequence(data_dir, configs):
     # We use a single class for Redwood and Freiburg sequence
     else:
     # if configs.data_type == "Redwood" or configs.data_type == "Freiburg":
+        print(1)
         from .mono_sequence import MonoSequence
+        print(2)
         return MonoSequence(data_dir, configs)

@@ -105,6 +105,7 @@ public:
 
     // Object SLAM by Jingwen
     // KITTI (stereo+LiDAR)
+    // 获得双目+激光雷达点云的检测结果，创建对应的物体观测和地图物体，添加到相应关键帧中
     void GetObjectDetectionsLiDAR(KeyFrame *pKF);
     void ObjectDataAssociation(KeyFrame *pKF);
     // Freiburg Cars and Redwood (Mono)
@@ -140,12 +141,12 @@ public:
     void VisualizeManhattanPlanes();
 
 
-    // void TaskRelationship(EllipsoidSLAM::Frame* pFrame);
-    // void RefineObjectsWithRelations(EllipsoidSLAM::Frame *pFrame);
+    // void TaskRelationship(ORB_SLAM2::Frame* pFrame);
+    // void RefineObjectsWithRelations(ORB_SLAM2::Frame *pFrame);
 
-    // void Update3DObservationDataAssociation(EllipsoidSLAM::Frame* pFrame, std::vector<int>& associations, std::vector<bool>& KeyFrameChecks);
+    // void Update3DObservationDataAssociation(ORB_SLAM2::Frame* pFrame, std::vector<int>& associations, std::vector<bool>& KeyFrameChecks);
     void UpdateDepthEllipsoidEstimation(ORB_SLAM2::Frame* pFrame, KeyFrame* pKF, bool withAssociation);
-    // void UpdateDepthEllipsoidUsingPointModel(EllipsoidSLAM::Frame* pFrame);
+    // void UpdateDepthEllipsoidUsingPointModel(ORB_SLAM2::Frame* pFrame);
 
     Builder* GetBuilder();
     bool SavePointCloudMap(const string& path);
@@ -195,6 +196,8 @@ public:
     bool mbOnlyTracking;
 
     void Reset();
+
+    void SetFrameByFrame();
 
 protected:
 
@@ -311,6 +314,7 @@ protected:
 
     // bool mbMapInSameThread;
 
+    std::mutex mMutexFrameByFrame;
     bool frame_by_frame;
 
     Optimizer* mpOptimizer;
@@ -330,6 +334,8 @@ protected:
 
     bool mbDepthEllipsoidOpened;
     bool mbOpenOptimization;
+
+    int minimum_match_to_associate;
 
 };
 

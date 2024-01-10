@@ -175,6 +175,7 @@ void LocalMapping::GetNewObservations()
     }
 }
 
+// 对 未关联上的观测进行物体创建
 void LocalMapping::CreateNewMapObjects()
 {
     PyThreadStateLock PyThreadLock;
@@ -183,7 +184,7 @@ void LocalMapping::CreateNewMapObjects()
 
     /**
      * 获取关键帧位姿、物体观测，遍历物体观测
-     * （1）
+     * 对 isNew 且 isGood 的观测进行新物体的创建
     */
 
     auto SE3Twc = Converter::toMatrix4f(mpCurrentKeyFrame->GetPoseInverse());
@@ -202,7 +203,7 @@ void LocalMapping::CreateNewMapObjects()
             continue;
         if (!det->isNew)
             continue;
-        if (!det->isNew)
+        if (!det->isGood)
             continue;
         auto pyMapObject = pyOptimizer.attr("reconstruct_object")
                 (det->Sim3Tco, det->SurfacePoints, det->RayDirections, det->DepthObs);
@@ -353,13 +354,14 @@ void LocalMapping::ProcessDetectedObjects()
         }
 
         MapObject *pMO = mvpAssociatedObjects[det_i];
+
         if (!pMO) {
             std::cout << "  Conitinue because !pMO" << std::endl;
             continue;
         }
 
         /** 这里人为规定了只考虑编号为0（中间的）的物体 */
-        if (pMO->mnId != 0) {
+        if (pMO->mnId != 0 && create_single_object) {
             std::cout << "  Conitinue because pMO->mnId != 0" << std::endl;
             continue;
         }
@@ -378,12 +380,6 @@ void LocalMapping::ProcessDetectedObjects()
 
         bool isShortInternal = numKFsPassedSinceInit < 15 and (mpCurrentKeyFrame->mnId >= 3);
         std::string condition_str = "numKFsPassedSinceInit < 15 and (mpCurrentKeyFrame->mnId >= 3)";
-
-
-        // bool use_ellipsold_pose_for_shape_optimization = true;
-        
-        // bool use_ellipsold_pose_for_shape_optimization = true;
-
 
         /**
          * 在物体被初始化的时间间隔的过程中：
@@ -429,10 +425,6 @@ void LocalMapping::ProcessDetectedObjects()
             std::cout << "  Conitinue because (numKFsPassedSinceInit - 15) % 5 != 0" << std::endl;
             continue;
         }
-
-//        int numKFsPassedSinceLastRecon = int(mpCurrentKeyFrame->mnId) - nLastReconKFID;
-//        if (numKFsPassedSinceLastRecon  < 8)
-//            continue;
 
         std::vector<MapPoint*> points_on_object = pMO->GetMapPointsOnObject();
         int n_points = points_on_object.size();
@@ -569,11 +561,11 @@ void LocalMapping::ProcessDetectedObjects()
                                                 Eigen::Vector3f(0,1,0)).matrix();
 
                     flipped_Two.topLeftCorner(3,3) = flipped_Two.topLeftCorner(3,3) * Ry;
-                    cout << " => flipped_Two = " << flipped_Two.matrix() << std::endl;
+                    // cout << " => flipped_Two = " << flipped_Two.matrix() << std::endl;
                     auto pyMapObjectFlipped = pyOptimizer.attr("reconstruct_object")
                             (SE3Tcw * flipped_Two, surface_points_cam, rays, depth_obs, pMO->vShapeCode);
                     
-                    std::cout << "Loss: " << pyMapObjectFlipped.attr("loss").cast<float>() << std::endl;
+                    // std::cout << "Loss: " << pyMapObjectFlipped.attr("loss").cast<float>() << std::endl;
                     losses[i_rot] = pyMapObjectFlipped.attr("loss").cast<float>();
 
                     bool recon_state = pyMapObjectLeastLoss.attr("is_good").cast<bool>();
@@ -588,12 +580,12 @@ void LocalMapping::ProcessDetectedObjects()
                     // 如果先前的重建失败 / 当前重建成功且loss更小
                     if (!recon_state || \
                         (loss_least > loss_flipped && recon_state_flipped)) {
-                        std::cout << "! Rotate y axis by " << double(i_rot) * flip_sample_angle << " rad" << std::endl;
+                        std::cout << "# Rotate y axis by " << double(i_rot) * flip_sample_angle << " rad" << std::endl;
                         pyMapObjectLeastLoss = pyMapObjectFlipped;
                     }
                 }
                 // todo: to Judge whether good orientation has been found
-                std::cout << "Losses: ";
+                std::cout << "# Losses: ";
                 for (auto &loss: losses) {
                     std::cout << loss << ",";
                 }

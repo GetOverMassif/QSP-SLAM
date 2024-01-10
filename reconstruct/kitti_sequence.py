@@ -145,6 +145,8 @@ class FrameWithLiDAR:
             T_cam_obj = self.T_cam_velo @ T_velo_obj
             T_cam_obj[:3, :3] *= l
 
+            # 这里的检测结果中会直接包含 Tco, scale, surface_points, rays (激光雷达点云在python程序中处理)
+
             # Initialize detected instance
             instance = ForceKeyErrorDict()
             instance.T_cam_obj = T_cam_obj
@@ -195,14 +197,10 @@ class FrameWithLiDAR:
             points_in_masks = [masks_2d[n, pixels_coord[:, 1], pixels_coord[:, 0]] for n in range(masks_2d.shape[0])]
             num_matches = np.array([points_in_mask[points_in_mask].shape[0] for points_in_mask in points_in_masks])
             max_num_matchess = num_matches.max()
-            print("198")
             if max_num_matchess > pixels_coord.shape[0] * 0.5:
                 n = np.argmax(num_matches)
                 instance.mask = masks_2d[n, ...]
                 instance.bbox = bboxes_2d[n, ...]
-
-                print("204")
-
                 if instance.mask[instance.mask].shape[0] > self.min_mask_area:
                     # Sample non-surface pixels
                     non_surface_pixels = self.pixels_sampler(instance.bbox, instance.mask)

@@ -688,14 +688,14 @@ void GenerateConstrainPlanesToEllipsoid(g2o::ellipsoid &e_local_normalized, Vect
         mPlanesParam.row(i) = CPlanesTotal[i]->toVector().segment(5,4).transpose();
     }
     std::cout << "mPlanesParam = " << mPlanesParam.matrix() << std::endl;
-    std::cout << "Press Enter to continue....." << std::endl;
+    // std::cout << "Press Enter to continue....." << std::endl;
     // g2o::ellipsoid e_global_multiplanes = OptimizeEllipsoidUsingPlanes(e_global_normalized, mPlanesParam);
     // g2o::ellipsoid e_global_multiplanes = OptimizeEllipsoidUsingPlanes(e_local_normalized, mPlanesParam);
 
 
     // 确保切平面的法向量指向椭球体的中心
     e_local_normalized.addConstrainPlanes(CPlanesTotal);
-
+    
     return;
 }
 

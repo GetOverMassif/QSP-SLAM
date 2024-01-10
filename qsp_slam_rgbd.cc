@@ -28,6 +28,10 @@
 
 #include "src/config/Config.h"
 
+#include "include/utils/file_operate.h"
+
+#include <pangolin/pangolin.h>
+
 using namespace std;
 
 /**
@@ -83,6 +87,7 @@ int main(int argc, char **argv)
 
     string strSettingsFile = argv[2];
 
+    // Config::CheckParams("configs/standard_param.yaml");
 
     //  path_to_dataset [path_to_map]
     string dataset_path = Config::Get<string>("Dataset.Path.Root");
@@ -96,11 +101,39 @@ int main(int argc, char **argv)
 
     string strDetectionDir = dataset_path + "/bbox/";
 
+    std::string save_map_dir = std::string(argv[5]);
+    std::string data_source_dir = std::string(argv[3]);
+
+    assert(CreateDirIfNotExist(save_map_dir));
+
     std::cout << "- settings file: " << strSettingsFile << std::endl;
     std::cout << "- dataset_path: " << dataset_path << std::endl;
     std::cout << "- strDetectionDir: " << strDetectionDir << std::endl;
     string dataset_type = Config::Get<string>("Dataset.Type");
     std::cout << "- dataset_type : " << dataset_type << std::endl;
+
+    // 这里的跳步对后续的图像物体检测造成了影响
+    int skip_num = Config::Get<int>("Running.skip_num");
+    double total_ratio = Config::Get<double>("Running.total_ratio");
+
+    cout << "nImages = " << nImages << std::endl;
+
+    int total_num = std::min(int(total_ratio * (double)nImages + 1), nImages);
+    skip_num = std::max(1, skip_num);
+
+    std::cout << "total_num = " << total_num << ", skip_num = " << skip_num << std::endl;
+
+    // jumpResize(vstrImageFilenamesRGB, );
+    int new_index = 0, raw_index = 0;
+    for(; raw_index < total_num; new_index+=1, raw_index+=skip_num) {
+        vstrImageFilenamesRGB[new_index] = vstrImageFilenamesRGB[raw_index];
+        vstrImageFilenamesD[new_index] = vstrImageFilenamesD[raw_index];
+        vTimestamps[new_index] = vTimestamps[raw_index];
+    }
+    nImages = new_index;
+    vstrImageFilenamesRGB.resize(nImages);
+    vstrImageFilenamesD.resize(nImages);
+    vTimestamps.resize(nImages);
 
 
     SLAM.SetImageNames(vstrImageFilenamesRGB);
@@ -118,20 +151,10 @@ int main(int argc, char **argv)
     // Main loop
     cv::Mat imRGB, imD;
 
-    int skip_num = Config::Get<int>("Running.skip_num");
-    double total_ratio = Config::Get<double>("Running.total_ratio");
-
-    cout << "nImages = " << nImages << std::endl;
-
-    int total_num = std::min(int(total_ratio * (double)nImages + 1), nImages);
-    skip_num = std::max(1, skip_num);
-
-    std::cout << "total_num = " << total_num << ", skip_num = " << skip_num << std::endl;
-
-    for(int ni = 0; ni < total_num; ni+=skip_num)
+    for(int ni = 0; ni < nImages; ni++)
     {
         std::cout << "\n========================================" << std::endl;
-        std::cout << "=> Inputting Image " << ni << "/" << total_num << std::endl;
+        std::cout << "=> Inputting Image " << ni << "/" << nImages << std::endl;
 
         std::chrono::steady_clock::time_point t1_read = std::chrono::steady_clock::now();
 
@@ -169,8 +192,12 @@ int main(int argc, char **argv)
 
         std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
 
-        // cout << imD.type() << endl;
-        // cout << imD << endl;
+        // cout << "imRGB.type() = " << imRGB.type() << endl;
+
+        // cout << "imD.type() = " << imD.type() << endl;
+
+        assert(imRGB.type()==16);
+        assert(imD.type()==2);
 
         if (msensor == ORB_SLAM2::System::RGBD)
             SLAM.TrackRGBD(imRGB, imD, tframe);
@@ -203,10 +230,9 @@ int main(int argc, char **argv)
 //            SLAM.SaveMapCurrentFrame(string(argv[4]), ni);
     }
 
+    SLAM.SaveEntireMap(save_map_dir);
 
-    SLAM.SaveEntireMap(string(argv[5]));
-
-    string traj_path = std::string(argv[3])  + "KeyFrameTrajectory.txt";
+    string traj_path = data_source_dir  + "KeyFrameTrajectory.txt";
 
     if(fSettings["System.output"].isNamed()) {
         if(fSettings["System.output_path"].isNamed()) {
@@ -221,6 +247,8 @@ int main(int argc, char **argv)
 
     // Save pointcloud
     bool mbOpenBuilder = Config::Get<int>("Visualization.Builder.Open") == 1;
+
+    assert(CreateDirIfNotExist(dataset_path_savedir));
     if(mbOpenBuilder)
         SLAM.getTracker()->SavePointCloudMap(dataset_path_savedir+"map.pcd");
 
@@ -242,9 +270,17 @@ int main(int argc, char **argv)
     cout << "median tracking time: " << vTimesTrack[nImages/2] << endl;
     cout << "mean tracking time: " << totaltime/nImages << endl;
 
-    cout << "Use Ctrl+C to quit." << endl;
-    
-    while(1);
+    cout << "Press y to quit." << endl;
+    char key;
+    key = getchar();
+
+    while(key!='y' && key!='Y'){
+        cout << "Press y to quit." << endl;
+        key = getchar();
+    }
+
+    // SLAM.Shutdown();
+    cv::destroyAllWindows();
 
     // SLAM.Shutdown();
 
