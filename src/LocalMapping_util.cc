@@ -255,6 +255,7 @@ void LocalMapping::CreateNewObjectsFromDetections()
     // Create new objects first, otherwise data association might fail
     for (int det_i = 0; det_i < mvpObjectDetections.size(); det_i++)
     {
+        std::cout << "=> det_i : " << det_i << std::endl;
         // Step 2.1: 如果该检测如果已经与物体关联/关键点过少，则continue
 
         auto det = mvpObjectDetections[det_i];
@@ -295,10 +296,14 @@ void LocalMapping::CreateNewObjectsFromDetections()
             pNewObj->AddMapPoints(pMP);
             n_valid_points++;
         }
-        std::cout << "n_valid_points = " << n_valid_points << std::endl;
-        std::cout << "det->isNew" << det->isNew << std::endl;
-        // todo: 这里只处理了一个结果
-        return;  // for mono sequences, we only focus on the single object in the middle
+        // std::cout << "n_valid_points = " << n_valid_points << std::endl;
+        // std::cout << "det->isNew" << det->isNew << std::endl;
+
+        if (create_single_object)
+        {
+            // todo: 这里只处理了一个结果
+            return;  // for mono sequences, we only focus on the single object in the middle
+        }
     }
 }
 
@@ -345,7 +350,7 @@ void LocalMapping::ProcessDetectedObjects()
         if (show_ellipsold_process && det_i)
         {
             auto det_vec = mvpObjectDetections[det_i-1]->bbox;
-            int x1 = (int)det_vec(1), y1 = (int)det_vec(2), x2 = (int)det_vec(3), y2 = (int)det_vec(4);
+            int x1 = (int)det_vec(0), y1 = (int)det_vec(1), x2 = (int)det_vec(2), y2 = (int)det_vec(3);
             // cv::Mat img_show = pFrame->rgb_img.clone();
             cv::Mat img_show(cam_height, cam_width, CV_8UC3, cv::Scalar(255, 255, 255));
             std::cout << "img_show.channels = " << img_show.channels() << std::endl;
@@ -665,7 +670,7 @@ void LocalMapping::ProcessDetectedObjects()
     if (show_ellipsold_process && mvpObjectDetections.size())
     {
         auto det_vec = mvpObjectDetections.back()->bbox;
-        int x1 = (int)det_vec(1), y1 = (int)det_vec(2), x2 = (int)det_vec(3), y2 = (int)det_vec(4);
+        int x1 = (int)det_vec(0), y1 = (int)det_vec(1), x2 = (int)det_vec(2), y2 = (int)det_vec(3);
         cv::Mat img_show(cam_height, cam_width, CV_8UC3, cv::Scalar(255, 255, 255));
         std::cout << "img_show.channels = " << img_show.channels() << std::endl;
         cv::rectangle(img_show, cv::Point(x1, y1), cv::Point(x2, y2), cv::Scalar(255, 0, 0), 2);  // Scalar(255, 0, 0) is for blue color, 2 is the thickness
