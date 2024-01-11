@@ -45,6 +45,7 @@ cv::Mat FrameDrawer::DrawFrame()
     int state; // Tracking state
 
     vector<cv::Mat> vmasks;
+    vector<vector<int>> vbboxs;
 
     //Copy variables within scoped mutex
     {
@@ -54,6 +55,10 @@ cv::Mat FrameDrawer::DrawFrame()
 
         for (auto mask: mvImObjectMasks) {
             vmasks.push_back(mask);
+        }
+
+        for (auto bbox: mvImObjectBboxs) {
+            vbboxs.push_back(bbox);
         }
 
         if(mState==Tracking::SYSTEM_NOT_READY)
@@ -96,6 +101,12 @@ cv::Mat FrameDrawer::DrawFrame()
         channels.emplace_back(mask);
         merge(channels, mask_rgb);
         cv::addWeighted(im, 1, mask_rgb, 0.2, 0.0, im);
+    }
+
+    for (auto &bbox: vbboxs) {
+        int x1 = bbox[0], y1 = bbox[1], x2 = bbox[2], y2 = bbox[3];
+        cv::rectangle(im, cv::Point2f(float(x1), float(y1)), cv::Point2f(float(x2), float(y2)), \
+                      cv::Scalar(0,0,200));
     }
 
     //Draw
@@ -198,11 +209,15 @@ void FrameDrawer::Update(Tracking *pTracker)
     mvbMap = vector<bool>(N,false);
     mbOnlyTracking = pTracker->mbOnlyTracking;
     mvImObjectMasks.clear();
+    mvImObjectBboxs.clear();
 
     for (auto img: pTracker->mvImObjectMasks) {
         mvImObjectMasks.push_back(img);
     }
-    
+
+    for (auto bbox: pTracker->mvImObjectBboxs) {
+        mvImObjectBboxs.push_back(bbox);
+    }
 
     if(pTracker->mLastProcessedState==Tracking::NOT_INITIALIZED)
     {

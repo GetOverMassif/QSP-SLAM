@@ -39,8 +39,11 @@ public:
     void SetRenderer(ObjectRenderer *pRenderer);
     void AddObject(MapObject *pMO);
     void ProcessNewObjects();
-    void DrawObjects(bool bFollow, const Eigen::Matrix4f &Tec);
+    void DrawObjects(bool bFollow, const Eigen::Matrix4f &Tec, double prob_thresh=0);
     void DrawCuboid(MapObject *pMO);
+
+    void SE3ToOpenGLCameraMatrix(g2o::SE3Quat &matIn, pangolin::OpenGlMatrix &M); // inverse matIn
+    void drawEllipsoidsInVector(ellipsoid* e);
     void SetCurrentCameraPose(const Eigen::Matrix4f &Tcw);
     void DrawFrame(const float w, const float h, const float l);
     std::list<MapObject*> mlNewMapObjects;
@@ -52,6 +55,11 @@ public:
     std::vector<std::tuple<float, float, float>> mvObjectColors;
     Eigen::Matrix4f SE3Tcw; // current camera pose
     Eigen::Matrix4f SE3TcwFollow; // pose of camera which our eye is attached
+
+
+    float mCameraLineWidth;
+    bool mbOpenTransform;
+    g2o::SE3Quat mTge;
 };
 
 }

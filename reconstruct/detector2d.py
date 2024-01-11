@@ -124,9 +124,7 @@ class Detector2D(object):
     def visualize_result(self, image, filename):
         self.model.show_result(image, self.predictions, out_file=filename)
 
-
     def get_valid_detections(self, boxes, masks, labels, probs):
-
 
         # # Remove those on the margin
         # cond1 = (boxes[:, 0] >= 30) & (boxes[:, 1] > 10) & (boxes[:, 2] < 1211) & (boxes[:, 3] < 366)
@@ -136,7 +134,7 @@ class Detector2D(object):
 
         cond2 = (boxes_area > self.min_bb_area)
         scores = boxes[:, -1]
-        cond3 = (scores >= 0.70)
+        cond3 = (scores >= 0.60)
 
         # valid_mask = (cond2 & cond3)
         valid_mask = (cond2 & cond3)

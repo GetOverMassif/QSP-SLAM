@@ -222,10 +222,11 @@ void Viewer::Run()
         if(menuShowMapObjects)
             mpObjectDrawer->DrawObjects(bFollow, Tec);
 
-        // 如果是RGBD模式，则绘制深度图对应的点云
-        if (mpTracker->mSensor == System::RGBD) {
-            mpMapDrawer->DrawDepthPointCloud();
-        }
+        // // 如果是RGBD模式，则绘制深度图对应的点云
+        // if (mpTracker->mSensor == System::RGBD) {
+        //     mpMapDrawer->DrawDepthPointCloud();
+            
+        // }
 
         pangolin::FinishFrame();
 

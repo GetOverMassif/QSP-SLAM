@@ -216,6 +216,7 @@ void Tracking::GetObjectDetectionsMono(KeyFrame *pKF)
     // => Step 1: 准备Python线程锁，清空物体 mask 的 vector
     PyThreadStateLock PyThreadLock;
     mvImObjectMasks.clear();
+    mvImObjectBboxs.clear();
 
     // => Step 2: 获取帧号/帧名称，调用物体检测
     std::string frame_name = mvstrImageFilenamesRGB[pKF->mnFrameId];
@@ -291,6 +292,7 @@ void Tracking::GetObjectDetectionsRGBD(KeyFrame *pKF)
     PyThreadStateLock PyThreadLock;
 
     mvImObjectMasks.clear();
+    mvImObjectBboxs.clear();
 
     std::string frame_name = mvstrImageFilenamesRGB[pKF->mnFrameId];
 
@@ -330,7 +332,11 @@ void Tracking::GetObjectDetectionsRGBD(KeyFrame *pKF)
         
         cv::erode(mask_cv, mask_erro, kernel);
 
+        int x1 = (int)(det->bbox(0)), y1 = (int)(det->bbox(1)), \
+            x2 = (int)(det->bbox(2)), y2 = (int)(det->bbox(3));
+
         mvImObjectMasks.push_back(std::move(mask_cv));
+        mvImObjectBboxs.push_back({x1,y1,x2,y2});
         
         // get 2D feature points inside mask
         for (int i = 0; i < pKF->mvKeys.size(); i++)
@@ -424,6 +430,10 @@ void Tracking::AssociateObjectsByProjection(ORB_SLAM2::KeyFrame *pKF)
 
             // associated object
             // todo: 这里的关联方式过于粗糙，只要有相同地图点就关联到一起了
+
+            // 增加判断条件： 除了地图点验证，再增加椭球体的IOU验证
+
+            // bool match = CheckIoU();
 
             if (max_matches > minimum_match_to_associate)
             {
@@ -702,7 +712,7 @@ void VisualizeCuboidsPlanesInImages(g2o::ellipsoid& e, const g2o::SE3Quat& campo
 
     std::vector<plane*> pPlanes = e.GetCubePlanesInImages(g2o::SE3Quat(), calib, rows, cols, 30);
     int planeNum = pPlanes.size();
-    std::cout << "[Tracking::VisualizeCuboidsPlanesInImages] planeNum = " << planeNum << std::endl;
+    // std::cout << "[Tracking::VisualizeCuboidsPlanesInImages] planeNum = " << planeNum << std::endl;
     for( int i=0; i<planeNum; i++){
         Vector4d planeVec = pPlanes[i]->param.head(4);
         Vector3d color(0,0,1.0);  
@@ -738,15 +748,7 @@ void Tracking::UpdateDepthEllipsoidEstimation(ORB_SLAM2::Frame* pFrame, KeyFrame
     for(int i=0;i<rows;i++){
         Eigen::VectorXd det_vec = obs_mat.row(i);  // id x1 y1 x2 y2 label rate instanceID
 
-        std::cout << "Det " << i << ": " << det_vec.transpose().matrix() << std::endl;
-
-        int x1 = (int)det_vec(1), y1 = (int)det_vec(2), x2 = (int)det_vec(3), y2 = (int)det_vec(4);
-
-        // cv::Mat img_show = pFrame->rgb_img.clone();
-        // std::cout << "img_show.channels = " << img_show.channels() << std::endl;
-        // cv::rectangle(img_show, cv::Point(x1, y1), cv::Point(x2, y2), cv::Scalar(255, 0, 0), 2);  // Scalar(255, 0, 0) is for blue color, 2 is the thickness
-        // cv::imshow("Image with Bbox", img_show);
-        // cv::waitKey(0);
+        std::cout << "=> Det " << i << ": " << det_vec.transpose().matrix() << std::endl;
 
         int label = round(det_vec(5));
         double measurement_prob = det_vec(6);
@@ -793,8 +795,9 @@ void Tracking::UpdateDepthEllipsoidEstimation(ORB_SLAM2::Frame* pFrame, KeyFrame
              << prob_check << "," << c1 << "," << c2 << "," << !c3 << "," << c4 << std::endl;
 
         if( prob_check && c1 && c2 && !c3 && c4 ){
-            std::cout << "bPlaneNotClear = " << bPlaneNotClear << std::endl;
+            // std::cout << "bPlaneNotClear = " << bPlaneNotClear << std::endl;
             if(bPlaneNotClear){
+                std::cout << "mpMap->clearPlanes()" << std::endl;
                 mpMap->clearPlanes();
                 if(miGroundPlaneState == 2) // if the groundplane has been estimated
                     mpMap->addPlane(&mGroundPlane);
@@ -833,7 +836,11 @@ void Tracking::UpdateDepthEllipsoidEstimation(ORB_SLAM2::Frame* pFrame, KeyFrame
                     mpMap->ClearBoundingboxes();
                     bEllipsoidNotClear = false;
                 }
+
+
                 mpMap->addEllipsoidVisual(pObjByFitting);
+                std::cout << "Add Ellipsold" << std::endl;
+                
                 
                 // std::cout << "*****************************" << std::endl;
                 // std::cout << "Show EllipsoidVisual, press [ENTER] to continue ... " << std::endl;
@@ -853,11 +860,24 @@ void Tracking::UpdateDepthEllipsoidEstimation(ORB_SLAM2::Frame* pFrame, KeyFrame
             }
         }
 
+        if (show_ellipsold_process) 
+        {
+            int x1 = (int)det_vec(1), y1 = (int)det_vec(2), x2 = (int)det_vec(3), y2 = (int)det_vec(4);
+            cv::Mat img_show = pFrame->rgb_img.clone();
+            std::cout << "img_show.channels = " << img_show.channels() << std::endl;
+            cv::rectangle(img_show, cv::Point(x1, y1), cv::Point(x2, y2), cv::Scalar(255, 0, 0), 2);  // Scalar(255, 0, 0) is for blue color, 2 is the thickness
+            cv::imshow("Image with Bbox", img_show);
+            cv::waitKey(0);
+        }
+
         // 若不成功保持为NULL
         pFrame->mpLocalObjects.push_back(pEllipsoidForThisObservation);
         pKF->mpLocalObjects.push_back(pEllipsoidForThisObservation);
     }
 
+    if (show_ellipsold_process){
+        cv::destroyWindow("Image with Bbox");
+    }
     return;
 }
 

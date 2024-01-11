@@ -54,7 +54,6 @@ namespace ORB_SLAM2
         glEnd();
     }
 
-
 void MapDrawer::drawEllipsoid() {
     // SE3Quat TmwSE3 = ellipsoids[i]->pose.inverse();
     // Vector3d scale = ellipsoids[i]->scale;

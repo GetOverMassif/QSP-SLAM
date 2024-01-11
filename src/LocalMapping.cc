@@ -46,6 +46,12 @@ LocalMapping::LocalMapping(System *pSys, Map *pMap, ObjectDrawer* pObjectDrawer,
     flip_sample_angle = 2 * M_PI / (double)flip_sample_num;
 
     create_single_object = Config::Get<int>("CreateSingleObject");
+    show_ellipsold_process = Config::Get<int>("LocalMapping.ShowEllipsoldProcess");
+
+// Camera.width: 640
+// Camera.height: 480
+    cam_width = Config::Get<int>("Camera.width");
+    cam_height = Config::Get<int>("Camera.height");
 }
 
 void LocalMapping::SetLoopCloser(LoopClosing* pLoopCloser)

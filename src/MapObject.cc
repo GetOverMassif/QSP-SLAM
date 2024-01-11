@@ -27,7 +27,7 @@ int MapObject::nNextId = 0;
 MapObject::MapObject(const Eigen::Matrix4f &T, const Eigen::Vector<float, 64> &vCode, KeyFrame *pRefKF, Map *pMap) :
         mpRefKF(pRefKF), mpNewestKF(pRefKF), mnBALocalForKF(0), mnAssoRefID(0), mnFirstKFid(pRefKF->mnId),
         mnCorrectedByKF(0), mnCorrectedReference(0), mnLoopObjectForKF(0), mnBAGlobalForKF(0),
-        w(1.), h(1.), l(1.), mbBad(false), mbDynamic(false), mpMap(pMap), nObs(0), mRenderId(-1)
+        w(0.4), h(0.4), l(0.4), mbBad(false), mbDynamic(false), mpMap(pMap), nObs(0), mRenderId(-1)
 {
     // Transformation Matrix in Sim3
     Sim3Two = T;
@@ -56,11 +56,14 @@ MapObject::MapObject(const Eigen::Matrix4f &T, const Eigen::Vector<float, 64> &v
 MapObject::MapObject(KeyFrame *pRefKF, Map *pMap) :
         mpRefKF(pRefKF), mpNewestKF(pRefKF), mnBALocalForKF(0), mnAssoRefID(0), mnFirstKFid(pRefKF->mnId),
         mnCorrectedByKF(0), mnCorrectedReference(0), mnLoopObjectForKF(0), mnBAGlobalForKF(0),
-        reconstructed(false), w(1.), h(1.), l(1.), mbBad(false), mbDynamic(false), mpMap(pMap), nObs(0), mRenderId(-1)
+        reconstructed(false), w(0.4), h(0.4), l(0.4), mbBad(false), mbDynamic(false), mpMap(pMap), nObs(0), mRenderId(-1)
 {
     mnId = nNextId++;
-    scale = 1.;
-    invScale = 1.;
+    // scale = 1.;
+    scale = 0.4;
+    // invScale = 1.;
+    invScale = 1. / scale;
+
     vShapeCode = Eigen::Vector<float, 64>::Zero();
     findGoodOrientation = false;
 }
@@ -441,12 +444,14 @@ void MapObject::ComputeCuboidPCA(bool updatePose)
         // cout << pow(T.topLeftCorner(3, 3).determinant(), 1./3) << endl;
         Two.topRightCorner(3, 1) = cuboid_centre_w;
         SetObjectPoseSim3(Two);
+
+        // 使用PCA结果创建和保存一个关联的椭球体
     }
 }
 
 void MapObject::SetPoseByEllipsold(g2o::ellipsoid* e)
 {
-
+    mpEllipsold = e;
     // SE3Quat pose;  // rigid body transformation, object in world coordinate
     // Vector3d scale; // a,b,c : half length of axis x,y,z
 

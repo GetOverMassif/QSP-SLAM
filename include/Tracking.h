@@ -177,6 +177,7 @@ public:
     cv::Mat mImGray;
     cv::Mat mImDepth;
     vector<cv::Mat> mvImObjectMasks;
+    vector<vector<int>> mvImObjectBboxs;
 
     // Initialization Variables (Monocular)
     std::vector<int> mvIniLastMatches;
@@ -336,6 +337,8 @@ protected:
     bool mbOpenOptimization;
 
     int minimum_match_to_associate;
+
+    bool show_ellipsold_process;
 
 };
 

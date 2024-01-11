@@ -23,6 +23,35 @@ using namespace Eigen;
 namespace ORB_SLAM2
 {
 
+// draw axis for ellipsoids
+void drawAxis()
+{
+    float length = 2.0;
+    
+    // x
+    glColor3f(1.0,0.0,0.0); // red x
+    glBegin(GL_LINES);
+    glVertex3f(0.0, 0.0f, 0.0f);
+    glVertex3f(length, 0.0f, 0.0f);
+    glEnd();
+
+    // y 
+    glColor3f(0.0,1.0,0.0); // green y
+    glBegin(GL_LINES);
+    glVertex3f(0.0, 0.0f, 0.0f);
+    glVertex3f(0.0, length, 0.0f);
+
+    glEnd();
+
+    // z 
+    glColor3f(0.0,0.0,1.0); // blue z
+    glBegin(GL_LINES);
+    glVertex3f(0.0, 0.0f ,0.0f );
+    glVertex3f(0.0, 0.0f ,length );
+
+    glEnd();
+}
+
 ObjectDrawer::ObjectDrawer(Map *pMap, MapDrawer *pMapDrawer, const string &strSettingPath) : mpMap(pMap), mpMapDrawer(pMapDrawer)
 {
     cv::FileStorage fSettings(strSettingPath, cv::FileStorage::READ);
@@ -39,6 +68,17 @@ ObjectDrawer::ObjectDrawer(Map *pMap, MapDrawer *pMapDrawer, const string &strSe
     mvObjectColors.push_back(std::tuple<float, float, float>({0., 128. / 255., 128. / 255.}));   //Teal  9
     SE3Tcw = Eigen::Matrix4f::Identity();
     SE3TcwFollow = Eigen::Matrix4f::Identity();
+
+    // cv::FileStorage fSettings(strSettingPath, cv::FileStorage::READ);
+
+    // mKeyFrameSize = fSettings["Viewer.KeyFrameSize"];
+    // mKeyFrameLineWidth = fSettings["Viewer.KeyFrameLineWidth"];
+    // mGraphLineWidth = fSettings["Viewer.GraphLineWidth"];
+    // mPointSize = fSettings["Viewer.PointSize"];
+    // mCameraSize = fSettings["Viewer.CameraSize"];
+    mCameraLineWidth = fSettings["Viewer.CameraLineWidth"];
+
+    mbOpenTransform = false;
 }
 
 void ObjectDrawer::SetRenderer(ObjectRenderer *pRenderer)
@@ -69,7 +109,7 @@ void ObjectDrawer::ProcessNewObjects()
     }
 }
 
-void ObjectDrawer::DrawObjects(bool bFollow, const Eigen::Matrix4f &Tec)
+void ObjectDrawer::DrawObjects(bool bFollow, const Eigen::Matrix4f &Tec, double prob_thresh)
 {
     unique_lock<mutex> lock(mMutexObjects);
 
@@ -101,7 +141,106 @@ void ObjectDrawer::DrawObjects(bool bFollow, const Eigen::Matrix4f &Tec)
         }
         
         DrawCuboid(pMO);
+
+        if(pMO->mpEllipsold && pMO->mpEllipsold->prob > prob_thresh )
+            drawEllipsoidsInVector(pMO->mpEllipsold);
+
     }
+}
+
+// // In : Tcw
+// // Out: Twc
+// void ObjectDrawer::SE3ToOpenGLCameraMatrix(g2o::SE3Quat &matInSe3, pangolin::OpenGlMatrix &M)
+// {
+//     // eigen to cv
+//     Eigen::Matrix4d matEigen = matInSe3.to_homogeneous_matrix();
+//     cv::Mat matIn;
+
+//     matIn = Converter::toCvMat(matEigen);
+
+//     // std::cout << "matIn = " << matIn << std::endl;
+//     // cv::eigen2cv(matEigen, matIn);
+
+//     if(!matIn.empty())
+//     {
+//         cv::Mat Rwc(3,3,CV_64F);
+//         cv::Mat twc(3,1,CV_64F);
+
+//         {
+//             // unique_lock<mutex> lock(mMutexCamera);
+//             Rwc = matIn.rowRange(0,3).colRange(0,3).t();
+//             twc = -Rwc*matIn.rowRange(0,3).col(3);
+//         }
+
+//         // 原来是 double, 发现有问题
+
+//         M.m[0] = Rwc.at<float>(0,0);
+//         M.m[1] = Rwc.at<float>(1,0);
+//         M.m[2] = Rwc.at<float>(2,0);
+//         M.m[3]  = 0.0;
+
+//         M.m[4] = Rwc.at<float>(0,1);
+//         M.m[5] = Rwc.at<float>(1,1);
+//         M.m[6] = Rwc.at<float>(2,1);
+//         M.m[7]  = 0.0;
+
+//         M.m[8] = Rwc.at<float>(0,2);
+//         M.m[9] = Rwc.at<float>(1,2);
+//         M.m[10] = Rwc.at<float>(2,2);
+//         M.m[11]  = 0.0;
+
+//         M.m[12] = twc.at<float>(0);
+//         M.m[13] = twc.at<float>(1);
+//         M.m[14] = twc.at<float>(2);
+//         M.m[15]  = 1.0;
+//     }
+//     else
+//         M.SetIdentity();
+// }
+
+void ObjectDrawer::drawEllipsoidsInVector(ellipsoid* e)
+{
+    // std::cout << "[MapDrawer::drawAllEllipsoidsInVector] " \
+    //     << "ellipsoids.size() = " << ellipsoids.size() << std::endl;
+    
+    SE3Quat TmwSE3 = e->pose.inverse();
+
+    if(mbOpenTransform)
+        TmwSE3 = (mTge * e->pose).inverse(); // Tem
+
+    Vector3d scale = e->scale;
+
+    // std::cout << "TmwSE3 = " << TmwSE3.to_homogeneous_matrix().matrix() << std::endl;
+    // std::cout << "Ellipsoid scale = " << scale.transpose().matrix() << std::endl; 
+
+    glPushMatrix();
+
+    glLineWidth(mCameraLineWidth/3.0);
+
+    if(e->isColorSet()){
+        Vector4d color = e->getColorWithAlpha();
+        // std::cout << "color = " << color.matrix() << std::endl;
+        glColor4d(color(0),color(1),color(2),color(3));
+    }
+    else
+        glColor3f(0.0f,0.0f,1.0f);
+
+    GLUquadricObj *pObj;
+    pObj = gluNewQuadric();
+    gluQuadricDrawStyle(pObj, GLU_LINE);
+
+    pangolin::OpenGlMatrix Twm;   // model to world
+
+    // SE3ToOpenGLCameraMatrix(TmwSE3, Twm);
+
+    glMultMatrixd(Twm.m);  
+    glScaled(scale[0],scale[1],scale[2]);
+    gluSphere(pObj, 1.0, 26, 13); // draw a sphere with radius 1.0, center (0,0,0), slices 26, and stacks 13.
+
+    drawAxis();
+    glPopMatrix();
+    return;
+
 }
 
 void ObjectDrawer::DrawCuboid(MapObject *pMO)

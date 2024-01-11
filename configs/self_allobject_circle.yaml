@@ -3,6 +3,8 @@
 
 CreateSingleObject: 0
 MinimumMatchToAssociate: 10
+Tracking.ShowEllipsoldProcess: 0
+LocalMapping.ShowEllipsoldProcess: 1
 
 # [Dataset Path]
 Dataset.Type: "Redwood"
@@ -102,7 +104,7 @@ SemanticPrior.GroundWeight: 2
 
 # deg
 Optimizer.Edges.3DConstrain.PlaneAngle.Sigma: 100
-EllipsoidExtractor.SupportingPlaneFilter.DisThresh: 0.03
+EllipsoidExtractor.SupportingPlaneFilter.DisThresh: 0.002
 
 # 10
 Dataset.Jumpframe: 5

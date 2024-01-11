@@ -186,9 +186,11 @@ Tracking::Tracking(System *pSys, ORBVocabulary* pVoc, FrameDrawer *pFrameDrawer,
     //     mbMapInSameThread = MapInSameThread;
     // }
 
-    frame_by_frame = fSettings["frame_by_frame"].isNamed();
+    frame_by_frame = Config::Get<int>("frame_by_frame");
 
     minimum_match_to_associate = fSettings["MinimumMatchToAssociate"];
+
+    show_ellipsold_process = Config::Get<int>("Tracking.ShowEllipsoldProcess");
 
 }
 
@@ -303,7 +305,7 @@ cv::Mat Tracking::GrabImageRGBD(const cv::Mat &imRGB,const cv::Mat &imD, const d
 
         if(!mCurrentFrame.rgb_img.empty()){    // RGB images are needed.
             Eigen::VectorXd pose = mCurrentFrame.cam_pose_Twc.toVector();
-            cv::imshow("mCurrentFrame.rgb_img", mCurrentFrame.rgb_img);
+            // cv::imshow("mCurrentFrame.rgb_img", mCurrentFrame.rgb_img);
             cv::waitKey(20);
             mpBuilder->processFrame(mCurrentFrame.rgb_img, mCurrentFrame.frame_img, pose, depth_range);
 

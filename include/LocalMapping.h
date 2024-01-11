@@ -152,6 +152,9 @@ protected:
     double flip_sample_angle;
 
     bool create_single_object;
+    bool show_ellipsold_process;
+
+    int cam_width, cam_height;
 };
 
 } //namespace ORB_SLAM

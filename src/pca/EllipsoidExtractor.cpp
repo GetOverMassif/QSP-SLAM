@@ -109,7 +109,7 @@ pcl::PointCloud<PointType>::Ptr EllipsoidExtractor::ExtractPointCloud(cv::Mat &d
     // std::cout << "*****************************" << std::endl;
     // getchar();
 
-    std::cout << "campose_wc = " << campose_wc.to_homogeneous_matrix().matrix() << std::endl;
+    // std::cout << "campose_wc = " << campose_wc.to_homogeneous_matrix().matrix() << std::endl;
 
     // 产生两组可视化点云 world, world_downsample
     // PointCloud *pPoints_world = transformPointCloud(pPoints_local, &campose_wc);

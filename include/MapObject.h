@@ -130,6 +130,8 @@ public:
     double outlierThreDis = 1.0;
 
     bool findGoodOrientation;
+
+    g2o::ellipsoid* mpEllipsold;
 };
 
 }

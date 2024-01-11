@@ -687,7 +687,7 @@ void GenerateConstrainPlanesToEllipsoid(g2o::ellipsoid &e_local_normalized, Vect
         // CPlanesTotal[i]->toVector() 返回的是一个九位的向量，平面参数为后四个
         mPlanesParam.row(i) = CPlanesTotal[i]->toVector().segment(5,4).transpose();
     }
-    std::cout << "mPlanesParam = " << mPlanesParam.matrix() << std::endl;
+    // std::cout << "mPlanesParam = " << mPlanesParam.matrix() << std::endl;
     // std::cout << "Press Enter to continue....." << std::endl;
     // g2o::ellipsoid e_global_multiplanes = OptimizeEllipsoidUsingPlanes(e_global_normalized, mPlanesParam);
     // g2o::ellipsoid e_global_multiplanes = OptimizeEllipsoidUsingPlanes(e_local_normalized, mPlanesParam);
@@ -704,7 +704,7 @@ void GenerateConstrainPlanesToEllipsoid(g2o::ellipsoid &e_local_normalized, Vect
 // 2. 将点云转换到重力坐标系( Z轴沿重力方向, 中心为物体中心点 )
 // 3. ...
 g2o::ellipsoid EllipsoidExtractor::EstimateLocalEllipsoidUsingMultiPlanes(cv::Mat &depth, Eigen::Vector4d &bbox, int label, double prob, Eigen::VectorXd &pose, camera_intrinsic &camera) {
-    std::cout << "In EllipsoidExtractor::EstimateLocalEllipsoidUsingMultiPlanes" << std::endl;
+    // std::cout << "In EllipsoidExtractor::EstimateLocalEllipsoidUsingMultiPlanes" << std::endl;
     g2o::ellipsoid e;
     miSystemState = 0;                  // reset the state
     mSymmetryOutputData.result = false; // reset

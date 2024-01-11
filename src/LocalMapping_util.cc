@@ -319,13 +319,12 @@ void LocalMapping::ProcessDetectedObjects()
     auto mvpObjectDetections = mpCurrentKeyFrame->GetObjectDetections();
     auto mvpAssociatedObjects = mpCurrentKeyFrame->GetMapObjectMatches();
 
-    // std::cout << " => " << "mvpObjectDetections.size() = " << mvpObjectDetections.size() << std::endl;
     std::cout << " => " << "KF" << mpCurrentKeyFrame->mnId << ", mvpObjectDetections.size() = " << mvpObjectDetections.size() << std::endl;
 
     // 处理当前关键帧的所有detection
     for (int det_i = 0; det_i < mvpObjectDetections.size(); det_i++)
     {
-        std::cout << "det_i " << det_i << ": " << std::endl;
+        std::cout << "=> det_i " << det_i << ": " << std::endl;
         // std::cout << "Press [ENTER] to continue ... " << std::endl;
         // key = getchar();
 
@@ -341,7 +340,19 @@ void LocalMapping::ProcessDetectedObjects()
          *   (2) 该检测包含的特征点数量较少
          *   (3) 该检测关联的物体为NULL
          * 则 continue
-        */ 
+        */
+
+        if (show_ellipsold_process && det_i)
+        {
+            auto det_vec = mvpObjectDetections[det_i-1]->bbox;
+            int x1 = (int)det_vec(1), y1 = (int)det_vec(2), x2 = (int)det_vec(3), y2 = (int)det_vec(4);
+            // cv::Mat img_show = pFrame->rgb_img.clone();
+            cv::Mat img_show(cam_height, cam_width, CV_8UC3, cv::Scalar(255, 255, 255));
+            std::cout << "img_show.channels = " << img_show.channels() << std::endl;
+            cv::rectangle(img_show, cv::Point(x1, y1), cv::Point(x2, y2), cv::Scalar(255, 0, 0), 2);  // Scalar(255, 0, 0) is for blue color, 2 is the thickness
+            cv::imshow("Image with Bbox", img_show);
+            cv::waitKey(0);
+        }
 
         if (det->isNew) {
             std::cout << "  Conitinue because det->isNew" << std::endl;
@@ -650,6 +661,23 @@ void LocalMapping::ProcessDetectedObjects()
             // key = getchar();
         }
     }
+
+    if (show_ellipsold_process && mvpObjectDetections.size())
+    {
+        auto det_vec = mvpObjectDetections.back()->bbox;
+        int x1 = (int)det_vec(1), y1 = (int)det_vec(2), x2 = (int)det_vec(3), y2 = (int)det_vec(4);
+        cv::Mat img_show(cam_height, cam_width, CV_8UC3, cv::Scalar(255, 255, 255));
+        std::cout << "img_show.channels = " << img_show.channels() << std::endl;
+        cv::rectangle(img_show, cv::Point(x1, y1), cv::Point(x2, y2), cv::Scalar(255, 0, 0), 2);  // Scalar(255, 0, 0) is for blue color, 2 is the thickness
+        cv::imshow("Image with Bbox", img_show);
+        cv::waitKey(0);
+
+        cv::destroyWindow("Image with Bbox");
+    }
+
+    // if (show_ellipsold_process && mvpObjectDetections.size()){
+    //     cv::destroyWindow("Image with Bbox");
+    // }
 }
 
 }
