@@ -24,7 +24,7 @@ namespace ORB_SLAM2
 
 int MapObject::nNextId = 0;
 
-MapObject::MapObject(const Eigen::Matrix4f &T, const Eigen::Vector<float, 64> &vCode, KeyFrame *pRefKF, Map *pMap) :
+MapObject::MapObject(const Eigen::Matrix4f &T, const Eigen::Vector<float, 64> &vCode, KeyFrame *pRefKF, Map *pMap, int class_id):
         mpRefKF(pRefKF), mpNewestKF(pRefKF), mnBALocalForKF(0), mnAssoRefID(0), mnFirstKFid(pRefKF->mnId),
         mnCorrectedByKF(0), mnCorrectedReference(0), mnLoopObjectForKF(0), mnBAGlobalForKF(0),
         w(0.4), h(0.4), l(0.4), mbBad(false), mbDynamic(false), mpMap(pMap), nObs(0), mRenderId(-1)
@@ -51,9 +51,10 @@ MapObject::MapObject(const Eigen::Matrix4f &T, const Eigen::Vector<float, 64> &v
     velocity = Eigen::Vector3f::Zero();
     mnId = nNextId++;
     findGoodOrientation=false;
+    label = class_id;
 }
 
-MapObject::MapObject(KeyFrame *pRefKF, Map *pMap) :
+MapObject::MapObject(KeyFrame *pRefKF, Map *pMap, int class_id) :
         mpRefKF(pRefKF), mpNewestKF(pRefKF), mnBALocalForKF(0), mnAssoRefID(0), mnFirstKFid(pRefKF->mnId),
         mnCorrectedByKF(0), mnCorrectedReference(0), mnLoopObjectForKF(0), mnBAGlobalForKF(0),
         reconstructed(false), w(0.4), h(0.4), l(0.4), mbBad(false), mbDynamic(false), mpMap(pMap), nObs(0), mRenderId(-1)
@@ -66,6 +67,7 @@ MapObject::MapObject(KeyFrame *pRefKF, Map *pMap) :
 
     vShapeCode = Eigen::Vector<float, 64>::Zero();
     findGoodOrientation = false;
+    label = class_id;
 }
 
 void MapObject::AddObservation(KeyFrame *pKF, int idx)
@@ -461,13 +463,24 @@ void MapObject::SetPoseByEllipsold(g2o::ellipsoid* e)
     cout << "Ellipsold->pose, Two = \n" << Two.matrix() << endl;
 
     Vector3d& scale = e->scale;
-    float l = scale.norm() * 2;
+    float s = scale.norm() * 2;
 
-    // Rx(90)*Ry(-90)
+    // Rx(90)*Ry(-90) 
     Eigen::Matrix3f Ron = Eigen::AngleAxisf(M_PI/2, Eigen::Vector3f(1,0,0)).matrix()
         * Eigen::AngleAxisf(-M_PI/2, Eigen::Vector3f(0,1,0)).matrix();
     Two.topLeftCorner(3, 3) = Two.topLeftCorner(3, 3) * Ron;
-    Two.topLeftCorner(3, 3) = 0.40 * l * Two.topLeftCorner(3, 3);
+    Two.topLeftCorner(3, 3) = 0.40 * s * Two.topLeftCorner(3, 3);
+
+
+    w = e->scale(0) * 2;
+    h = e->scale(2) * 2;
+    l = e->scale(1) * 2;
+
+    // w = 0.4;  
+    // h = 0.8;
+    // l = 1.6;
+
+    std::cout << "Setting scale = " << e->scale.transpose().matrix() << std::endl;
 
     SetObjectPoseSim3(Two); // Two
 }

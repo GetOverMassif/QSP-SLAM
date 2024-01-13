@@ -64,7 +64,7 @@ MapDrawer::MapDrawer(Map* pMap, const string &strSettingPath):mpMap(pMap)
 
 }
 
-void MapDrawer::DrawMapPoints()
+void MapDrawer::DrawMapPoints(float mappointSize)
 {
     const vector<MapPoint*> &vpMPs = mpMap->GetAllMapPoints();
     // const vector<MapPoint*> &vpRefMPs = mpMap->GetReferenceMapPoints();
@@ -74,7 +74,8 @@ void MapDrawer::DrawMapPoints()
     if(vpMPs.empty())
         return;
 
-    glPointSize(mPointSize);
+    // glPointSize(mPointSize);
+    glPointSize(mappointSize);
     glBegin(GL_POINTS);
     glColor3f(0.0,0.0,0.0);
 
@@ -91,7 +92,8 @@ void MapDrawer::DrawMapPoints()
     int n_objects = mpMap->GetAllMapObjects().size();
     for (int o_i = 0 ; o_i < n_objects; o_i++)
     {
-        glPointSize(2 * mPointSize);
+        // glPointSize(2 * mPointSize);
+        glPointSize(2 * mappointSize);
         glBegin(GL_POINTS);
         float r, g, b;
         r = get<0>(mvObjectColors[o_i % 10]);

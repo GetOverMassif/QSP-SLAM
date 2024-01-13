@@ -95,6 +95,7 @@ void Viewer::Run()
     // pangolin::Var<bool> menuShowConstrainPlanesBbox("menu.ConstrainPlanes-bbox", false, true);
     // pangolin::Var<bool> menuShowConstrainPlanesCuboids("menu.ConstrainPlanes-cuboids", false, true);
     pangolin::Var<double> SliderEllipsoidProbThresh("menu.Ellipsoid Prob", 0.3, 0.0, 1.0);
+    pangolin::Var<float> SliderMapPointSize("menu.MapPoint Size", 1.0, 0.5, 5.0);
     pangolin::Var<float> SliderPointCloudListSize("menu.Pointcloud Size", 1.0, 0.5, 5.0);
 
     // pangolin::Var<bool> menuShowWorldAxis("menu.Draw World Axis", false, true);
@@ -185,11 +186,14 @@ void Viewer::Run()
         Tec.row(2) = -Tec.row(2);
         glClearColor(1.0f,1.0f,1.0f,1.0f);
         mpMapDrawer->DrawCurrentCamera(Twc);
+
+        float mappointSize = SliderMapPointSize;
+
         /** From ORB-SLAM*/
         if(menuShowKeyFrames || menuShowGraph)
             mpMapDrawer->DrawKeyFrames(menuShowKeyFrames,menuShowGraph);
         if(menuShowPoints)
-            mpMapDrawer->DrawMapPoints();
+            mpMapDrawer->DrawMapPoints(mappointSize);
 
         
         if(menuShowGroundPlane)

@@ -41,7 +41,7 @@ public:
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
     MapDrawer(Map* pMap, const string &strSettingPath);
 
-    void DrawMapPoints();
+    void DrawMapPoints(float mappointSize);
     void DrawKeyFrames(const bool bDrawKF, const bool bDrawGraph);
     void DrawCurrentCamera(pangolin::OpenGlMatrix &Twc);
     void SetCurrentCameraPose(const cv::Mat &Tcw);

@@ -35,9 +35,39 @@ LocalMapping::LocalMapping(System *pSys, Map *pMap, ObjectDrawer* pObjectDrawer,
     mpMap(pMap), mpObjectDrawer(pObjectDrawer), mbAbortBA(false), mbStopped(false),
     mbStopRequested(false), mbNotStop(false), mbAcceptKeyFrames(true)
 {
+    cout << "Get into LocalMapping::LocalMapping" << endl;
     py::module optim  = py::module::import("reconstruct.optimizer");
+    
+    cout << "Creating optimizer" << endl;
     pyOptimizer = optim.attr("Optimizer")(pSys->pyDecoder, pSys->pyCfg);
+
+    cout << "Creating pyMeshExtractor" << endl;
     pyMeshExtractor = optim.attr("MeshExtractor")(pSys->pyDecoder, pSys->pyCfg.attr("optimizer").attr("code_len"), pSys->pyCfg.attr("voxels_dim"));
+    
+    // 这里暂时没有使用不同的pyCfg，默认所有的decoder模型具有相等的编码程度、使用一样的优化参数
+
+    // cv::FileStorage fsSettings(strSettingsFile.c_str(), cv::FileStorage::READ);
+
+    // cout << "Finish pyMeshExtractor creation" << std::endl;
+
+    auto& pyDecoders = pSys->mmPyDecoders;
+
+    for (auto it = pyDecoders.begin(); it != pyDecoders.end(); ++it) {
+        int class_id = it->first;
+        cout << "!! Add class_id into mmPyOptimizers: " << class_id << std::endl;
+        // TODO: 对于运行过程序的终端窗口，运行到这里就会报错 895372 Segmentation fault ，可能与内存分配有关
+        auto& decoder = it->second;
+        // cout << "11" << endl;
+        py::object optimizer = optim.attr("Optimizer")(decoder, pSys->pyCfg);
+        // cout << "12" << endl;
+        // py::object* optimizer_ptr = static_cast<py::object*>(&optimizer);
+        mmPyOptimizers[class_id] = std::move(optimizer);
+        py::object mesh_extractor = optim.attr("MeshExtractor")(decoder, pSys->pyCfg.attr("optimizer").attr("code_len"), pSys->pyCfg.attr("voxels_dim"));
+        
+        // py::object* mesh_extractor_ptr = &mesh_extractor;
+        mmPyMeshExtractors[class_id] = std::move(mesh_extractor);
+    }
+
     mpLastKeyFrame = static_cast<KeyFrame*>(NULL);
     nLastReconKFID = 0;
 

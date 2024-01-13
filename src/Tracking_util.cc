@@ -267,6 +267,7 @@ void Tracking::GetObjectDetectionsMono(KeyFrame *pKF)
         //           将det加入当前帧物体检测vector中
 
         // Reject the detection if too few keypoints are extracted
+
         if (det->NumberOfPoints() < 20)
         {
             std::cout << " => det" << detected_idx << "->NumberOfPoints() < 20" << std::endl;
@@ -350,7 +351,7 @@ void Tracking::GetObjectDetectionsRGBD(KeyFrame *pKF)
 
         // Reject the detection if too few keypoints are extracted
         // todo: 设置点数量数量而不是isGood
-        if (det->NumberOfPoints() < 20)
+        if (det->NumberOfPoints() < minimux_points_to_judge_good)
         {
             det->isGood = false;
         }
@@ -810,12 +811,13 @@ void Tracking::UpdateDepthEllipsoidEstimation(ORB_SLAM2::Frame* pFrame, KeyFrame
             // std::cout << "*****************************" << std::endl;
             // getchar();
             // 使用多平面估计局部椭球体 (depth, label, bbox, prob, mCamera)
+            // TODO： 这里有待将物体对应的深度点云添加给MapObject，可以先通过椭球体进行关联
             g2o::ellipsoid e_extractByFitting_newSym = \
                 mpEllipsoidExtractor->EstimateLocalEllipsoidUsingMultiPlanes(\
                     pFrame->frame_img, measurement, label, measurement_prob, pose, mCamera);
             bool c0 = mpEllipsoidExtractor->GetResult();
             std::cout << "mpEllipsoidExtractor->GetResult() = " << c0 << std::endl;
-
+            
             // 可视化部分
             if( c0 )
             {
@@ -864,7 +866,6 @@ void Tracking::UpdateDepthEllipsoidEstimation(ORB_SLAM2::Frame* pFrame, KeyFrame
         {
             int x1 = (int)det_vec(1), y1 = (int)det_vec(2), x2 = (int)det_vec(3), y2 = (int)det_vec(4);
             cv::Mat img_show = pFrame->rgb_img.clone();
-            std::cout << "img_show.channels = " << img_show.channels() << std::endl;
             cv::rectangle(img_show, cv::Point(x1, y1), cv::Point(x2, y2), cv::Scalar(255, 0, 0), 2);  // Scalar(255, 0, 0) is for blue color, 2 is the thickness
             cv::imshow("Image with Bbox", img_show);
             cv::waitKey(0);

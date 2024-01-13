@@ -113,11 +113,31 @@ void LocalMapping::GetNewObservations()
         auto pMO = mvpAssociatedObjects[i];
         if (pMO)
         {
+            
+
             // Tco obtained by transforming Two to camera frame
             Eigen::Matrix4f iniSE3Tco = Tcw * pMO->GetPoseSE3();
             g2o::SE3Quat Tco = Converter::toSE3Quat(iniSE3Tco);
+
             // Tco after running ICP, use Tco provided by detector
-            Eigen::Matrix4f SE3Tco = pyOptimizer.attr("estimate_pose_cam_obj")
+            // Eigen::Matrix4f SE3Tco = pyOptimizer.attr("estimate_pose_cam_obj")
+            //         (det->SE3Tco, pMO->scale, det->SurfacePoints, pMO->GetShapeCode()).cast<Eigen::Matrix4f>();
+
+            int class_id = pMO->label;
+
+            py::object* optimizer_ptr;
+
+            if(mmPyOptimizers.count(class_id) > 0) {
+                py::object* optimizer_ptr_local = &(mmPyOptimizers[class_id]);
+                optimizer_ptr = optimizer_ptr_local;
+            }
+            else{
+                cout << "class " << class_id << " is not in yolo_classes" << endl;
+                py::object* optimizer_ptr_local = &pyOptimizer;
+                optimizer_ptr = optimizer_ptr_local;
+            }
+            
+            Eigen::Matrix4f SE3Tco = optimizer_ptr->attr("estimate_pose_cam_obj")
                     (det->SE3Tco, pMO->scale, det->SurfacePoints, pMO->GetShapeCode()).cast<Eigen::Matrix4f>();
             g2o::SE3Quat Zco = Converter::toSE3Quat(SE3Tco);
             // error
@@ -205,8 +225,26 @@ void LocalMapping::CreateNewMapObjects()
             continue;
         if (!det->isGood)
             continue;
-        auto pyMapObject = pyOptimizer.attr("reconstruct_object")
+        // auto pyMapObject = pyOptimizer.attr("reconstruct_object")
+        //         (det->Sim3Tco, det->SurfacePoints, det->RayDirections, det->DepthObs);
+
+        int class_id = det->label;
+
+        py::object* optimizer_ptr;
+
+        if(mmPyOptimizers.count(class_id) > 0) {
+            py::object* optimizer_ptr_local = &(mmPyOptimizers[class_id]);
+            optimizer_ptr = optimizer_ptr_local;
+        }
+        else{
+            cout << "class " << class_id << " is not in yolo_classes" << endl;
+            py::object* optimizer_ptr_local = &pyOptimizer;
+            optimizer_ptr = optimizer_ptr_local;
+        }
+
+        auto pyMapObject = optimizer_ptr->attr("reconstruct_object")
                 (det->Sim3Tco, det->SurfacePoints, det->RayDirections, det->DepthObs);
+
         if (!pyMapObject.attr("is_good").cast<bool>())
             continue;
 
@@ -218,9 +256,25 @@ void LocalMapping::CreateNewMapObjects()
         // Sim3, SE3, Sim3
         Eigen::Matrix4f Sim3Two = SE3Twc * Sim3Tco;
         auto code = pyMapObject.attr("code").cast<Eigen::Vector<float, 64>>();
-        auto pNewObj = new MapObject(Sim3Two, code, mpCurrentKeyFrame, mpMap);
+        auto pNewObj = new MapObject(Sim3Two, code, mpCurrentKeyFrame, mpMap, class_id);
 
-        auto pyMesh = pyMeshExtractor.attr("extract_mesh_from_code")(code);
+        // auto pyMesh = pyMeshExtractor.attr("extract_mesh_from_code")(code);
+
+        py::object* mesh_extracter_ptr;
+
+        if(mmPyOptimizers.count(class_id) > 0) {
+            py::object* mesh_extracter_ptr_local = &(mmPyMeshExtractors[class_id]);
+            mesh_extracter_ptr = mesh_extracter_ptr_local;
+        }
+        else{
+            cout << " [LocalMapping_util.cc 265] class " << class_id << " is not in yolo_classes" << endl;
+            py::object* mesh_extracter_ptr_local = &pyMeshExtractor;
+            mesh_extracter_ptr = mesh_extracter_ptr_local;
+        }
+
+        auto pyMesh = mesh_extracter_ptr->attr("extract_mesh_from_code")(code);
+
+
         pNewObj->vertices = pyMesh.attr("vertices").cast<Eigen::MatrixXf>();
         pNewObj->faces = pyMesh.attr("faces").cast<Eigen::MatrixXi>();
 
@@ -260,6 +314,8 @@ void LocalMapping::CreateNewObjectsFromDetections()
 
         auto det = mvpObjectDetections[det_i];
 
+        int class_id = det->label;
+
         // If the detection is a new object, create a new map object.
         // todo: 这里原本根据点云数量进行判断是否创建物体
 
@@ -274,7 +330,7 @@ void LocalMapping::CreateNewObjectsFromDetections()
         }
 
         // Step 2.2: 创建地图物体，向当前帧、地图中进行添加，向该物体添加关联地图点
-        auto pNewObj = new MapObject(mpCurrentKeyFrame, mpMap);
+        auto pNewObj = new MapObject(mpCurrentKeyFrame, mpMap, class_id);
         mpCurrentKeyFrame->AddMapObject(pNewObj, det_i);
         mpMap->AddMapObject(pNewObj);
 
@@ -353,7 +409,6 @@ void LocalMapping::ProcessDetectedObjects()
             int x1 = (int)det_vec(0), y1 = (int)det_vec(1), x2 = (int)det_vec(2), y2 = (int)det_vec(3);
             // cv::Mat img_show = pFrame->rgb_img.clone();
             cv::Mat img_show(cam_height, cam_width, CV_8UC3, cv::Scalar(255, 255, 255));
-            std::cout << "img_show.channels = " << img_show.channels() << std::endl;
             cv::rectangle(img_show, cv::Point(x1, y1), cv::Point(x2, y2), cv::Scalar(255, 0, 0), 2);  // Scalar(255, 0, 0) is for blue color, 2 is the thickness
             cv::imshow("Image with Bbox", img_show);
             cv::waitKey(0);
@@ -555,8 +610,32 @@ void LocalMapping::ProcessDetectedObjects()
 
             auto Sim3Two_pMO = pMO->Sim3Two;
 
-            auto pyMapObject = pyOptimizer.attr("reconstruct_object")
+            int class_id = det->label;
+
+            py::object* optimizer_ptr;
+
+            if(mmPyOptimizers.count(class_id) > 0) {
+                py::object* optimizer_ptr_local = &(mmPyOptimizers[class_id]);
+                optimizer_ptr = optimizer_ptr_local;
+            }
+            else{
+                cout << " [ProcessDetectedObjects] class " << class_id << " is not in yolo_classes" << endl;
+                py::object* optimizer_ptr_local = &pyOptimizer;
+                optimizer_ptr = optimizer_ptr_local;
+            }
+
+            cout << "Before reconstruct_object" << std::endl;
+            auto pyMapObject = optimizer_ptr->attr("reconstruct_object")
                     (SE3Tcw * Sim3Two_pMO, surface_points_cam, rays, depth_obs, pMO->vShapeCode);
+
+            // py::object* optimizer_ptr = &pyOptimizer;
+            // py::object* optimizer_ptr = &(mmPyOptimizers[class_id]);
+
+            // auto pyMapObject = pyOptimizer.attr("reconstruct_object")
+            //         (SE3Tcw * Sim3Two_pMO, surface_points_cam, rays, depth_obs, pMO->vShapeCode);
+
+            // auto pyMapObject = optimizer_ptr->attr("reconstruct_object")
+            //         (SE3Tcw * Sim3Two_pMO, surface_points_cam, rays, depth_obs, pMO->vShapeCode);
 
             std::cout << "0 rad, is_good: " << pyMapObject.attr("is_good").cast<bool>()\
                       << ", loss: " << pyMapObject.attr("loss").cast<float>() << std::endl;
@@ -578,7 +657,11 @@ void LocalMapping::ProcessDetectedObjects()
 
                     flipped_Two.topLeftCorner(3,3) = flipped_Two.topLeftCorner(3,3) * Ry;
                     // cout << " => flipped_Two = " << flipped_Two.matrix() << std::endl;
-                    auto pyMapObjectFlipped = pyOptimizer.attr("reconstruct_object")
+
+                    // auto pyMapObjectFlipped = pyOptimizer.attr("reconstruct_object")
+                    //         (SE3Tcw * flipped_Two, surface_points_cam, rays, depth_obs, pMO->vShapeCode);
+
+                    auto pyMapObjectFlipped = optimizer_ptr->attr("reconstruct_object")
                             (SE3Tcw * flipped_Two, surface_points_cam, rays, depth_obs, pMO->vShapeCode);
                     
                     // std::cout << "Loss: " << pyMapObjectFlipped.attr("loss").cast<float>() << std::endl;
@@ -629,7 +712,10 @@ void LocalMapping::ProcessDetectedObjects()
 
             std::cout << "Sim3Two = " << Sim3Two.matrix() << std::endl;
 
-            int code_len = pyOptimizer.attr("code_len").cast<int>();
+            // int code_len = pyOptimizer.attr("code_len").cast<int>();
+
+            int code_len = optimizer_ptr->attr("code_len").cast<int>();
+
             Eigen::Vector<float, 64> code = Eigen::VectorXf::Zero(64);
             if (code_len == 32)
             {
@@ -648,7 +734,23 @@ void LocalMapping::ProcessDetectedObjects()
              * 向 当前关键帧、物体绘制器 添加物体
             */
             pMO->UpdateReconstruction(Sim3Two, code);
-            auto pyMesh = pyMeshExtractor.attr("extract_mesh_from_code")(code);
+
+            // auto pyMesh = pyMeshExtractor.attr("extract_mesh_from_code")(code);
+
+            py::object* mesh_extracter_ptr;
+            if(mmPyOptimizers.count(class_id) > 0) {
+                // mesh_extracter_ptr = mmPyMeshExtractors[class_id];
+                py::object* mesh_extracter_ptr_local = &(mmPyMeshExtractors[class_id]);
+                mesh_extracter_ptr = mesh_extracter_ptr_local;
+            }
+            else{
+                cout << " [LocalMapping_util.cc 265] class " << class_id << "is not in yolo_classes" << endl;
+                py::object* mesh_extracter_ptr_local = &pyMeshExtractor;
+                mesh_extracter_ptr = mesh_extracter_ptr_local;
+            }
+            auto pyMesh = mesh_extracter_ptr->attr("extract_mesh_from_code")(code);
+
+
             pMO->vertices = pyMesh.attr("vertices").cast<Eigen::MatrixXf>();
             pMO->faces = pyMesh.attr("faces").cast<Eigen::MatrixXi>();
             pMO->reconstructed = true;
@@ -672,7 +774,6 @@ void LocalMapping::ProcessDetectedObjects()
         auto det_vec = mvpObjectDetections.back()->bbox;
         int x1 = (int)det_vec(0), y1 = (int)det_vec(1), x2 = (int)det_vec(2), y2 = (int)det_vec(3);
         cv::Mat img_show(cam_height, cam_width, CV_8UC3, cv::Scalar(255, 255, 255));
-        std::cout << "img_show.channels = " << img_show.channels() << std::endl;
         cv::rectangle(img_show, cv::Point(x1, y1), cv::Point(x2, y2), cv::Scalar(255, 0, 0), 2);  // Scalar(255, 0, 0) is for blue color, 2 is the thickness
         cv::imshow("Image with Bbox", img_show);
         cv::waitKey(0);

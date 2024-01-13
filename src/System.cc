@@ -107,23 +107,50 @@ System::System(const string &strVocFile, const string &strSettingsFile, const st
     warn.attr("filterwarnings")("ignore");
 
     cv::FileStorage fSettings(strSettingsFile, cv::FileStorage::READ);
+
     cout << "2/8 import sys" << std::endl;
     py::module sys = py::module::import("sys");
+
     cout << "3/8 sys.path.append(\"./\")" << std::endl;
     sys.attr("path").attr("append")("./");
     sys.attr("path").attr("append")("./reconstruct");
+
     cout << "4/8 import reconstruct.utils as io_utils" << std::endl;
     py::module io_utils = py::module::import("reconstruct.utils");
+
     string pyCfgPath = fSettings["DetectorConfigPath"].string();
+
     cout << "5/8 pyCfg = io_utils.get_configs(pyCfgPath)" << std::endl;
     pyCfg = io_utils.attr("get_configs")(pyCfgPath);
+
     cout << "6/8 pyDecoder = get_decoder(pyCfg)" << std::endl;
+
     pyDecoder = io_utils.attr("get_decoder")(pyCfg);
+
     cout << "7/8 pySequence = reconstruct.get_sequence(strSequencePath, pyCfg)" << std::endl;
     pySequence = py::module::import("reconstruct").attr("get_sequence")(strSequencePath, pyCfg);
+    
+
+    // For multi decoders
+    py::module deep_sdf_utils = py::module::import("deep_sdf.workspace");
+
+    vector<int> yolo_classes;
+    vector<std::string> decoder_paths;
+    fSettings["YoloClasses"] >> yolo_classes;
+    fSettings["DecoderPaths"] >> decoder_paths;
+
+    py::module optim  = py::module::import("reconstruct.optimizer");
+
+    for (int i_class = 0; i_class < yolo_classes.size(); i_class++){
+        int class_id = yolo_classes[i_class];
+        cout << "mmPyDecoders Add class: " << class_id << std::endl;
+        py::object decoder = deep_sdf_utils.attr("config_decoder")(decoder_paths[i_class]);
+        // py::object* decoder_ptr = &decoder;
+        mmPyDecoders[class_id] = std::move(decoder);
+    }
+
     std::cout << "8/8 ";
     InitThread();
-    // std::cout << "109\n";
 
     //Create KeyFrame Database
     mpKeyFrameDatabase = new KeyFrameDatabase(*mpVocabulary);

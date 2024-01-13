@@ -825,6 +825,7 @@ g2o::ellipsoid EllipsoidExtractor::EstimateLocalEllipsoidUsingMultiPlanes(cv::Ma
     e_local_normalized.prob = prob * prob_3d; // measurement_prob * symmetry_prob
     e_local_normalized.miLabel = label;
     e_local_normalized.bbox = bbox;
+    e_local_normalized.scale = e_zero_normalized.scale;
     e_local_normalized.bPointModel = false;
     mResult = true;
     clock_t time_2_fullProcess = clock();

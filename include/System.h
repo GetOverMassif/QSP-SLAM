@@ -152,7 +152,7 @@ public:
 
     void SaveMapCurrentFrame(const string &dir, int frameId);
     void SaveEntireMap(const string &dir);
-
+    void SaveEstimatedObjects(const string &dir);
 
     // Information from most recent processed frame
     // You can call this right after TrackMonocular (or stereo or RGBD)
@@ -179,9 +179,17 @@ public:
             PyEval_InitThreads();
         }
     }
+
+
+    map<int, int> classId2decoderId;
+    map<int, py::object> mmPyCfgs;
+    map<int, py::object> mmPyDecoders;
+    // map<int, py::object*> mmPyDecoders;
+
     py::object pyCfg;
     py::object pyDecoder;
     py::object pySequence;
+
 
 private:
 

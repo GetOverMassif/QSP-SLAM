@@ -21,7 +21,7 @@ import json
 from addict import Dict
 import plyfile
 import skimage.measure as measure
-from deep_sdf.workspace import config_decoder
+
 
 # colors used for visualization
 color_table = [[230. / 255., 0., 0.],  # red
@@ -91,6 +91,7 @@ def get_configs(cfg_file):
 
 
 def get_decoder(configs):
+    from deep_sdf.workspace import config_decoder
     return config_decoder(configs.DeepSDF_DIR)
 
 

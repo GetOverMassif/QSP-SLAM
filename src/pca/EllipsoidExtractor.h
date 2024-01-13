@@ -35,7 +35,7 @@ struct PCAResult {
     Eigen::Vector3d center;
     Eigen::Matrix3d rotMat;
     Eigen::Vector3d covariance; // unused yet.
-    Eigen::Vector3d scale;
+    Eigen::Vector3d scale;  // half length of axis x,y,z
 };
 
 enum ExtractionMethod {

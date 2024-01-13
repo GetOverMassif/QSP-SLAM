@@ -340,6 +340,8 @@ protected:
 
     bool show_ellipsold_process;
 
+    bool minimux_points_to_judge_good;
+
 };
 
 } //namespace ORB_SLAM

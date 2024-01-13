@@ -32,8 +32,8 @@ class Frame;
 
 class MapObject {
 public:
-    MapObject(const Eigen::Matrix4f &T, const Eigen::Vector<float, 64> &vCode, KeyFrame *pRefKF, Map *pMap);
-    MapObject(KeyFrame *pRefKF, Map *pMap);
+    MapObject(const Eigen::Matrix4f &T, const Eigen::Vector<float, 64> &vCode, KeyFrame *pRefKF, Map *pMap, int class_id);
+    MapObject(KeyFrame *pRefKF, Map *pMap, int class_id);
 
     void AddObservation(KeyFrame *pKF, int idx);
     int Observations();
@@ -132,6 +132,8 @@ public:
     bool findGoodOrientation;
 
     g2o::ellipsoid* mpEllipsold;
+
+    int label;
 };
 
 }

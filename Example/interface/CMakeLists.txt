@@ -18,12 +18,13 @@
 #         EllipsoidSLAM
 #         ${PCL_LIBRARIES}
 #         func
-# )       
+# )
 
 # 测试平面提取
 add_executable(test_planeExtraction
         ./test/test_planeExtraction.cpp
 )
+
 target_link_libraries(test_planeExtraction
         tum_rgbd
         boost_system

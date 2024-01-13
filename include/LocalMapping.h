@@ -90,8 +90,14 @@ public:
     void MapObjectCulling();
     void CreateNewObjectsFromDetections();
     void ProcessDetectedObjects();
+
+    // map<int, int> classId2decoderId;
+    map<int, py::object> mmPyOptimizers;
+    map<int, py::object> mmPyMeshExtractors;
+
     py::object pyOptimizer;
     py::object pyMeshExtractor;
+
     int nLastReconKFID;
 
 protected:

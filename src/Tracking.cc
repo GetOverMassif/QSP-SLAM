@@ -192,6 +192,8 @@ Tracking::Tracking(System *pSys, ORBVocabulary* pVoc, FrameDrawer *pFrameDrawer,
 
     show_ellipsold_process = Config::Get<int>("Tracking.ShowEllipsoldProcess");
 
+    minimux_points_to_judge_good = Config::Get<int>("Tracking.MinimumPtNumToJudgeGood");
+
 }
 
 void Tracking::SetLocalMapper(LocalMapping *pLocalMapper)

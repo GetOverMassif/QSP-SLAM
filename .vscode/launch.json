@@ -5,9 +5,9 @@
         "name": "C++ Launch",
         "type": "cppdbg",
         "request": "launch",
-        // "program": "${workspaceFolder}/qsp_slam_rgbd",
+        "program": "${workspaceFolder}/qsp_slam_rgbd",
         // "program": "${workspaceFolder}/label_tool",
-        "program": "${workspaceFolder}/instanceAnnotation",
+        // "program": "${workspaceFolder}/instanceAnnotation",
         "args": [
             // "Vocabulary/ORBvoc.bin",
             // "configs/tum_fr1_desk.yaml",
@@ -35,6 +35,11 @@
             // "map/tum/fr2_dishes"
 
 
+            "Vocabulary/ORBvoc.bin",
+            "configs/self_allobject_circle.yaml",
+            "/media/lj/TOSHIBA/dataset/FromZHJD/circle",
+            "/media/lj/TOSHIBA/dataset/FromZHJD/circle/associate.txt",
+            "map/self/circle"
         ],
         "stopAtEntry": true,
         "cwd": "${workspaceFolder}",

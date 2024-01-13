@@ -29,6 +29,8 @@ namespace ORB_SLAM2
     void drawAxisNormal()
     {
         float length = 2.0;
+
+        glLineWidth(2);
         
         // x
         glColor3f(1.0,0.0,0.0); // red x

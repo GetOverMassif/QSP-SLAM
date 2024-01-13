@@ -215,7 +215,9 @@ class MonoSequence:
         return self.detections_in_current_frame
     
     def get_frame_by_name(self, frame_id, frame_name):
+        print("Before Frame creation")
         self.current_frame = Frame(self, frame_id = frame_id, frame_name = frame_name)
+        print("Before get_detections")
         self.current_frame.get_detections()
         self.detections_in_current_frame = self.current_frame.instances
         return self.detections_in_current_frame
