@@ -342,6 +342,8 @@ protected:
 
     bool minimux_points_to_judge_good;
 
+    bool add_suffix_to_pcd;
+
 };
 
 } //namespace ORB_SLAM

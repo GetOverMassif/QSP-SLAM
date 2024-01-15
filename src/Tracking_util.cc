@@ -711,10 +711,11 @@ void VisualizeCuboidsPlanesInImages(g2o::ellipsoid& e, const g2o::SE3Quat& campo
     g2o::ellipsoid e_global = e.transform_from(campose_wc);
     Vector3d center = e_global.pose.translation();
 
+
     std::vector<plane*> pPlanes = e.GetCubePlanesInImages(g2o::SE3Quat(), calib, rows, cols, 30);
     int planeNum = pPlanes.size();
     // std::cout << "[Tracking::VisualizeCuboidsPlanesInImages] planeNum = " << planeNum << std::endl;
-    for( int i=0; i<planeNum; i++){
+    for( int i = 0; i < planeNum; i++){
         Vector4d planeVec = pPlanes[i]->param.head(4);
         Vector3d color(0,0,1.0);  
         double plane_size = e.scale.norm()/2.0;
@@ -746,7 +747,17 @@ void Tracking::UpdateDepthEllipsoidEstimation(ORB_SLAM2::Frame* pFrame, KeyFrame
     bool bEllipsoidNotClear = true;
     std::cout << "[Tracking::UpdateDepthEllipsoidEstimation] " << std::endl;
     std::cout << "共有 " << rows << " 个检测结果" << std::endl;
-    for(int i=0;i<rows;i++){
+    std::string pcd_suffix;
+
+    for(int i = 0; i < rows; i++){
+
+        if (add_suffix_to_pcd){
+            pcd_suffix = to_string(i);
+        }
+        else {
+            pcd_suffix = "";
+        }
+        
         Eigen::VectorXd det_vec = obs_mat.row(i);  // id x1 y1 x2 y2 label rate instanceID
 
         std::cout << "=> Det " << i << ": " << det_vec.transpose().matrix() << std::endl;
@@ -763,6 +774,7 @@ void Tracking::UpdateDepthEllipsoidEstimation(ORB_SLAM2::Frame* pFrame, KeyFrame
         bool prob_check = (measurement_prob > prob_thresh);
 
         g2o::ellipsoid* pEllipsoidForThisObservation = NULL;
+        g2o::ellipsoid* pEllipsoidForThisObservationGlobal = NULL;
         // 2 conditions must meet to start ellipsoid extraction:
         // C1 : the bounding box is not on border
         // C1 : 包围框是否不在边界上
@@ -812,9 +824,11 @@ void Tracking::UpdateDepthEllipsoidEstimation(ORB_SLAM2::Frame* pFrame, KeyFrame
             // getchar();
             // 使用多平面估计局部椭球体 (depth, label, bbox, prob, mCamera)
             // TODO： 这里有待将物体对应的深度点云添加给MapObject，可以先通过椭球体进行关联
+            // 得到的椭球体模型表示在相机坐标系中
+
             g2o::ellipsoid e_extractByFitting_newSym = \
                 mpEllipsoidExtractor->EstimateLocalEllipsoidUsingMultiPlanes(\
-                    pFrame->frame_img, measurement, label, measurement_prob, pose, mCamera);
+                    pFrame->frame_img, measurement, label, measurement_prob, pose, mCamera, pcd_suffix);
             bool c0 = mpEllipsoidExtractor->GetResult();
             std::cout << "mpEllipsoidExtractor->GetResult() = " << c0 << std::endl;
             
@@ -822,6 +836,7 @@ void Tracking::UpdateDepthEllipsoidEstimation(ORB_SLAM2::Frame* pFrame, KeyFrame
             if( c0 )
             {
                 // Visualize estimated ellipsoid
+                // 将相机坐标系的椭球体转换到世界坐标系内
                 g2o::ellipsoid* pObjByFitting = new g2o::ellipsoid(e_extractByFitting_newSym.transform_from(pFrame->cam_pose_Twc));
                 if(pObjByFitting->prob_3d > 0.5)
                     pObjByFitting->setColor(Vector3d(0.8,0.0,0.0), 1); // Set green color
@@ -841,8 +856,10 @@ void Tracking::UpdateDepthEllipsoidEstimation(ORB_SLAM2::Frame* pFrame, KeyFrame
 
 
                 mpMap->addEllipsoidVisual(pObjByFitting);
+
                 std::cout << "Add Ellipsold" << std::endl;
                 
+                cout << "detection " << i << " = " << pObjByFitting->pose << endl;
                 
                 // std::cout << "*****************************" << std::endl;
                 // std::cout << "Show EllipsoidVisual, press [ENTER] to continue ... " << std::endl;
@@ -852,13 +869,17 @@ void Tracking::UpdateDepthEllipsoidEstimation(ORB_SLAM2::Frame* pFrame, KeyFrame
                 VisualizeCuboidsPlanesInImages(e_extractByFitting_newSym, pFrame->cam_pose_Twc, mCalib, mRows, mCols, mpMap);
 
 
-            }   // successful estimation.
+            // }   // successful estimation.
 
-            // 存储条件1: 该检测 3d_prob > 0.5
-            // 最终决定使用的估计结果
-            if( c0 ){
+            // // 存储条件1: 该检测 3d_prob > 0.5
+            // // 最终决定使用的估计结果
+            // if( c0 ){
+
                 g2o::ellipsoid *pE_extractByFitting = new g2o::ellipsoid(e_extractByFitting_newSym);
                 pEllipsoidForThisObservation = pE_extractByFitting;   // Store result to pE_extracted.
+
+                g2o::ellipsoid *pE_extractByFittingGlobal = new g2o::ellipsoid(*(pObjByFitting));
+                pEllipsoidForThisObservationGlobal = pE_extractByFittingGlobal;
             }
         }
 
@@ -868,12 +889,19 @@ void Tracking::UpdateDepthEllipsoidEstimation(ORB_SLAM2::Frame* pFrame, KeyFrame
             cv::Mat img_show = pFrame->rgb_img.clone();
             cv::rectangle(img_show, cv::Point(x1, y1), cv::Point(x2, y2), cv::Scalar(255, 0, 0), 2);  // Scalar(255, 0, 0) is for blue color, 2 is the thickness
             cv::imshow("Image with Bbox", img_show);
-            cv::waitKey(0);
+            // cv::waitKey(0);
+            cv::waitKey(10);
+            cout << "Press any key to continue" << endl;
+            char key = getchar();
         }
 
         // 若不成功保持为NULL
         pFrame->mpLocalObjects.push_back(pEllipsoidForThisObservation);
-        pKF->mpLocalObjects.push_back(pEllipsoidForThisObservation);
+        pKF->mpLocalObjectsLocal.push_back(pEllipsoidForThisObservation);
+
+        // 这里要注意创建一个新的
+        pKF->mpLocalObjectsGlobal.push_back(pEllipsoidForThisObservationGlobal);
+
     }
 
     if (show_ellipsold_process){

@@ -139,7 +139,7 @@ void ObjectDrawer::DrawObjects(bool bFollow, const Eigen::Matrix4f &Tec, double 
         {
             mpRenderer->Render(idx, Tec * SE3TcwFollow * Sim3Two, mvObjectColors[pMO->GetRenderId() % mvObjectColors.size()]);
         }
-        
+
         DrawCuboid(pMO);
 
         if(pMO->mpEllipsold && pMO->mpEllipsold->prob > prob_thresh )
@@ -250,6 +250,8 @@ void ObjectDrawer::DrawCuboid(MapObject *pMO)
     const float l = pMO->l / 2;
 
     glPushMatrix();
+
+
 
     pangolin::OpenGlMatrix Two = Converter::toMatrixPango(pMO->SE3Two);
 #ifdef HAVE_GLES

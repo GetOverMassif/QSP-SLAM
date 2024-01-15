@@ -200,7 +200,8 @@ public:
     // For depth ellipsoid extraction.
     // todo: mpLocalObjects may need a mutex?
     bool mbHaveLocalObject;
-    std::vector<g2o::ellipsoid*> mpLocalObjects; // local 3d ellipsoid
+    std::vector<g2o::ellipsoid*> mpLocalObjectsLocal; // local 3d ellipsoid
+    std::vector<g2o::ellipsoid*> mpLocalObjectsGlobal; // local 3d ellipsoid
 
     // Variables used in object-based graph optimization
     int nObj;

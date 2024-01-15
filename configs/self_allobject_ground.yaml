@@ -5,8 +5,6 @@ CreateSingleObject: 0
 MinimumMatchToAssociate: 10
 Tracking.ShowEllipsoldProcess: 0
 LocalMapping.ShowEllipsoldProcess: 0
-LocalMapping.KeepRawPose: 0
-Tracking.AddSuffixToPcd: 0
 
 Tracking.MinimumPtNumToJudgeGood: 5  # default 20
 
@@ -48,22 +46,31 @@ Tracking.MinimumPtNumToJudgeGood: 5  # default 20
 # yolo_class: [77, 73, 39, 63, 75, 66, 41, 64]   #先去掉笔记本电脑 63
 
 # On table: laptop-63, book-73, vase-75, bottle-39, keyboard-66, cup-41
-YoloClasses: [63, 73, 75, 39, 66, 41]
-# 是否能读字符串列表
+# YoloClasses: [63, 73, 75, 39, 66, 41]
+# # 是否能读字符串列表
 
-DecoderPaths: ["weights/deepsdf/laptops_64", 
-               "weights/deepsdf/books_64_c",
-               "weights/deepsdf/vases_64_c",
-               "weights/deepsdf/bottles_64",
-               "weights/deepsdf/keyboards_64",
-               "weights/deepsdf/cups_64_c"]
+# DecoderPaths: ["weights/deepsdf/laptops_64", 
+#                "weights/deepsdf/books_64_c",
+#                "weights/deepsdf/vases_64_c",
+#                "weights/deepsdf/bottles_64",
+#                "weights/deepsdf/keyboards_64",
+#                "weights/deepsdf/cups_64_c"]
 
 
 # On ground: chair-56, couch-57, dining table-60, bed-59, bookshelf-
 
+YoloClasses: [56, 57, 60, 59]
+# 是否能读字符串列表
+
+DecoderPaths: ["weights/deepsdf/chairs_64", 
+               "weights/deepsdf/sofas_64",
+               "weights/deepsdf/tables_64",
+               "weights/deepsdf/beds_64"]
+
+
 # [Dataset Path]
 Dataset.Type: "Redwood"
-Dataset.Path.Root: "/media/lj/TOSHIBA/dataset/FromZHJD/circle"
+Dataset.Path.Root: "/media/lj/TOSHIBA/dataset/MySimDataset/GroundObjects"
 Dataset.Path.Map: "./dataset.pcd"
 
 
@@ -124,7 +131,7 @@ Camera.scale: 5000
 # Parameters used for Object SLAM
 #--------------------------------------------------------------------------------------------
 # Config path for Python detectors
-DetectorConfigPath: configs/config_self_allobject_circle.json
+DetectorConfigPath: configs/config_self_allobject_ground.json
 Objects.maskErrosion: 5
 
 
@@ -251,7 +258,7 @@ Tracking.KeyFrameCheck.Close: 1
 
 # Visualization
 Visualization.Builder.Open: 1
-Visualization.Builder.Global.Open: 0
+Visualization.Builder.Global.Open: 1
 
 # when >0, filter using dis to groundplane
 Visualization.Map.Filter.DisThresh: 2.3

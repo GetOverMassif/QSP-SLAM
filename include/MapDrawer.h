@@ -80,7 +80,8 @@ public:
     void GetCurrentOpenGLCameraMatrix(pangolin::OpenGlMatrix &M);
 
     void drawPointCloudLists(float pointSize=1); // draw all the point cloud lists 
-    void drawPointCloudWithOptions(const std::map<std::string,bool> &options); // draw the point cloud lists with options opened
+    void drawPointCloudLists(float pointSize, std::string pcd_name);
+    void drawPointCloudWithOptions(const std::map<std::string,bool> &options, float pointcloudSize=1); // draw the point cloud lists with options opened
 
     // void drawBoundingboxes();
     // void drawConstrainPlanes(double prob_thresh = 0, int type = 0);

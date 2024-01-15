@@ -63,7 +63,7 @@ class EllipsoidExtractor {
     g2o::ellipsoid EstimateLocalEllipsoid(cv::Mat &depth, Eigen::Vector4d &bbox, int label, double prob, Eigen::VectorXd &pose, camera_intrinsic &camera);
 
     // API2: [new] estimate using multi-planes
-    g2o::ellipsoid EstimateLocalEllipsoidUsingMultiPlanes(cv::Mat &depth, Eigen::Vector4d &bbox, int label, double prob, Eigen::VectorXd &pose, camera_intrinsic &camera);
+    g2o::ellipsoid EstimateLocalEllipsoidUsingMultiPlanes(cv::Mat &depth, Eigen::Vector4d &bbox, int label, double prob, Eigen::VectorXd &pose, camera_intrinsic &camera, string suffix="");
     // API2.1: given a supporting plane(local coordinate)
     g2o::ellipsoid EstimateLocalEllipsoidWithSupportingPlane(cv::Mat &depth, Eigen::Vector4d &bbox, int label, double prob, Eigen::VectorXd &pose, camera_intrinsic &camera, g2o::plane *pSupPlane);
     // API3: PointModel Version
@@ -83,7 +83,7 @@ class EllipsoidExtractor {
   private:
     void LoadSymmetryPrior(); // define object symmetry prior
 
-    pcl::PointCloud<PointType>::Ptr ExtractPointCloud(cv::Mat &depth, Eigen::Vector4d &bbox, Eigen::VectorXd &pose, camera_intrinsic &camera); // extract point cloud from depth image.
+    pcl::PointCloud<PointType>::Ptr ExtractPointCloud(cv::Mat &depth, Eigen::Vector4d &bbox, Eigen::VectorXd &pose, camera_intrinsic &camera, string suffix=""); // extract point cloud from depth image.
     PCAResult ProcessPCA(pcl::PointCloud<PointType>::Ptr &pCloudPCL);                                                                          // apply principal component analysis
     g2o::ellipsoid ConstructEllipsoid(PCAResult &data);                                                                                        // generate a sparse ellipsoid estimation from PCA result.
 

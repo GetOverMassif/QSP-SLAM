@@ -405,13 +405,23 @@ void LocalMapping::ProcessDetectedObjects()
 
         if (show_ellipsold_process && det_i)
         {
+            MapObject *pMO_last = mvpAssociatedObjects[det_i - 1];
+            if (!pMO_last)
+                cout << "pMO == null" << endl;
+            else
+                cout << "Object " << pMO_last->mnId << ": \n" << pMO_last->Sim3Two.matrix() << endl;
+
+
             auto det_vec = mvpObjectDetections[det_i-1]->bbox;
             int x1 = (int)det_vec(0), y1 = (int)det_vec(1), x2 = (int)det_vec(2), y2 = (int)det_vec(3);
             // cv::Mat img_show = pFrame->rgb_img.clone();
             cv::Mat img_show(cam_height, cam_width, CV_8UC3, cv::Scalar(255, 255, 255));
             cv::rectangle(img_show, cv::Point(x1, y1), cv::Point(x2, y2), cv::Scalar(255, 0, 0), 2);  // Scalar(255, 0, 0) is for blue color, 2 is the thickness
             cv::imshow("Image with Bbox", img_show);
-            cv::waitKey(0);
+            // cv::waitKey(0);
+            cv::waitKey(10);
+            cout << "Press any key to continue" << endl;
+            char key = getchar();
         }
 
         if (det->isNew) {
@@ -467,14 +477,14 @@ void LocalMapping::ProcessDetectedObjects()
 
         if (numKFsPassedSinceInit < 50 && !pMO->reconstructed) {
             if (!use_ellipsold_pose_for_shape_optimization || \
-                mpCurrentKeyFrame->mpLocalObjects[det_i] == NULL) {
+                mpCurrentKeyFrame->mpLocalObjectsGlobal[det_i] == NULL) {
                 std::cout << "ComputeCuboidPCA" << std::endl;
                 pMO->ComputeCuboidPCA(numKFsPassedSinceInit < 15);
             }
             else{
                 // Method 2: 使用来自椭球体的位姿信息
                 std::cout << "SetPoseByEllipsold" << std::endl;
-                pMO->SetPoseByEllipsold(mpCurrentKeyFrame->mpLocalObjects[det_i]);
+                pMO->SetPoseByEllipsold(mpCurrentKeyFrame->mpLocalObjectsGlobal[det_i]);
             }
         }
         else { // when we have relative good object shape
@@ -610,6 +620,8 @@ void LocalMapping::ProcessDetectedObjects()
 
             auto Sim3Two_pMO = pMO->Sim3Two;
 
+            Eigen::Matrix4f Sim3Two_raw = Sim3Two_pMO;
+
             int class_id = det->label;
 
             py::object* optimizer_ptr;
@@ -705,6 +717,7 @@ void LocalMapping::ProcessDetectedObjects()
 
             std::cout << "Reconstruction successed" << std::endl;
             
+            // 设置检测结果的位姿测量
             det->SetPoseMeasurementSim3(Sim3Tco);
             // Sim3, SE3, Sim3
             // Sim3 可以乘在前面但不能乘在后面?
@@ -733,7 +746,15 @@ void LocalMapping::ProcessDetectedObjects()
              * - 是否已重建、（关键帧，检测索引）
              * 向 当前关键帧、物体绘制器 添加物体
             */
-            pMO->UpdateReconstruction(Sim3Two, code);
+            
+            if (keep_raw_pose) {
+                cout << "Draw Sim3Two_raw " << endl;
+                pMO->UpdateReconstruction(Sim3Two_raw, code);
+            }
+            else {
+                pMO->UpdateReconstruction(Sim3Two, code);
+                
+            }
 
             // auto pyMesh = pyMeshExtractor.attr("extract_mesh_from_code")(code);
 
@@ -748,6 +769,7 @@ void LocalMapping::ProcessDetectedObjects()
                 py::object* mesh_extracter_ptr_local = &pyMeshExtractor;
                 mesh_extracter_ptr = mesh_extracter_ptr_local;
             }
+
             auto pyMesh = mesh_extracter_ptr->attr("extract_mesh_from_code")(code);
 
 
@@ -776,7 +798,9 @@ void LocalMapping::ProcessDetectedObjects()
         cv::Mat img_show(cam_height, cam_width, CV_8UC3, cv::Scalar(255, 255, 255));
         cv::rectangle(img_show, cv::Point(x1, y1), cv::Point(x2, y2), cv::Scalar(255, 0, 0), 2);  // Scalar(255, 0, 0) is for blue color, 2 is the thickness
         cv::imshow("Image with Bbox", img_show);
-        cv::waitKey(0);
+        cv::waitKey(10);
+        cout << "Press any key to continue" << endl;
+        char key = getchar();
 
         cv::destroyWindow("Image with Bbox");
     }

@@ -159,6 +159,7 @@ protected:
 
     bool create_single_object;
     bool show_ellipsold_process;
+    bool keep_raw_pose;
 
     int cam_width, cam_height;
 };

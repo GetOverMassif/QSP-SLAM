@@ -403,4 +403,43 @@ void MapDrawer::drawPointCloudLists(float pointSize)
     glPopMatrix();
 }
 
+void MapDrawer::drawPointCloudLists(float pointSize, std::string pcd_name)
+{
+    auto pointLists = mpMap->GetPointCloudList();
+
+    // cout << "pointLists.size() = " << pointLists.size() << std::endl;
+
+    glPushMatrix();
+
+    for(auto pair:pointLists){
+        auto strpoints = pair.first;
+        if (strpoints!=pcd_name){
+            continue;
+        }
+        // std::cout << "strpoints = " << strpoints << std::endl;
+        auto pPoints = pair.second;
+        if( pPoints == NULL ) continue;
+        for(int i=0; i<pPoints->size(); i=i+1)
+        {
+            PointXYZRGB &p = (*pPoints)[i];
+            // std::cout << "pPoints->size() = " << pPoints->size() << std::endl;
+            // std::cout << "(&p) == NULL = " << ((&p)==NULL ) << std::endl;
+            // std::cout << "p.x = " << p.x << std::endl;
+
+            glPointSize( pointSize );
+            // glPointSize( p.size );
+            glBegin(GL_POINTS);
+            glColor3d(p.r/255.0, p.g/255.0, p.b/255.0);
+            glVertex3d(p.x, p.y, p.z);
+            glEnd();
+
+        }
+    }
+    glPointSize( pointSize );
+
+    glPopMatrix();
+}
+
+
+
 } //namespace ORB_SLAM

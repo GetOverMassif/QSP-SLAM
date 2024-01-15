@@ -50,6 +50,8 @@ class Frame:
             self.object_class = ["tv_monitor"]
         elif sequence.data_type == "AllObjectsOnTable":
             self.object_class = object_classes_on_table
+        elif sequence.data_type == "AllObjectsOnGround":
+            self.object_class = object_classes_on_ground
         
         # elif sequence.data_type=='Tum':
         #     self.object_class = "monitor"
@@ -168,7 +170,7 @@ class Frame:
                 self.instances.append(instance)
 
 
-valid_data_types = ["Redwood", "Freiburg", "MultiObject", "AllObjectsOnTable"]
+valid_data_types = ["Redwood", "Freiburg", "MultiObject", "AllObjectsOnTable", "AllObjectsOnGround"]
 
 class MonoSequence:
     def __init__(self, data_dir, configs):

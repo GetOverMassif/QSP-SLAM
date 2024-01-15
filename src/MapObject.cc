@@ -216,6 +216,7 @@ void MapObject::SetObjectPoseSim3(const Eigen::Matrix4f &Two)
     SE3Two.topLeftCorner<3, 3>() = Rwo;
     SE3Two.topRightCorner<3, 1>() = two;
     SE3Tow = SE3Two.inverse();
+    cout << "SE3Two = \n" << SE3Two.matrix() << endl;
 }
 
 void MapObject::SetObjectPoseSE3(const Eigen::Matrix4f &Two)
@@ -469,18 +470,23 @@ void MapObject::SetPoseByEllipsold(g2o::ellipsoid* e)
     Eigen::Matrix3f Ron = Eigen::AngleAxisf(M_PI/2, Eigen::Vector3f(1,0,0)).matrix()
         * Eigen::AngleAxisf(-M_PI/2, Eigen::Vector3f(0,1,0)).matrix();
     Two.topLeftCorner(3, 3) = Two.topLeftCorner(3, 3) * Ron;
+
+    // cout << "Two from ellipsold = " << Two.matrix() << endl;
+
     Two.topLeftCorner(3, 3) = 0.40 * s * Two.topLeftCorner(3, 3);
 
 
-    w = e->scale(0) * 2;
+    w = e->scale(1) * 2;
     h = e->scale(2) * 2;
-    l = e->scale(1) * 2;
+    l = e->scale(0) * 2;
 
     // w = 0.4;  
     // h = 0.8;
     // l = 1.6;
 
-    std::cout << "Setting scale = " << e->scale.transpose().matrix() << std::endl;
+    // std::cout << "Setting scale = " << e->scale.transpose().matrix() << std::endl;
+
+    // cout << "in setPoseByEllipsold: Two = \n" << Two.matrix() << endl;
 
     SetObjectPoseSim3(Two); // Two
 }

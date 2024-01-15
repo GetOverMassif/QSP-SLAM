@@ -703,7 +703,7 @@ void GenerateConstrainPlanesToEllipsoid(g2o::ellipsoid &e_local_normalized, Vect
 // 1. 提取点云
 // 2. 将点云转换到重力坐标系( Z轴沿重力方向, 中心为物体中心点 )
 // 3. ...
-g2o::ellipsoid EllipsoidExtractor::EstimateLocalEllipsoidUsingMultiPlanes(cv::Mat &depth, Eigen::Vector4d &bbox, int label, double prob, Eigen::VectorXd &pose, camera_intrinsic &camera) {
+g2o::ellipsoid EllipsoidExtractor::EstimateLocalEllipsoidUsingMultiPlanes(cv::Mat &depth, Eigen::Vector4d &bbox, int label, double prob, Eigen::VectorXd &pose, camera_intrinsic &camera, string suffix) {
     // std::cout << "In EllipsoidExtractor::EstimateLocalEllipsoidUsingMultiPlanes" << std::endl;
     g2o::ellipsoid e;
     miSystemState = 0;                  // reset the state
@@ -721,7 +721,8 @@ g2o::ellipsoid EllipsoidExtractor::EstimateLocalEllipsoidUsingMultiPlanes(cv::Ma
     // 注意: 该过程由于进行了与世界平面的操作, 所以位于世界坐标系下.
 
     // 通过降采样、统计滤波、平面筛选、中点欧几里德快速聚类等步骤，提取世界坐标系下的物体点云。
-    pcl::PointCloud<PointType>::Ptr pCloudPCL = ExtractPointCloud(depth, bbox, pose, camera);
+    // 同时也会把物体点云绘制出来
+    pcl::PointCloud<PointType>::Ptr pCloudPCL = ExtractPointCloud(depth, bbox, pose, camera, suffix);
     clock_t time_1_ExtractPointCloud = clock();
     if (miSystemState > 0) {
         cout << "return because miSystemState = " << miSystemState << std::endl;

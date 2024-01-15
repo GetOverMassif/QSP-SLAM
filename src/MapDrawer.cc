@@ -323,7 +323,7 @@ void MapDrawer::GetCurrentOpenGLCameraMatrix(pangolin::OpenGlMatrix &M)
         M.SetIdentity();
 }
 
-void MapDrawer::drawPointCloudWithOptions(const std::map<std::string,bool> &options)
+void MapDrawer::drawPointCloudWithOptions(const std::map<std::string,bool> &options, float pointcloudSize)
 {
     auto pointLists = mpMap->GetPointCloudList();
     if(pointLists.size() < 1) return;
@@ -344,7 +344,8 @@ void MapDrawer::drawPointCloudWithOptions(const std::map<std::string,bool> &opti
         for(int i=0; i<cloud.size(); i=i+1)
         {
             PointXYZRGB& p = cloud[i];
-            glPointSize( p.size );
+            // glPointSize( p.size );
+            glPointSize( pointcloudSize );
             glBegin(GL_POINTS);
             glColor3d(p.r/255.0, p.g/255.0, p.b/255.0);
             glVertex3d(p.x, p.y, p.z);

@@ -77,6 +77,7 @@ LocalMapping::LocalMapping(System *pSys, Map *pMap, ObjectDrawer* pObjectDrawer,
 
     create_single_object = Config::Get<int>("CreateSingleObject");
     show_ellipsold_process = Config::Get<int>("LocalMapping.ShowEllipsoldProcess");
+    keep_raw_pose = Config::Get<int>("LocalMapping.KeepRawPose");
 
 // Camera.width: 640
 // Camera.height: 480

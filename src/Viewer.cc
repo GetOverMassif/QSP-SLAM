@@ -85,7 +85,7 @@ void Viewer::Run()
     pangolin::Var<bool> menuShowMapObjects("menu.Show MapObjects",true,true);
     pangolin::Var<bool> menuShowGroundPlane("menu.Show GroundPlane",true,true);
     pangolin::Var<bool> menuShowEllipsoids("menu.Show Ellipsoids", true, true);
-    pangolin::Var<bool> menuShowPointCloudLists("menu.Show PointCloudLists", true, true);
+    // pangolin::Var<bool> menuShowPointCloudLists("menu.Show PointCloudLists", true, true);
 
     pangolin::Var<bool> menuShowEllipsoidsObservation("menu.Ellipsoids-Ob", true, true);
     // pangolin::Var<bool> menuShowCuboids("menu. - Show Cuboids", false, true);
@@ -147,6 +147,8 @@ void Viewer::Run()
 
     while(1)
     {
+        RefreshMenu();  // Deal with dynamic menu bars
+
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         mpMapDrawer->GetCurrentOpenGLCameraMatrix(Twc);
@@ -213,12 +215,23 @@ void Viewer::Run()
         // mpMapDrawer->drawEllipsoid();
 
         // draw pointclouds with names
-        // RefreshPointCloudOptions();
-        // mpMapDrawer->drawPointCloudWithOptions(mmPointCloudOptionMap);
-
         float pointcloudSize = SliderPointCloudListSize;
-        if(menuShowPointCloudLists)
-            mpMapDrawer->drawPointCloudLists(pointcloudSize);
+        RefreshPointCloudOptions();
+        mpMapDrawer->drawPointCloudWithOptions(mmPointCloudOptionMap, pointcloudSize);
+
+        // float pointcloudSize = SliderPointCloudListSize;
+        // if(menuShowPointCloudLists)
+        //     mpMapDrawer->drawPointCloudLists(pointcloudSize);
+
+
+        // if(menuShowPcdGlobal)
+        //     mpMapDrawer->drawPointCloudLists(pointcloudSize);
+        
+        // if(menuShowPcdLocal)
+        //     mpMapDrawer->drawPointCloudLists(pointcloudSize);
+        
+        //     mpMap->AddPointCloudList("Builder.Global Points", pCloud);
+        // mpMap->AddPointCloudList("Builder.Local Points", pCloudLocal);
 
 
         mpObjectDrawer->ProcessNewObjects();
@@ -352,5 +365,53 @@ void Viewer::RefreshPointCloudOptions()
     mmPointCloudOptionMap.clear();
     mmPointCloudOptionMap = options;
 }
+
+void Viewer::RefreshMenu(){
+    unique_lock<mutex> lock(mMutexFinish);
+
+    // 以名称为单位，给 pointcloud list 中的每个点云设置菜单
+    auto pointLists = mpSystem->getMap()->GetPointCloudList();
+
+    // Iterate over the menu and delete the menu if the corresponding clouds are no longer available
+    // 遍历菜单，如果对应的点云没有了则删除菜单
+    for( auto menuPair = mmPointCloudOptionMenus.begin(); menuPair!=mmPointCloudOptionMenus.end();)
+    {
+        if(pointLists.find(menuPair->first) == pointLists.end())
+        {
+            if( menuPair->second !=NULL ){
+                delete menuPair->second;        // destroy the dynamic menu 
+                menuPair->second = NULL;
+            }
+            menuPair = mmPointCloudOptionMenus.erase(menuPair);  
+            continue;
+        }
+        menuPair++;
+    }
+
+    // Iterate over the cloud lists to add new menu.
+    // 遍历点云列表，添加新菜单
+    for( auto cloudPair: pointLists )
+    {
+        if(mmPointCloudOptionMenus.find(cloudPair.first) == mmPointCloudOptionMenus.end())
+        {
+            pangolin::Var<bool>* pMenu = new pangolin::Var<bool>(string("menu.") + cloudPair.first, false, true);
+            mmPointCloudOptionMenus.insert(make_pair(cloudPair.first, pMenu));            
+        }
+    }
+
+    // // refresh double bars
+    // int doubleBarNum = mvDoubleMenus.size();
+    // int structNum = mvMenuStruct.size();
+    // if( structNum > 0 && structNum > doubleBarNum )
+    // {
+    //     for(int i = doubleBarNum; i < structNum; i++)
+    //     {
+    //         pangolin::Var<double>* pMenu = new pangolin::Var<double>(string("menu.")+mvMenuStruct[i].name, mvMenuStruct[i].def, mvMenuStruct[i].min, mvMenuStruct[i].max);
+    //         mvDoubleMenus.push_back(pMenu);
+    //     }
+    // }
+
+}
+
 
 }

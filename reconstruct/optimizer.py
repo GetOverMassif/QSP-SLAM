@@ -124,6 +124,7 @@ class Optimizer(object):
         loss = 0.
         print(f"{self.num_iterations_joint_optim} Iterations")
         for e in range(self.num_iterations_joint_optim):
+            # print(f"t_cam_obj = {t_cam_obj}")
             # get depth range and sample points along the rays
             t_cam_obj = torch.inverse(t_obj_cam)
             scale = torch.det(t_cam_obj[:3, :3]) ** (1 / 3)

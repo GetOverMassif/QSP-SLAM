@@ -62,6 +62,7 @@ public:
 private:
 
     bool Stop();
+    void RefreshMenu();
 
     System* mpSystem;
     FrameDrawer* mpFrameDrawer;
