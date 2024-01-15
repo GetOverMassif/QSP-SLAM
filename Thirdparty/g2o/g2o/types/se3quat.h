@@ -288,13 +288,11 @@ namespace g2o {
         {
           //TODO: CHECK WHETHER THIS IS CORRECT!!!
           R = (Matrix3d::Identity() + Omega + Omega*Omega);
-
           V = R;
         }
         else
         {
           Matrix3d Omega2 = Omega*Omega;
-
           R = (Matrix3d::Identity()
               + sin(theta)/theta *Omega
               + (1-cos(theta))/(theta*theta)*Omega2);

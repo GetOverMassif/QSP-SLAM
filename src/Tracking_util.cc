@@ -376,6 +376,7 @@ void Tracking::GetObjectDetectionsRGBD(KeyFrame *pKF)
 */
 void Tracking::AssociateObjectsByProjection(ORB_SLAM2::KeyFrame *pKF)
 {
+    
     std::cout << "\n[ Tracking - AssociateObjectsByProjection ]" << std::endl;
     // => Step 1: 获取该关键帧关联的地图点、物体检测
     auto mvpMapPoints = pKF->GetMapPointMatches();
@@ -389,6 +390,29 @@ void Tracking::AssociateObjectsByProjection(ORB_SLAM2::KeyFrame *pKF)
         //           记录这些地图点中已经关联的物体编号
         // cout << "Detection: " << d_i + 1 << endl;
         auto detKF1 = detectionsKF1[d_i];
+
+        if (associate_object_with_ellipsold) {
+            cout << "Tracking::AssociateObjectsByProjection" << endl;
+            auto mapObjects = mpMap->GetAllMapObjects();
+            for (auto pMO: mapObjects){
+                cv::Mat img_show = mCurrentFrame.rgb_img.clone();
+                auto e = pMO->mpEllipsold;
+                auto campose_cw = mCurrentFrame.cam_pose_Tcw;
+                auto ellipse = e->projectOntoImageEllipse(campose_cw, mCalib);
+                e->drawEllipseOnImage(ellipse, img_show);
+
+                // int x1 = (int)det_vec(1), y1 = (int)det_vec(2), x2 = (int)det_vec(3), y2 = (int)det_vec(4);
+                // cv::rectangle(img_show, cv::Point(x1, y1), cv::Point(x2, y2), cv::Scalar(255, 0, 0), 2);  // Scalar(255, 0, 0) is for blue color, 2 is the thickness
+
+                cv::imshow("Ellipse Projection", img_show);
+                cv::waitKey(10);
+
+                cout << "Press any key to continue" << endl;
+                char key = getchar();
+            }
+
+        }
+
         map<int, int> observed_object_id;
         int nOutliers = 0;
 

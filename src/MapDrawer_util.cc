@@ -121,45 +121,50 @@ void MapDrawer::drawAllEllipsoidsInVector(std::vector<ellipsoid*>& ellipsoids)
     
     for( size_t i=0; i<ellipsoids.size(); i++)
     {
-        SE3Quat TmwSE3 = ellipsoids[i]->pose.inverse();
-
-        if(mbOpenTransform)
-            TmwSE3 = (mTge * ellipsoids[i]->pose).inverse(); // Tem
-
-        Vector3d scale = ellipsoids[i]->scale;
-
-        // std::cout << "TmwSE3 = " << TmwSE3.to_homogeneous_matrix().matrix() << std::endl;
-        // std::cout << "Ellipsoid scale = " << scale.transpose().matrix() << std::endl; 
-
-        glPushMatrix();
-
-        glLineWidth(mCameraLineWidth/3.0);
-
-        if(ellipsoids[i]->isColorSet()){
-            Vector4d color = ellipsoids[i]->getColorWithAlpha();
-            // std::cout << "color = " << color.matrix() << std::endl;
-            glColor4d(color(0),color(1),color(2),color(3));
-        }
-        else
-            glColor3f(0.0f,0.0f,1.0f);
-
-        GLUquadricObj *pObj;
-        pObj = gluNewQuadric();
-        gluQuadricDrawStyle(pObj, GLU_LINE);
-
-        pangolin::OpenGlMatrix Twm;   // model to world
-
-        SE3ToOpenGLCameraMatrix(TmwSE3, Twm);
-
-        glMultMatrixd(Twm.m);  
-        glScaled(scale[0],scale[1],scale[2]);
-        gluSphere(pObj, 1.0, 26, 13); // draw a sphere with radius 1.0, center (0,0,0), slices 26, and stacks 13.
-
-        drawAxisNormal();
-
-        glPopMatrix();
+        drawEllipsoidInVector(ellipsoids[i]);
     }
     return;
+}
+
+void MapDrawer::drawEllipsoidInVector(ellipsoid* e)
+{
+    SE3Quat TmwSE3 = e->pose.inverse();
+
+    if(mbOpenTransform)
+        TmwSE3 = (mTge * e->pose).inverse(); // Tem
+
+    Vector3d scale = e->scale;
+
+    // std::cout << "TmwSE3 = " << TmwSE3.to_homogeneous_matrix().matrix() << std::endl;
+    // std::cout << "Ellipsoid scale = " << scale.transpose().matrix() << std::endl; 
+
+    glPushMatrix();
+
+    glLineWidth(mCameraLineWidth/3.0);
+
+    if(e->isColorSet()){
+        Vector4d color = e->getColorWithAlpha();
+        // std::cout << "color = " << color.matrix() << std::endl;
+        glColor4d(color(0),color(1),color(2),color(3));
+    }
+    else
+        glColor3f(0.0f,0.0f,1.0f);
+
+    GLUquadricObj *pObj;
+    pObj = gluNewQuadric();
+    gluQuadricDrawStyle(pObj, GLU_LINE);
+
+    pangolin::OpenGlMatrix Twm;   // model to world
+
+    SE3ToOpenGLCameraMatrix(TmwSE3, Twm);
+
+    glMultMatrixd(Twm.m);  
+    glScaled(scale[0],scale[1],scale[2]);
+    gluSphere(pObj, 1.0, 26, 13); // draw a sphere with radius 1.0, center (0,0,0), slices 26, and stacks 13.
+
+    drawAxisNormal();
+
+    glPopMatrix();
 }
 
 bool MapDrawer::drawObservationEllipsoids(double prob_thresh)

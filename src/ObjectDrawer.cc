@@ -143,7 +143,7 @@ void ObjectDrawer::DrawObjects(bool bFollow, const Eigen::Matrix4f &Tec, double 
         DrawCuboid(pMO);
 
         if(pMO->mpEllipsold && pMO->mpEllipsold->prob > prob_thresh )
-            drawEllipsoidsInVector(pMO->mpEllipsold);
+            mpMapDrawer->drawEllipsoidInVector(pMO->mpEllipsold);
 
     }
 }
@@ -198,50 +198,50 @@ void ObjectDrawer::DrawObjects(bool bFollow, const Eigen::Matrix4f &Tec, double 
 //         M.SetIdentity();
 // }
 
-void ObjectDrawer::drawEllipsoidsInVector(ellipsoid* e)
-{
-    // std::cout << "[MapDrawer::drawAllEllipsoidsInVector] " \
-    //     << "ellipsoids.size() = " << ellipsoids.size() << std::endl;
+// void ObjectDrawer::drawEllipsoidsInVector(ellipsoid* e)
+// {
+//     // std::cout << "[MapDrawer::drawAllEllipsoidsInVector] " \
+//     //     << "ellipsoids.size() = " << ellipsoids.size() << std::endl;
     
-    SE3Quat TmwSE3 = e->pose.inverse();
+//     SE3Quat TmwSE3 = e->pose.inverse();
 
-    if(mbOpenTransform)
-        TmwSE3 = (mTge * e->pose).inverse(); // Tem
+//     if(mbOpenTransform)
+//         TmwSE3 = (mTge * e->pose).inverse(); // Tem
 
-    Vector3d scale = e->scale;
+//     Vector3d scale = e->scale;
 
-    // std::cout << "TmwSE3 = " << TmwSE3.to_homogeneous_matrix().matrix() << std::endl;
-    // std::cout << "Ellipsoid scale = " << scale.transpose().matrix() << std::endl; 
+//     // std::cout << "TmwSE3 = " << TmwSE3.to_homogeneous_matrix().matrix() << std::endl;
+//     // std::cout << "Ellipsoid scale = " << scale.transpose().matrix() << std::endl; 
 
-    glPushMatrix();
+//     glPushMatrix();
 
-    glLineWidth(mCameraLineWidth/3.0);
+//     glLineWidth(mCameraLineWidth/3.0);
 
-    if(e->isColorSet()){
-        Vector4d color = e->getColorWithAlpha();
-        // std::cout << "color = " << color.matrix() << std::endl;
-        glColor4d(color(0),color(1),color(2),color(3));
-    }
-    else
-        glColor3f(0.0f,0.0f,1.0f);
+//     if(e->isColorSet()){
+//         Vector4d color = e->getColorWithAlpha();
+//         // std::cout << "color = " << color.matrix() << std::endl;
+//         glColor4d(color(0),color(1),color(2),color(3));
+//     }
+//     else
+//         glColor3f(0.0f,0.0f,1.0f);
 
-    GLUquadricObj *pObj;
-    pObj = gluNewQuadric();
-    gluQuadricDrawStyle(pObj, GLU_LINE);
+//     GLUquadricObj *pObj;
+//     pObj = gluNewQuadric();
+//     gluQuadricDrawStyle(pObj, GLU_LINE);
 
-    pangolin::OpenGlMatrix Twm;   // model to world
+//     pangolin::OpenGlMatrix Twm;   // model to world
 
-    // SE3ToOpenGLCameraMatrix(TmwSE3, Twm);
+//     // SE3ToOpenGLCameraMatrix(TmwSE3, Twm);
 
-    glMultMatrixd(Twm.m);  
-    glScaled(scale[0],scale[1],scale[2]);
-    gluSphere(pObj, 1.0, 26, 13); // draw a sphere with radius 1.0, center (0,0,0), slices 26, and stacks 13.
+//     glMultMatrixd(Twm.m);  
+//     glScaled(scale[0],scale[1],scale[2]);
+//     gluSphere(pObj, 1.0, 26, 13); // draw a sphere with radius 1.0, center (0,0,0), slices 26, and stacks 13.
 
-    drawAxis();
-    glPopMatrix();
-    return;
+//     drawAxis();
+//     glPopMatrix();
+//     return;
 
-}
+// }
 
 void ObjectDrawer::DrawCuboid(MapObject *pMO)
 {

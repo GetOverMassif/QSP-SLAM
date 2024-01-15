@@ -8,6 +8,7 @@
 #include <Eigen/Dense>
 
 #include <opencv2/core/core.hpp>
+#include <opencv2/opencv.hpp>
 
 #include "include/utils/matrix_utils.h"
  
@@ -115,6 +116,8 @@ public:
 
     // The ellipsoid is projected onto the image plane to get an ellipse
     Vector5d projectOntoImageEllipse(const SE3Quat& campose_cw, const Matrix3d& Kalib) const;
+
+
     // Out put a Matrix form
     Matrix3d projectOntoImageEllipseMat(const SE3Quat& campose_cw, const Matrix3d& Kalib) const;
 
@@ -170,6 +173,8 @@ public:
     // Visualization function: project axises on image
     Matrix3d projectAxisOnImage(const g2o::SE3Quat& campose_cw, const Matrix3d& calib, int length_scale = 1) const;
     Vector2d projectPointIntoImagePoint(const Vector3d& point, const SE3Quat& campose_cw, const Matrix3d& Kalib) const;
+
+    void drawEllipseOnImage(const Vector5d& ellipse, cv::Mat& im, const cv::Scalar& color = cv::Scalar(0,0,255));
 
 private:
     bool mbColor;

@@ -23,6 +23,7 @@
 #include "MapDrawer.h"
 #include "KeyFrame.h"
 #include "ObjectRenderer.h"
+// #include "Viewer.h"
 #include <pangolin/pangolin.h>
 
 namespace ORB_SLAM2
@@ -31,6 +32,7 @@ namespace ORB_SLAM2
 class KeyFrame;
 class Map;
 class MapDrawer;
+// class Viewer;
 
 class ObjectDrawer {
 public:
@@ -42,14 +44,16 @@ public:
     void DrawObjects(bool bFollow, const Eigen::Matrix4f &Tec, double prob_thresh=0);
     void DrawCuboid(MapObject *pMO);
 
-    void SE3ToOpenGLCameraMatrix(g2o::SE3Quat &matIn, pangolin::OpenGlMatrix &M); // inverse matIn
-    void drawEllipsoidsInVector(ellipsoid* e);
+    // void SE3ToOpenGLCameraMatrix(g2o::SE3Quat &matIn, pangolin::OpenGlMatrix &M); // inverse matIn
+    // void drawEllipsoidsInVector(ellipsoid* e);
     void SetCurrentCameraPose(const Eigen::Matrix4f &Tcw);
     void DrawFrame(const float w, const float h, const float l);
     std::list<MapObject*> mlNewMapObjects;
     Map *mpMap;
     MapDrawer *mpMapDrawer;
     ObjectRenderer *mpRenderer;
+    // Viewer *mpViewer;
+
     float mViewpointF;
     std::mutex mMutexObjects;
     std::vector<std::tuple<float, float, float>> mvObjectColors;

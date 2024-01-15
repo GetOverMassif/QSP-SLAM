@@ -99,11 +99,14 @@ public:
     // By Lijian
     void DrawDepthPointCloud();
 
+    // 可能被ObjectDrawer调用
+    void drawEllipsoidInVector(ellipsoid* e);
 
 private:
     // void drawPlaneWithEquationDense(plane* p);
     void drawPlaneWithEquation(plane* p);
     void drawAllEllipsoidsInVector(std::vector<ellipsoid*>& ellipsoids);
+    
     // void drawLabelTextOfEllipsoids(std::vector<ellipsoid*>& ellipsoids);
 
     // pangolin::OpenGlMatrix getGLMatrixFromCenterAndNormal(Vector3f& center, Vector3f& normal);

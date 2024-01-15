@@ -972,4 +972,24 @@ namespace g2o
         return proj_axes;
     }
 
+    void ellipsoid::drawEllipseOnImage(const Vector5d& ellipse, cv::Mat& im, const cv::Scalar& color)
+    {
+        // std::cout << "Ellipse from circle : " << ellipse.transpose() << std::endl;
+        // ellipse: center_x, center_y, 
+        cv::RotatedRect rotbox2(cv::Point2f(ellipse[0],ellipse[1]), cv::Size2f(ellipse[3]*2,ellipse[4]*2), ellipse[2]/M_PI*180);
+        try
+        {
+            std::cout << "drawEllipseOnImage success" << std::endl;
+            cv::ellipse(im, rotbox2, color);
+            // cv::ellipse(im, cv::Point(200, 200), cv::Size(100, 50), 45, 0, 360, cv::Scalar(0, 255, 0), 2);
+            // cv::ellipse(im, cv::Point2f(ellipse[0],ellipse[1]), cv::Size2f(ellipse[3]*2,ellipse[4]*2), ellipse[2]/M_PI*180, color);
+        }
+        catch(const std::exception& e)
+        {
+            std::cout << "drawEllipseOnImage fail" << std::endl;
+            std::cerr << e.what() << '\n';
+        }
+        return;
+    }
+
 } // g2o

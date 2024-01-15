@@ -343,6 +343,9 @@ protected:
     bool minimux_points_to_judge_good;
 
     bool add_suffix_to_pcd;
+    bool associate_object_with_ellipsold;
+
+    bool add_depth_pcd_to_map_object;
 
 };
 

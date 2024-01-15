@@ -195,6 +195,10 @@ Tracking::Tracking(System *pSys, ORBVocabulary* pVoc, FrameDrawer *pFrameDrawer,
     minimux_points_to_judge_good = Config::Get<int>("Tracking.MinimumPtNumToJudgeGood");
     add_suffix_to_pcd = Config::Get<int>("Tracking.AddSuffixToPcd");
 
+    associate_object_with_ellipsold = Config::Get<int>("Tracking.AssociateObjectWithEllipsold");
+
+    add_depth_pcd_to_map_object = Config::Get<int>("Tracking.AddDepthPcdToMapObject");
+
 }
 
 void Tracking::SetLocalMapper(LocalMapping *pLocalMapper)
@@ -1250,8 +1254,6 @@ void Tracking::CreateNewKeyFrame()
         //     NonparamOptimization(); // Optimize data associations,objects,landmarks.        
         // }
 
-        ManageMemory();
-
         // 如果地图存在物体，则通过地图点将新的观测与物体建立关联，并且补充地图点
         //DetectObjects(pKF);
         if (!mpMap->GetAllMapObjects().empty())
@@ -1261,6 +1263,8 @@ void Tracking::CreateNewKeyFrame()
             AssociateObjectsByProjection(pKF);
         }
         
+        ManageMemory();
+
         std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
 
         double ttrack = std::chrono::duration_cast<std::chrono::duration<double> >(t2 - t1).count();
