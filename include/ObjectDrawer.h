@@ -41,7 +41,7 @@ public:
     void SetRenderer(ObjectRenderer *pRenderer);
     void AddObject(MapObject *pMO);
     void ProcessNewObjects();
-    void DrawObjects(bool bFollow, const Eigen::Matrix4f &Tec, double prob_thresh=0);
+    void DrawObjects(bool bFollow, const Eigen::Matrix4f &Tec, double prob_thresh=0, float pointcloudSize=1);
     void DrawCuboid(MapObject *pMO);
 
     // void SE3ToOpenGLCameraMatrix(g2o::SE3Quat &matIn, pangolin::OpenGlMatrix &M); // inverse matIn

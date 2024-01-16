@@ -8,7 +8,9 @@ LocalMapping.ShowEllipsoldProcess: 0
 LocalMapping.KeepRawPose: 0
 Tracking.AddSuffixToPcd: 0
 Tracking.AssociateObjectWithEllipsold: 1
+Tracking.AssociateDebug: 0
 Tracking.AddDepthPcdToMapObject: 1
+Tracking.AssociateIoUThresold: 0.59
 
 Tracking.MinimumPtNumToJudgeGood: 5  # default 20
 

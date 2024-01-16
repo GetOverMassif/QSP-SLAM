@@ -109,7 +109,7 @@ void ObjectDrawer::ProcessNewObjects()
     }
 }
 
-void ObjectDrawer::DrawObjects(bool bFollow, const Eigen::Matrix4f &Tec, double prob_thresh)
+void ObjectDrawer::DrawObjects(bool bFollow, const Eigen::Matrix4f &Tec, double prob_thresh, float pointcloudSize)
 {
     unique_lock<mutex> lock(mMutexObjects);
 
@@ -145,6 +145,9 @@ void ObjectDrawer::DrawObjects(bool bFollow, const Eigen::Matrix4f &Tec, double 
         if(pMO->mpEllipsold && pMO->mpEllipsold->prob > prob_thresh )
             mpMapDrawer->drawEllipsoidInVector(pMO->mpEllipsold);
 
+        std::shared_ptr<PointCloud> mPointsPtr = pMO->GetPointCloud();
+        PointCloud* rawPtr = mPointsPtr.get();
+        mpMapDrawer->drawPointCloud(rawPtr, pointcloudSize);
     }
 }
 

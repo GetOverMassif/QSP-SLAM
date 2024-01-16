@@ -63,7 +63,7 @@ class EllipsoidExtractor {
     g2o::ellipsoid EstimateLocalEllipsoid(cv::Mat &depth, Eigen::Vector4d &bbox, int label, double prob, Eigen::VectorXd &pose, camera_intrinsic &camera);
 
     // API2: [new] estimate using multi-planes
-    g2o::ellipsoid EstimateLocalEllipsoidUsingMultiPlanes(cv::Mat &depth, Eigen::Vector4d &bbox, int label, double prob, Eigen::VectorXd &pose, camera_intrinsic &camera, string suffix="");
+    g2o::ellipsoid EstimateLocalEllipsoidUsingMultiPlanes(cv::Mat &depth, Eigen::Vector4d &bbox, int label, double prob, Eigen::VectorXd &pose, camera_intrinsic &camera, pcl::PointCloud<PointType>::Ptr& pcd_ptr, string suffix="");
     // API2.1: given a supporting plane(local coordinate)
     g2o::ellipsoid EstimateLocalEllipsoidWithSupportingPlane(cv::Mat &depth, Eigen::Vector4d &bbox, int label, double prob, Eigen::VectorXd &pose, camera_intrinsic &camera, g2o::plane *pSupPlane);
     // API3: PointModel Version

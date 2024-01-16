@@ -24,7 +24,7 @@ from reconstruct.loss_utils import decode_sdf, get_robust_res, exp_se3, exp_sim3
 
 
 class Optimizer(object):
-    def __init__(self, decoder, configs):
+    def __init__(self, decoder, configs, debug=False):
         self.decoder = decoder
         optim_cfg = configs.optimizer
         self.k1 = optim_cfg.joint_optim.k1
@@ -39,6 +39,7 @@ class Optimizer(object):
         self.code_len = optim_cfg.code_len
         self.num_depth_samples = optim_cfg.num_depth_samples
         self.cut_off = optim_cfg.cut_off_threshold
+        self.debug = debug
         if configs.data_type == "KITTI":
             self.num_iterations_pose_only = optim_cfg.pose_only_optim.num_iterations
 
@@ -124,9 +125,10 @@ class Optimizer(object):
         loss = 0.
         print(f"{self.num_iterations_joint_optim} Iterations")
         for e in range(self.num_iterations_joint_optim):
-            # print(f"t_cam_obj = {t_cam_obj}")
+            # print(f"t_obj_cam = {t_obj_cam}")
             # get depth range and sample points along the rays
             t_cam_obj = torch.inverse(t_obj_cam)
+            # print(f"t_cam_obj = {t_cam_obj}")
             scale = torch.det(t_cam_obj[:3, :3]) ** (1 / 3)
             # print("Scale: %f" % scale)
             depth_min, depth_max = t_cam_obj[2, 3] - 1.0 * scale, t_cam_obj[2, 3] + 1.0 * scale

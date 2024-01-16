@@ -115,6 +115,7 @@ public:
     void GetObjectDetectionsMono(KeyFrame *pKF);
     void GetObjectDetectionsRGBD(KeyFrame *pKF);
     void AssociateObjectsByProjection(KeyFrame *pKF);  // assocating detection to object by projecting map points
+    int associateDetWithObject(ORB_SLAM2::KeyFrame *pKF, MapObject* pMO, int d_i, ObjectDetection* detKF1, vector<MapPoint*>& mvpMapPoints);
     void SetImageNames(vector<string>& vstrImageFilenamesRGB);
 
     void TaskRelationship(ORB_SLAM2::Frame* pFrame);
@@ -346,6 +347,10 @@ protected:
     bool associate_object_with_ellipsold;
 
     bool add_depth_pcd_to_map_object;
+
+    double associate_IoU_thresold;
+
+    bool associate_debug;
 
 };
 

@@ -81,6 +81,7 @@ public:
 
     void drawPointCloudLists(float pointSize=1); // draw all the point cloud lists 
     void drawPointCloudLists(float pointSize, std::string pcd_name);
+    void drawPointCloud(PointCloud *pPoints, float pointSize = 1);
     void drawPointCloudWithOptions(const std::map<std::string,bool> &options, float pointcloudSize=1); // draw the point cloud lists with options opened
 
     // void drawBoundingboxes();

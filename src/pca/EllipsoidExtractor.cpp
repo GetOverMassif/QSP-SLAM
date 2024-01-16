@@ -86,6 +86,7 @@ bool EllipsoidExtractor::GetResult() {
  * 获取bbox内的点云，使用统计滤波滤除率群点
  * 转换到世界坐标系，使用支撑平面/曼哈顿平面进行滤波
  * 计算点云中点，并基于中点使用欧几里德快速聚类筛选物体点
+ * 返回的点云为欧几里德快速聚类后的点云
 */
 pcl::PointCloud<PointType>::Ptr EllipsoidExtractor::ExtractPointCloud(cv::Mat &depth, Eigen::Vector4d &bbox, Eigen::VectorXd &pose, camera_intrinsic &camera, string suffix) {
     clock_t time_1_start = clock();
@@ -251,13 +252,6 @@ pcl::PointCloud<PointType>::Ptr EllipsoidExtractor::ExtractPointCloud(cv::Mat &d
 
     mpPoints = pPointsEuFiltered;
 
-    // std::string suffix_str;
-    // if (suffix==NULL) {
-    //     suffix_str = "";
-    // }
-    // else{
-    //     suffix_str = suffix;
-    // }
 
     VisualizePointCloud("EuclideanFiltered" + suffix, mpPoints, Vector3d(0.4, 0, 1.0), 2);
 

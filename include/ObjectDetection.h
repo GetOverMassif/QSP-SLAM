@@ -18,9 +18,13 @@
 #ifndef OBJECTDETECTION_H
 #define OBJECTDETECTION_H
 
-# include <mutex>
+#include <mutex>
 #include <vector>
-# include <Eigen/Dense>
+#include <Eigen/Dense>
+#include <pcl/point_cloud.h>
+#include <pcl/point_types.h>
+
+typedef pcl::PointXYZ PointType;
 
 namespace ORB_SLAM2
 {
@@ -37,6 +41,8 @@ public:
     std::vector<int> GetFeaturePoints();
     void AddFeaturePoint(const int &i);
     int NumberOfPoints();
+
+    void setPcdPtr(pcl::PointCloud<PointType>::Ptr& pcd_ptr_);
 
 public:
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
@@ -62,6 +68,8 @@ public:
     Eigen::Vector4d bbox;
     int label;
     double prob;
+
+    pcl::PointCloud<PointType>::Ptr pcd_ptr;
 };
 }
 

@@ -161,6 +161,8 @@ protected:
     bool show_ellipsold_process;
     bool keep_raw_pose;
 
+    bool add_depth_pcd_to_map_object;
+
     int cam_width, cam_height;
 };
 

@@ -319,13 +319,14 @@ void LocalMapping::CreateNewObjectsFromDetections()
         // If the detection is a new object, create a new map object.
         // todo: 这里原本根据点云数量进行判断是否创建物体
 
+
         if (!det->isNew) {
             std::cout << "continue because !det->isNew" << std::endl;
             continue;
         }
             
-        if (!det->isGood) {
-            std::cout << "continue because !det->isGood" << std::endl;
+        if (!det->isGood && !add_depth_pcd_to_map_object) {
+            std::cout << "continue because !det->isGood && !add_depth_pcd_to_map_object" << std::endl;
             continue;
         }
 
@@ -363,7 +364,7 @@ void LocalMapping::CreateNewObjectsFromDetections()
     }
 }
 
-//
+
 void LocalMapping::ProcessDetectedObjects()
 {
     std::cout << "\n[ LocalMapping - ProcessDetectedObjects ]" << std::endl;
@@ -371,7 +372,7 @@ void LocalMapping::ProcessDetectedObjects()
     // std::cout << "Ready to reconstruct_object" << std::endl;
     // std::cout << "Press [ENTER] to continue ... " << std::endl;
     // key = getchar();
-
+    
     /** 获取当前关键帧的位姿信息、物体检测和地图物体 */
     auto SE3Twc = Converter::toMatrix4f(mpCurrentKeyFrame->GetPoseInverse());
     auto SE3Tcw = Converter::toMatrix4f(mpCurrentKeyFrame->GetPose());
@@ -429,8 +430,8 @@ void LocalMapping::ProcessDetectedObjects()
             continue;
         }
 
-        if (!det->isGood) {
-            std::cout << "  Conitinue because !det->isGood" << std::endl;
+        if (!det->isGood && !add_depth_pcd_to_map_object) {
+            std::cout << "  Conitinue because !det->isGood && !add_depth_pcd_to_map_object" << std::endl;
             continue;
         }
 
@@ -445,6 +446,13 @@ void LocalMapping::ProcessDetectedObjects()
         if (pMO->mnId != 0 && create_single_object) {
             std::cout << "  Conitinue because pMO->mnId != 0" << std::endl;
             continue;
+        }
+
+        std::cout << "pMO->mnId = " << pMO->mnId << std::endl;
+
+        if (add_depth_pcd_to_map_object) {
+            pMO->AddDepthPointCloudFromObjectDetection(det);
+            cout << "AddDepthPointCloudFromObjectDetection" << endl;
         }
 
         std::cout << "use_ellipsold_pose_for_shape_optimization = " << \
@@ -507,6 +515,8 @@ void LocalMapping::ProcessDetectedObjects()
             continue;
         }
 
+
+
         std::vector<MapPoint*> points_on_object = pMO->GetMapPointsOnObject();
         int n_points = points_on_object.size();
         int n_valid_points = 0;
@@ -538,6 +548,7 @@ void LocalMapping::ProcessDetectedObjects()
                 continue;
             n_rays++;
         }
+
         cout << "Object " << pMO->mnId << ": " << n_points << " points observed, " << "with " << n_valid_points << " valid points, and " << n_rays << " rays" << endl;
 
         // Surface points
@@ -566,6 +577,9 @@ void LocalMapping::ProcessDetectedObjects()
                 surface_points_cam(p_i, 2) = zc;
                 p_i++;
             }
+
+
+            // 椭球体本身能否用于深度渲染约束？
 
             //！ 获取ray_pixels和depth_obs
             Eigen::MatrixXf ray_pixels = Eigen::MatrixXf::Zero(n_rays, 2);
@@ -604,6 +618,7 @@ void LocalMapping::ProcessDetectedObjects()
                 auto x = u_hom.row(i).transpose();
                 fg_rays.row(i) = (invK * x).transpose();
             }
+
             Eigen::MatrixXf rays(fg_rays.rows() + det->background_rays.rows(), 3);
             rays << fg_rays, det->background_rays;
 
@@ -639,15 +654,6 @@ void LocalMapping::ProcessDetectedObjects()
             cout << "Before reconstruct_object" << std::endl;
             auto pyMapObject = optimizer_ptr->attr("reconstruct_object")
                     (SE3Tcw * Sim3Two_pMO, surface_points_cam, rays, depth_obs, pMO->vShapeCode);
-
-            // py::object* optimizer_ptr = &pyOptimizer;
-            // py::object* optimizer_ptr = &(mmPyOptimizers[class_id]);
-
-            // auto pyMapObject = pyOptimizer.attr("reconstruct_object")
-            //         (SE3Tcw * Sim3Two_pMO, surface_points_cam, rays, depth_obs, pMO->vShapeCode);
-
-            // auto pyMapObject = optimizer_ptr->attr("reconstruct_object")
-            //         (SE3Tcw * Sim3Two_pMO, surface_points_cam, rays, depth_obs, pMO->vShapeCode);
 
             std::cout << "0 rad, is_good: " << pyMapObject.attr("is_good").cast<bool>()\
                       << ", loss: " << pyMapObject.attr("loss").cast<float>() << std::endl;

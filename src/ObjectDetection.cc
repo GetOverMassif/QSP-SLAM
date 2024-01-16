@@ -79,6 +79,17 @@ int ObjectDetection::NumberOfPoints()
     return mvKeysIndices.size();
 }
 
+
+void ObjectDetection::setPcdPtr(pcl::PointCloud<PointType>::Ptr& pcd_ptr_)
+{
+    // 这里有待考虑是否单独设置锁更合理
+    std::unique_lock<std::mutex> lock(mMutexFeatures);
+    if (pcd_ptr==nullptr) {
+        pcd_ptr = pcl::PointCloud<PointType>::Ptr(new pcl::PointCloud<PointType>);
+    }
+    *pcd_ptr = *pcd_ptr_;
+}
+
 void ObjectDetection::SetPoseMeasurementSim3(const Eigen::Matrix4f &T) {
     Rco = T.topLeftCorner<3, 3>();
     // scale is fixed once the object is initialized

@@ -237,7 +237,7 @@ void Viewer::Run()
         mpObjectDrawer->ProcessNewObjects();
 
         if(menuShowMapObjects)
-            mpObjectDrawer->DrawObjects(bFollow, Tec);
+            mpObjectDrawer->DrawObjects(bFollow, Tec, ellipsoidProbThresh, pointcloudSize);
 
         // // 如果是RGBD模式，则绘制深度图对应的点云
         // if (mpTracker->mSensor == System::RGBD) {

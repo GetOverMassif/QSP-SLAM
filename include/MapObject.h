@@ -19,9 +19,12 @@
 #define MAPOBJECT_H
 
 #include <Eigen/Dense>
-#include"KeyFrame.h"
-#include"Frame.h"
-#include"Map.h"
+#include "KeyFrame.h"
+#include "Frame.h"
+#include "Map.h"
+#include "ObjectDetection.h"
+#include "include/core/Geometry.h"
+
 #include "src/config/Config.h"
 
 namespace ORB_SLAM2 {
@@ -55,6 +58,9 @@ public:
     KeyFrame* GetReferenceKeyFrame();
 
     std::vector<MapPoint*> GetMapPointsOnObject();
+
+    std::shared_ptr<PointCloud> GetPointCloud();
+
     void AddMapPoints(MapPoint *pMP);
     void RemoveOutliersSimple();
     void RemoveOutliersModel();
@@ -67,6 +73,8 @@ public:
     bool isDynamic();
 
     void SetPoseByEllipsold(g2o::ellipsoid* e);
+
+    bool AddDepthPointCloudFromObjectDetection(ObjectDetection* det);
 
 public:
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
@@ -122,6 +130,8 @@ public:
 
     std::mutex mMutexObject;
     std::mutex mMutexFeatures;
+    std::mutex mMutexPointCloud;
+
 
     static bool lId(MapObject* pMO1, MapObject* pMO2){
         return pMO1->mnId < pMO2->mnId;
@@ -134,6 +144,10 @@ public:
     g2o::ellipsoid* mpEllipsold;
 
     int label;
+
+    pcl::PointCloud<PointType>::Ptr pcd_ptr;
+
+    std::shared_ptr<PointCloud> mPoints;
 };
 
 }

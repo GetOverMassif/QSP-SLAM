@@ -17,7 +17,11 @@
 
 #include "MapObject.h"
 #include "Converter.h"
+#include "src/symmetry/PointCloudFilter.h"
+
 #include <Eigen/Dense>
+
+#include <pcl/io/pcd_io.h>
 
 namespace ORB_SLAM2
 {
@@ -489,6 +493,41 @@ void MapObject::SetPoseByEllipsold(g2o::ellipsoid* e)
     // cout << "in setPoseByEllipsold: Two = \n" << Two.matrix() << endl;
 
     SetObjectPoseSim3(Two); // Two
+}
+
+bool MapObject::AddDepthPointCloudFromObjectDetection(ObjectDetection* det)
+{
+    // // 这里可能还需要一次降采样操作
+    unique_lock<mutex> lock(mMutexPointCloud);
+
+    // std::cout << "mnId = " << mnId << std::endl;
+    
+    if (pcd_ptr == nullptr) {
+        std::cout << "pcd_ptr = nullptr" << std::endl;
+        pcd_ptr = pcl::PointCloud<PointType>::Ptr(new pcl::PointCloud<PointType>);
+        *pcd_ptr = *(det->pcd_ptr);
+    }
+    else{
+        std::cout << "Merging .. " << std::endl;
+        pcl::PointCloud<PointType>::Ptr mergedCloud(new pcl::PointCloud<PointType>);
+        pcl::concatenate(*(det->pcd_ptr), *pcd_ptr, *mergedCloud);
+        pcd_ptr->clear();
+        det->pcd_ptr->clear();
+        *pcd_ptr = *mergedCloud;
+    }
+    // 打印合并后的点云的大小
+    // std::cout << "Merged Cloud Size: " << pcd_ptr->size() << std::endl;
+    std::cout << "mnId = " << mnId << ", Merged Cloud Size: " << std::endl;
+
+    mPoints = std::make_shared<PointCloud>(pclXYZToQuadricPointCloud(pcd_ptr));
+
+    return true;
+}
+
+std::shared_ptr<PointCloud> MapObject::GetPointCloud()
+{
+    unique_lock<mutex> lock(mMutexPointCloud);
+    return mPoints;
 }
 
 void MapObject::AddMapPoints(MapPoint *pMP)

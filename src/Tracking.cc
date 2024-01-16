@@ -199,6 +199,9 @@ Tracking::Tracking(System *pSys, ORBVocabulary* pVoc, FrameDrawer *pFrameDrawer,
 
     add_depth_pcd_to_map_object = Config::Get<int>("Tracking.AddDepthPcdToMapObject");
 
+    associate_IoU_thresold = Config::Get<double>("Tracking.AssociateIoUThresold");
+
+    associate_debug = Config::Get<int>("Tracking.AssociateDebug");
 }
 
 void Tracking::SetLocalMapper(LocalMapping *pLocalMapper)
@@ -1260,6 +1263,8 @@ void Tracking::CreateNewKeyFrame()
         {
             // AssociateObjects(pKF);
             // 将物体检测关联到地图物体，并补充物体地图点
+
+            // 关联上之后，在LocalMapping中进行 物体点云 从detection到object的传递
             AssociateObjectsByProjection(pKF);
         }
         

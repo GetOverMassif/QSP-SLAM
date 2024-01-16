@@ -703,7 +703,10 @@ void GenerateConstrainPlanesToEllipsoid(g2o::ellipsoid &e_local_normalized, Vect
 // 1. 提取点云
 // 2. 将点云转换到重力坐标系( Z轴沿重力方向, 中心为物体中心点 )
 // 3. ...
-g2o::ellipsoid EllipsoidExtractor::EstimateLocalEllipsoidUsingMultiPlanes(cv::Mat &depth, Eigen::Vector4d &bbox, int label, double prob, Eigen::VectorXd &pose, camera_intrinsic &camera, string suffix) {
+g2o::ellipsoid EllipsoidExtractor::EstimateLocalEllipsoidUsingMultiPlanes(\
+    cv::Mat &depth, Eigen::Vector4d &bbox, int label, double prob, Eigen::VectorXd &pose, \
+    camera_intrinsic &camera, pcl::PointCloud<PointType>::Ptr& pcd_ptr, string suffix)
+{
     // std::cout << "In EllipsoidExtractor::EstimateLocalEllipsoidUsingMultiPlanes" << std::endl;
     g2o::ellipsoid e;
     miSystemState = 0;                  // reset the state
@@ -723,6 +726,17 @@ g2o::ellipsoid EllipsoidExtractor::EstimateLocalEllipsoidUsingMultiPlanes(cv::Ma
     // 通过降采样、统计滤波、平面筛选、中点欧几里德快速聚类等步骤，提取世界坐标系下的物体点云。
     // 同时也会把物体点云绘制出来
     pcl::PointCloud<PointType>::Ptr pCloudPCL = ExtractPointCloud(depth, bbox, pose, camera, suffix);
+
+    cout << "After ExtractPointCloud" << endl;
+
+    // if (pcd_ptr->size() > 0) {
+    //     pcd_ptr->clear();
+    // }
+
+    *pcd_ptr = *pCloudPCL;
+
+    cout << "After *pcd_ptr = *pCloudPCL;" << endl;
+
     clock_t time_1_ExtractPointCloud = clock();
     if (miSystemState > 0) {
         cout << "return because miSystemState = " << miSystemState << std::endl;
@@ -830,6 +844,7 @@ g2o::ellipsoid EllipsoidExtractor::EstimateLocalEllipsoidUsingMultiPlanes(cv::Ma
     e_local_normalized.bPointModel = false;
     mResult = true;
     clock_t time_2_fullProcess = clock();
+
 
     // output the main running time
     cout << " -- System Time [EllipsoidExtractor.cpp] :" << endl;
@@ -1048,7 +1063,17 @@ g2o::ellipsoid EllipsoidExtractor::EstimateLocalEllipsoidWithSupportingPlane(cv:
 
     SetSupportingPlane(pSupPlaneWorld, true);
 
-    g2o::ellipsoid e = EstimateLocalEllipsoidUsingMultiPlanes(depth, bbox, label, prob, pose, camera);
+    pcl::PointCloud<PointType>::Ptr pcd_ptr;
+
+    // g2o::ellipsoid e_extractByFitting_newSym = \
+    //     mpEllipsoidExtractor->EstimateLocalEllipsoidUsingMultiPlanes(\
+    //         pFrame->frame_img, measurement, label, measurement_prob, pose, mCamera, pcd_ptr, pcd_suffix);
+
+    // det.setPcdPtr(pcd_ptr);
+
+    g2o::ellipsoid e = EstimateLocalEllipsoidUsingMultiPlanes(depth, bbox, label, prob, pose, camera, pcd_ptr);
+
+    // pcd_ptr.delete();
 
     // 取消地平面
     // mpPlane = originGroundPlane;

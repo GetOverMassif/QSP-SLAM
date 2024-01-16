@@ -83,6 +83,7 @@ LocalMapping::LocalMapping(System *pSys, Map *pMap, ObjectDrawer* pObjectDrawer,
 // Camera.height: 480
     cam_width = Config::Get<int>("Camera.width");
     cam_height = Config::Get<int>("Camera.height");
+    add_depth_pcd_to_map_object = Config::Get<int>("Tracking.AddDepthPcdToMapObject");
 }
 
 void LocalMapping::SetLoopCloser(LoopClosing* pLoopCloser)

@@ -391,26 +391,57 @@ void Tracking::AssociateObjectsByProjection(ORB_SLAM2::KeyFrame *pKF)
         // cout << "Detection: " << d_i + 1 << endl;
         auto detKF1 = detectionsKF1[d_i];
 
+        auto bbox_det = detKF1->bbox;
+        auto label_bbox = detKF1->label;
+        // int x1 = (int)bbox_det(1), y1 = (int)bbox_det(2), x2 = (int)bbox_det(3), y2 = (int)bbox_det(4);
+        cv::Rect r2_bbox(cv::Point(bbox_det[0], bbox_det[1]), cv::Point(bbox_det[2], bbox_det[3]));
+
         if (associate_object_with_ellipsold) {
             cout << "Tracking::AssociateObjectsByProjection" << endl;
             auto mapObjects = mpMap->GetAllMapObjects();
             for (auto pMO: mapObjects){
                 cv::Mat img_show = mCurrentFrame.rgb_img.clone();
                 auto e = pMO->mpEllipsold;
+                auto label_obj = pMO->label;
                 auto campose_cw = mCurrentFrame.cam_pose_Tcw;
                 auto ellipse = e->projectOntoImageEllipse(campose_cw, mCalib);
                 e->drawEllipseOnImage(ellipse, img_show);
+                
+                // draw bbox of object
+                Vector4d rect = e->getBoundingBoxFromProjection(campose_cw, mCalib); 
 
-                // int x1 = (int)det_vec(1), y1 = (int)det_vec(2), x2 = (int)det_vec(3), y2 = (int)det_vec(4);
+                // 与bbox求IoU
+                cv::Rect r1_proj(cv::Point(rect[0], rect[1]), cv::Point(rect[2], rect[3]));
+                cv::rectangle(img_show, r1_proj, cv::Scalar(0, 0, 255), 2);
+
+                // draw bbox of det
                 // cv::rectangle(img_show, cv::Point(x1, y1), cv::Point(x2, y2), cv::Scalar(255, 0, 0), 2);  // Scalar(255, 0, 0) is for blue color, 2 is the thickness
+                cv::rectangle(img_show, r2_bbox, cv::Scalar(255, 0, 0), 2);  // Scalar(255, 0, 0) is for blue color, 2 is the thickness
+
+                cv::Rect r_and = r1_proj | r2_bbox;
+                cv::Rect r_U = r1_proj & r2_bbox;
+                double iou = r_U.area()*1.0/r_and.area();
+                std::cout << "IoU = " << iou << std::endl;
+                std::cout << "label_bbox: " << label_bbox << ", label_obj: " << label_obj << std::endl;
+
 
                 cv::imshow("Ellipse Projection", img_show);
                 cv::waitKey(10);
 
-                cout << "Press any key to continue" << endl;
-                char key = getchar();
-            }
+                if (associate_debug)
+                {
+                    std::cout << "Press any key to continue" << endl;
+                    char key = getchar();
+                }
 
+                if (iou > associate_IoU_thresold && label_bbox==label_obj){
+                    cout << "Associate" << std::endl;
+                    // 这里有一个问题，被关联过的物体可能在下一个det再次被遍历到
+                    associateDetWithObject(pKF, pMO, d_i, detKF1, mvpMapPoints);
+                    break;
+                }
+            }
+            continue;
         }
 
         map<int, int> observed_object_id;
@@ -452,50 +483,19 @@ void Tracking::AssociateObjectsByProjection(ORB_SLAM2::KeyFrame *pKF)
                     object_id_max_matches = it->first;
                 }
             }
-
             // associated object
             // todo: 这里的关联方式过于粗糙，只要有相同地图点就关联到一起了
-
             // 增加判断条件： 除了地图点验证，再增加椭球体的IOU验证
-
             // bool match = CheckIoU();
-
             if (max_matches > minimum_match_to_associate)
             {
                 // std::cout << ""
                 auto pMO = mpMap->GetMapObject(object_id_max_matches);
-                pKF->AddMapObject(pMO, d_i);
-                detKF1->isNew = false;
-
-                // add newly detected feature points to object
-                int newly_matched_points = 0;
-                for (int k_i : detKF1->GetFeaturePoints()) {
-                    auto pMP = mvpMapPoints[k_i];
-                    if (pMP && !pMP->isBad())
-                    {
-                        // new map points
-                        if (pMP->object_id < 0)
-                        {
-                            pMP->in_any_object = true;
-                            pMP->object_id = object_id_max_matches;
-                            pMO->AddMapPoints(pMP);
-                            newly_matched_points++;
-                        }
-                        else
-                        {
-                            // if pMP is already associate to a different object, set bad flag
-                            // 一个特征点在不同帧可以在不同物体的mask内
-                            if (pMP->object_id != object_id_max_matches)
-                                pMP->SetBadFlag();
-                        }
-                    }
-                }
+                int newly_matched_points = associateDetWithObject(pKF, pMO, d_i, detKF1, mvpMapPoints);
                 cout <<  "Matches: " << max_matches << ", New points: " << newly_matched_points << ", Keypoints: " <<
                     detKF1->mvKeysIndices.size() << ", Associated to object by projection " << object_id_max_matches
                     << endl << endl;
-                /*cout <<  "Matches: " << max_matches << ", New points: " << newly_matched_points << ", Keypoints: " <<
-                    detKF1->mvKeysIndices.size() << ", Associated to object by projection " << object_id_max_matches
-                    << endl << endl;*/
+
             }
             else
             {
@@ -503,6 +503,47 @@ void Tracking::AssociateObjectsByProjection(ORB_SLAM2::KeyFrame *pKF)
             }
         }
     }
+}
+
+int Tracking::associateDetWithObject(ORB_SLAM2::KeyFrame *pKF, MapObject* pMO, int d_i, ObjectDetection* detKF1, vector<MapPoint*>& mvpMapPoints)
+{
+    pKF->AddMapObject(pMO, d_i);
+    detKF1->isNew = false;
+    int associate_object_id = pMO->mnId;
+    // pMO
+
+    // add newly detected feature points to object
+    int newly_matched_points = 0;
+    for (int k_i : detKF1->GetFeaturePoints()) {
+        auto pMP = mvpMapPoints[k_i];
+        if (pMP && !pMP->isBad())
+        {
+            // new map points
+            if (pMP->object_id < 0)
+            {
+                pMP->in_any_object = true;
+                pMP->object_id = associate_object_id;
+                pMO->AddMapPoints(pMP);
+                newly_matched_points++;
+            }
+            else
+            {
+                // if pMP is already associate to a different object, set bad flag
+                // 一个特征点在不同帧可以在不同物体的mask内
+                if (pMP->object_id != associate_object_id)
+                    pMP->SetBadFlag();
+            }
+        }
+    }
+
+    return newly_matched_points;
+
+    // cout <<  "Matches: " << max_matches << ", New points: " << newly_matched_points << ", Keypoints: " <<
+    //     detKF1->mvKeysIndices.size() << ", Associated to object by projection " << object_id_max_matches
+    //     << endl << endl;
+    /*cout <<  "Matches: " << max_matches << ", New points: " << newly_matched_points << ", Keypoints: " <<
+        detKF1->mvKeysIndices.size() << ", Associated to object by projection " << object_id_max_matches
+        << endl << endl;*/
 }
 
 void Tracking::SetImageNames(vector<string>& vstrImageFilenamesRGB)
@@ -759,6 +800,8 @@ void Tracking::UpdateDepthEllipsoidEstimation(ORB_SLAM2::Frame* pFrame, KeyFrame
 {
     if( !mbDepthEllipsoidOpened ) return;
 
+    auto mvpObjectDetections = pKF->GetObjectDetections();
+
     Eigen::MatrixXd &obs_mat = pFrame->mmObservations;
     int rows = obs_mat.rows();
 
@@ -774,6 +817,8 @@ void Tracking::UpdateDepthEllipsoidEstimation(ORB_SLAM2::Frame* pFrame, KeyFrame
     std::string pcd_suffix;
 
     for(int i = 0; i < rows; i++){
+
+        auto det = mvpObjectDetections[i];
 
         if (add_suffix_to_pcd){
             pcd_suffix = to_string(i);
@@ -850,9 +895,15 @@ void Tracking::UpdateDepthEllipsoidEstimation(ORB_SLAM2::Frame* pFrame, KeyFrame
             // TODO： 这里有待将物体对应的深度点云添加给MapObject，可以先通过椭球体进行关联
             // 得到的椭球体模型表示在相机坐标系中
 
+            // TODO: 这里要将物体点云添加给观测
+            pcl::PointCloud<PointType>::Ptr pcd_ptr(new pcl::PointCloud<PointType>);
+
             g2o::ellipsoid e_extractByFitting_newSym = \
                 mpEllipsoidExtractor->EstimateLocalEllipsoidUsingMultiPlanes(\
-                    pFrame->frame_img, measurement, label, measurement_prob, pose, mCamera, pcd_suffix);
+                    pFrame->frame_img, measurement, label, measurement_prob, pose, mCamera, pcd_ptr, pcd_suffix);
+
+            det->setPcdPtr(pcd_ptr);
+            
             bool c0 = mpEllipsoidExtractor->GetResult();
             std::cout << "mpEllipsoidExtractor->GetResult() = " << c0 << std::endl;
             

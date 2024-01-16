@@ -427,10 +427,6 @@ void MapDrawer::drawPointCloudLists(float pointSize, std::string pcd_name)
         for(int i=0; i<pPoints->size(); i=i+1)
         {
             PointXYZRGB &p = (*pPoints)[i];
-            // std::cout << "pPoints->size() = " << pPoints->size() << std::endl;
-            // std::cout << "(&p) == NULL = " << ((&p)==NULL ) << std::endl;
-            // std::cout << "p.x = " << p.x << std::endl;
-
             glPointSize( pointSize );
             // glPointSize( p.size );
             glBegin(GL_POINTS);
@@ -442,6 +438,25 @@ void MapDrawer::drawPointCloudLists(float pointSize, std::string pcd_name)
     }
     glPointSize( pointSize );
 
+    glPopMatrix();
+}
+
+
+void MapDrawer::drawPointCloud(PointCloud *pPoints, float pointSize)
+{
+    glPushMatrix();
+    if( pPoints == NULL ) return;
+    for(int i=0; i<pPoints->size(); i=i+1)
+    {
+        PointXYZRGB &p = (*pPoints)[i];
+        glPointSize( pointSize );
+        // glPointSize( p.size );
+        glBegin(GL_POINTS);
+        glColor3d(p.r/255.0, p.g/255.0, p.b/255.0);
+        glVertex3d(p.x, p.y, p.z);
+        glEnd();
+
+    }
     glPopMatrix();
 }
 
