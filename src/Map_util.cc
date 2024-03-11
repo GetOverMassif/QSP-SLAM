@@ -94,6 +94,7 @@ bool Map::AddPointCloudList(const string &name, std::vector<pcl::PointCloud<pcl:
     return true;
 }
 
+// Default type = 0
 bool Map::AddPointCloudList(const string &name, PointCloud *pCloud, int type) {
     unique_lock<mutex> lock(mMutexMap);
     if (pCloud == NULL) {
@@ -218,7 +219,24 @@ vector<ellipsoid *> Map::GetAllEllipsoidsVisual() {
 
 void Map::ClearEllipsoidsVisual() {
     unique_lock<mutex> lock(mMutexMap);
+    // cout << "!!!! Map::ClearEllipsoidsVisual !!!!" << endl;
     mspEllipsoidsVisual.clear();
+}
+
+void Map::addEllipsoidObjects(ellipsoid *pObj) {
+    unique_lock<mutex> lock(mMutexMap);
+    mspEllipsoidsObjects.push_back(pObj);
+}
+
+vector<ellipsoid *> Map::GetAllEllipsoidsObjects() {
+    unique_lock<mutex> lock(mMutexMap);
+    return mspEllipsoidsObjects;
+}
+
+void Map::ClearEllipsoidsObjects() {
+    unique_lock<mutex> lock(mMutexMap);
+    // cout << "!!!! Map::ClearEllipsoidsObjects !!!!" << endl;
+    mspEllipsoidsObjects.clear();
 }
 
 void Map::addEllipsoidObservation(ellipsoid *pObj) {

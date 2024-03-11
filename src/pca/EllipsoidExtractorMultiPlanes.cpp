@@ -699,6 +699,7 @@ void GenerateConstrainPlanesToEllipsoid(g2o::ellipsoid &e_local_normalized, Vect
     return;
 }
 
+// 实际用到的是这个
 // 步骤
 // 1. 提取点云
 // 2. 将点云转换到重力坐标系( Z轴沿重力方向, 中心为物体中心点 )
@@ -727,15 +728,19 @@ g2o::ellipsoid EllipsoidExtractor::EstimateLocalEllipsoidUsingMultiPlanes(\
     // 同时也会把物体点云绘制出来
     pcl::PointCloud<PointType>::Ptr pCloudPCL = ExtractPointCloud(depth, bbox, pose, camera, suffix);
 
-    cout << "After ExtractPointCloud" << endl;
-
-    // if (pcd_ptr->size() > 0) {
-    //     pcd_ptr->clear();
+    if (pCloudPCL == NULL) {
+        cout << "pCloudPCL == NULL" << endl;
+        pcd_ptr = NULL;
+        return e;
+    }
+    else{
+        *pcd_ptr = *pCloudPCL;
+    }
+    
+    // if (pCloudPCL==NULL) {
+    //     cout << "return because pointcloud extraction failed" << endl;
+    //     return e;
     // }
-
-    *pcd_ptr = *pCloudPCL;
-
-    cout << "After *pcd_ptr = *pCloudPCL;" << endl;
 
     clock_t time_1_ExtractPointCloud = clock();
     if (miSystemState > 0) {
@@ -774,7 +779,7 @@ g2o::ellipsoid EllipsoidExtractor::EstimateLocalEllipsoidUsingMultiPlanes(\
     // pObjectCloudGravity = NULL;
 
     // 对点云使用法向量投票器，计算偏航角度
-    std::cout << "Computing cloud_normalized" << std::endl;
+    // std::cout << "Computing cloud_normalized" << std::endl;
     double yaw = NormalVoter(pCloudPCLGravity); // 该函数获得一个位于 XY 平面内的, 三维法向量. 可与 Z轴组完整旋转矩阵.
 
     // 通过yaw角度将 Gravity - > normalized

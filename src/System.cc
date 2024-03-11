@@ -174,6 +174,8 @@ System::System(const string &strVocFile, const string &strSettingsFile, const st
     
     mpLocalMapper = new LocalMapping(this, mpMap, mpObjectDrawer, mSensor==MONOCULAR);
 
+
+
     mbMapInSameThread = 0;
     if(fSettings["System.LocalMappingInSameThread"].isNamed()) {
         int MapInSameThread = fSettings["System.mode"];
@@ -315,15 +317,21 @@ cv::Mat System::TrackRGBD(const cv::Mat &im, const cv::Mat &depthmap, const doub
     // Check reset
     {
     unique_lock<mutex> lock(mMutexReset);
-    if(mbReset)
-    {
-        mpTracker->Reset();
-        mbReset = false;
+        if(mbReset)
+        {
+            mpTracker->Reset();
+            mbReset = false;
+        }
     }
-    }
+
+    cout << "Before GrabImageRGBD" << endl;
+    printMemoryUsage();
 
     // KEY： 加入图像、深度和时间戳
     cv::Mat Tcw = mpTracker->GrabImageRGBD(im,depthmap,timestamp);
+
+    cout << "After GrabImageRGBD" << endl;
+    printMemoryUsage();
     
     // 更新状态
     unique_lock<mutex> lock2(mMutexState);

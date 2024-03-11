@@ -21,7 +21,7 @@ import torch
 from reconstruct.utils import ForceKeyErrorDict, create_voxel_grid, convert_sdf_voxels_to_mesh
 from reconstruct.loss import compute_sdf_loss, compute_render_loss, compute_rotation_loss_sim3
 from reconstruct.loss_utils import decode_sdf, get_robust_res, exp_se3, exp_sim3, get_time
-
+from reconstruct.tools import show_cuda_memory
 
 class Optimizer(object):
     def __init__(self, decoder, configs, debug=False):
@@ -43,6 +43,7 @@ class Optimizer(object):
         if configs.data_type == "KITTI":
             self.num_iterations_pose_only = optim_cfg.pose_only_optim.num_iterations
 
+    # KEY: [python调用] 估计位姿
     def estimate_pose_cam_obj(self, t_co_se3, scale, pts, code):
         """
         :param t_co_se3: o2c transformation (4, 4) in SE(3)
@@ -51,6 +52,8 @@ class Optimizer(object):
         :param code: shape code
         :return: optimized o2c transformation
         """
+        show_cuda_memory("estimate_pose_cam_obj head")
+
         t_cam_obj = torch.from_numpy(t_co_se3)
         t_cam_obj[:3, :3] *= scale
         t_obj_cam = torch.inverse(t_cam_obj)
@@ -84,8 +87,12 @@ class Optimizer(object):
         t_cam_obj = torch.inverse(t_obj_cam)
         t_cam_obj[:3, :3] /= scale
 
+        torch.cuda.empty_cache()
+        show_cuda_memory("estimate_pose_cam_obj end")
+
         return t_cam_obj
 
+    # KEY: [python调用] 重建物体
     def reconstruct_object(self, t_cam_obj, pts, rays, depth, code=None):
         """
         :param t_cam_obj: object pose, object-to-camera transformation
@@ -94,6 +101,13 @@ class Optimizer(object):
         :param depth: depth values (K,) only contain foreground pixels, K = M for KITTI
         :return: optimized opject pose and shape, saved as a dict
         """
+
+        show_cuda_memory("reconstruct_object head")
+        # debug = True
+        debug = False
+
+        if debug:
+            print("Line 101")
 
         # print(f"t_cam_obj = {t_cam_obj}")
         # print(f"pts.shape = {pts.shape}")
@@ -123,12 +137,14 @@ class Optimizer(object):
 
         start = get_time()
         loss = 0.
-        print(f"{self.num_iterations_joint_optim} Iterations")
+        # print(f"{self.num_iterations_joint_optim} Iterations")
         for e in range(self.num_iterations_joint_optim):
             # print(f"t_obj_cam = {t_obj_cam}")
             # get depth range and sample points along the rays
             t_cam_obj = torch.inverse(t_obj_cam)
             # print(f"t_cam_obj = {t_cam_obj}")
+            if debug:
+                print("Line 138")
             scale = torch.det(t_cam_obj[:3, :3]) ** (1 / 3)
             # print("Scale: %f" % scale)
             depth_min, depth_max = t_cam_obj[2, 3] - 1.0 * scale, t_cam_obj[2, 3] + 1.0 * scale
@@ -136,51 +152,89 @@ class Optimizer(object):
             # set background depth to d'
             depth_obs[n_foreground_rays:] = 1.1 * depth_max
 
+            if debug:
+                print("Line 147")
             # 1. Compute SDF (3D) loss
             sdf_rst = compute_sdf_loss(self.decoder, pts_surface, t_obj_cam, latent_vector)
+            if debug:
+                print("Line 151")
             if sdf_rst is None:
                 return ForceKeyErrorDict(t_cam_obj=None, code=None, is_good=False, loss=loss)
             else:
                 de_dsim3_sdf, de_dc_sdf, res_sdf = sdf_rst
+            if debug:
+                print("Line 157")
             robust_res_sdf, sdf_loss, _ = get_robust_res(res_sdf, self.b2)
             if math.isnan(sdf_loss):
                 return ForceKeyErrorDict(t_cam_obj=None, code=None, is_good=False, loss=loss)
 
+            if debug:
+                print("Line 163")
             # 2. Compute Render (2D) Loss
             render_rst = compute_render_loss(self.decoder, ray_directions, depth_obs, t_obj_cam,
                                              sampled_depth_along_rays, latent_vector, th=self.cut_off)
+            if debug:
+                print("Line 168")
             # in case rendering fails
             if render_rst is None:
                 return ForceKeyErrorDict(t_cam_obj=None, code=None, is_good=False, loss=loss)
             else:
                 de_dsim3_render, de_dc_render, res_render = render_rst
 
+            if debug:
+                print("Line 176")
+
             # print("rays gradients on python side: %d" % de_dsim3_render.shape[0])
             robust_res_render, render_loss, _ = get_robust_res(res_render, self.b1)
+            
+            if debug:
+                print("Line 183")
+
             if math.isnan(render_loss):
                 return ForceKeyErrorDict(t_cam_obj=None, code=None, is_good=False, loss=loss)
 
+            if debug:
+                print("Line 188")
+            
             # 3. Rotation prior
             drot_dsim3, res_rot = compute_rotation_loss_sim3(t_obj_cam)
+
+            if debug:
+                print("Line 194")
 
             loss = self.k1 * render_loss + self.k2 * sdf_loss
             z = latent_vector.cpu()
 
+            if debug:
+                print("Line 200")
+
             # Compute Jacobian and Hessia
             pose_dim = 7
+
+            if debug:
+                print("Line 206")
 
             J_sdf = torch.cat([de_dsim3_sdf, de_dc_sdf], dim=-1)
             H_sdf = self.k2 * torch.bmm(J_sdf.transpose(-2, -1), J_sdf).sum(0).squeeze().cpu() / J_sdf.shape[0]
             b_sdf = -self.k2 * torch.bmm(J_sdf.transpose(-2, -1), robust_res_sdf).sum(0).squeeze().cpu() / J_sdf.shape[0]
 
+            if debug:
+                print("Line 213")
+
             J_render = torch.cat([de_dsim3_render, de_dc_render], dim=-1)
             H_render = self.k1 * torch.bmm(J_render.transpose(-2, -1), J_render).sum(0).squeeze().cpu() / J_render.shape[0]
             b_render = -self.k1 * torch.bmm(J_render.transpose(-2, -1), robust_res_render).sum(0).squeeze().cpu() / J_render.shape[0]
+
+            if debug:
+                print("Line 220")
 
             H = H_render + H_sdf
             H[pose_dim:pose_dim + self.code_len, pose_dim:pose_dim + self.code_len] += self.k3 * torch.eye(self.code_len)
             b = b_render + b_sdf
             b[pose_dim:pose_dim + self.code_len] -= self.k3 * z
+
+            if debug:
+                print("Line 228")
 
             # Rotation regularization
             drot_dsim3 = drot_dsim3.unsqueeze(0)
@@ -190,6 +244,9 @@ class Optimizer(object):
             b[:pose_dim] -= self.k4 * b_rot
             # rot_loss = res_rot
 
+            if debug:
+                print("Line 239")
+
             # add a small damping to the pose part
             H[:pose_dim, :pose_dim] += 1e0 * torch.eye(pose_dim)
             H[pose_dim-1, pose_dim-1] += self.s_damp  # add a large damping for scale
@@ -197,18 +254,28 @@ class Optimizer(object):
             dx = torch.mv(torch.inverse(H), b)
             delta_p = dx[:pose_dim]
 
+            if debug:
+                print("Line 249")
+
             delta_c = dx[pose_dim:pose_dim + self.code_len]
             delta_t = exp_sim3(self.lr * delta_p)
             t_obj_cam = torch.mm(delta_t, t_obj_cam)
             latent_vector += self.lr * delta_c.cuda()
+
+            if debug:
+                print("Line 257")
 
             # print("Object joint optimization: Iter %d, loss: %f, sdf loss: %f, "
             #       "render loss: %f, rotation loss: %f"
             #       % (e, loss, sdf_loss, render_loss, rot_loss))
 
         end = get_time()
-        print("Reconstruction takes %f seconds" % (end - start))
+        # print("Reconstruction takes %f seconds" % (end - start))
         t_cam_obj = torch.inverse(t_obj_cam)
+
+        torch.cuda.empty_cache()
+
+        show_cuda_memory("reconstruct_object end")
         return ForceKeyErrorDict(t_cam_obj=t_cam_obj.numpy(),
                                  code=latent_vector.cpu().numpy(),
                                  is_good=True, loss=loss)
@@ -223,6 +290,7 @@ class MeshExtractor(object):
             self.voxel_points = create_voxel_grid(vol_dim=self.voxels_dim).cuda()
 
     def extract_mesh_from_code(self, code):
+        show_cuda_memory("extract_mesh_from_code head")
         start = get_time()
         latent_vector = torch.from_numpy(code[:self.code_len]).cuda()
         sdf_tensor = decode_sdf(self.decoder, latent_vector, self.voxel_points)
@@ -231,4 +299,6 @@ class MeshExtractor(object):
         faces = faces.astype("int32")
         end = get_time()
         print("Extract mesh takes %f seconds" % (end - start))
+        torch.cuda.empty_cache()
+        show_cuda_memory("extract_mesh_from_code end")
         return ForceKeyErrorDict(vertices=vertices, faces=faces)

@@ -39,6 +39,12 @@ void KeyFrame::ReplaceMapObjectMatch(const size_t &idx, MapObject *pMO) {
     mvpMapObjects[idx] = pMO;
 }
 
+std::vector<g2o::ellipsoid*> KeyFrame::GetEllipsoldsGlobal()
+{
+    unique_lock<mutex> lock(mMutexObjects);
+    return mpGlobalEllipsolds;
+}
+
 vector<ObjectDetection *> KeyFrame::GetObjectDetections() {
     unique_lock<mutex> lock(mMutexObjects);
     return mvpDetectedObjects;

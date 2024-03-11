@@ -60,7 +60,7 @@ public:
             double prob_thresh = Config::Get<double>("Measurement.Probability.Thresh");
             bool prob_check = (measurement_prob > prob_thresh);
 
-            g2o::ellipsoid* pEllipsoidForThisObservation = NULL;
+            g2o::ellipsoid* pLocalEllipsoidThisObservation = NULL;
             // 2 conditions must meet to start ellipsoid extraction:
             // C1 : the bounding box is not on border
             bool c1 = !is_border;
@@ -84,7 +84,7 @@ public:
 
                 if(result){
                     // 若提取成功
-                    pEllipsoidForThisObservation = new g2o::ellipsoid(e_extracted);
+                    pLocalEllipsoidThisObservation = new g2o::ellipsoid(e_extracted);
 
                     // 可视化
                     // Visualize estimated ellipsoid
@@ -103,7 +103,7 @@ public:
             }
 
             // 若不成功保持为NULL
-            pFrame->mpLocalObjects.push_back(pEllipsoidForThisObservation);
+            pFrame->mpLocalObjects.push_back(pLocalEllipsoidThisObservation);
         }
 
         GenerateObservationStructure(pFrame);

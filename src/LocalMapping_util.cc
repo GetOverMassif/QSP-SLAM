@@ -309,7 +309,7 @@ void LocalMapping::CreateNewObjectsFromDetections()
     // Create new objects first, otherwise data association might fail
     for (int det_i = 0; det_i < mvpObjectDetections.size(); det_i++)
     {
-        std::cout << "=> det_i : " << det_i << std::endl;
+        std::cout << "\n=> det_i : " << det_i << std::endl;
         // Step 2.1: 如果该检测如果已经与物体关联/关键点过少，则continue
 
         auto det = mvpObjectDetections[det_i];
@@ -324,7 +324,7 @@ void LocalMapping::CreateNewObjectsFromDetections()
             std::cout << "continue because !det->isNew" << std::endl;
             continue;
         }
-            
+        
         if (!det->isGood && !add_depth_pcd_to_map_object) {
             std::cout << "continue because !det->isGood && !add_depth_pcd_to_map_object" << std::endl;
             continue;
@@ -364,6 +364,11 @@ void LocalMapping::CreateNewObjectsFromDetections()
     }
 }
 
+void LocalMapping::AssociateObjects3D()
+{
+    // for 
+}
+
 
 void LocalMapping::ProcessDetectedObjects()
 {
@@ -381,19 +386,21 @@ void LocalMapping::ProcessDetectedObjects()
     auto mvpObjectDetections = mpCurrentKeyFrame->GetObjectDetections();
     auto mvpAssociatedObjects = mpCurrentKeyFrame->GetMapObjectMatches();
 
+    auto mvpGlobalEllipsolds = mpCurrentKeyFrame->GetEllipsoldsGlobal();
+
     std::cout << " => " << "KF" << mpCurrentKeyFrame->mnId << ", mvpObjectDetections.size() = " << mvpObjectDetections.size() << std::endl;
 
     // 处理当前关键帧的所有detection
     for (int det_i = 0; det_i < mvpObjectDetections.size(); det_i++)
     {
-        std::cout << "=> det_i " << det_i << ": " << std::endl;
+        std::cout << "\n=> det_i " << det_i+1 << "/" << mvpObjectDetections.size() << std::endl;
         // std::cout << "Press [ENTER] to continue ... " << std::endl;
         // key = getchar();
 
         auto det = mvpObjectDetections[det_i];
 
         // If the detection is associated with an existing map object, we consider 2 different situations:
-        // 1. 物体已经被重建： 更新观测 
+        // 1. 物体已经被重建： 更新观测
         // 2. 物体尚未被重建： 检查是否准备好重建，如果有足够多点则进行重建
         
         /**
@@ -430,8 +437,14 @@ void LocalMapping::ProcessDetectedObjects()
             continue;
         }
 
-        if (!det->isGood && !add_depth_pcd_to_map_object) {
+        // 这里的中间判据有待改进
+        if (!det->isGood && !add_depth_pcd_to_map_object ) {
             std::cout << "  Conitinue because !det->isGood && !add_depth_pcd_to_map_object" << std::endl;
+            continue;
+        }
+
+        if (!det->isValidPcd && add_depth_pcd_to_map_object) {
+            std::cout << "  Conitinue because !det->isValidPcd && add_depth_pcd_to_map_object" << std::endl;
             continue;
         }
 
@@ -450,13 +463,14 @@ void LocalMapping::ProcessDetectedObjects()
 
         std::cout << "pMO->mnId = " << pMO->mnId << std::endl;
 
+        // 把深度点云加到地图物体中
         if (add_depth_pcd_to_map_object) {
             pMO->AddDepthPointCloudFromObjectDetection(det);
-            cout << "AddDepthPointCloudFromObjectDetection" << endl;
+            // cout << "AddDepthPointCloudFromObjectDetection" << endl;
         }
 
-        std::cout << "use_ellipsold_pose_for_shape_optimization = " << \
-            use_ellipsold_pose_for_shape_optimization << std::endl;
+        // std::cout << "use_ellipsold_pose_for_shape_optimization = " << \
+        //     use_ellipsold_pose_for_shape_optimization << std::endl;
 
         int numKFsPassedSinceInit = int(mpCurrentKeyFrame->mnId - pMO->mpRefKF->mnId);
 
@@ -482,17 +496,18 @@ void LocalMapping::ProcessDetectedObjects()
          * （2）在非首次的处理过程中，如何使用椭球体位姿？
          *       
          */
-
+        
+        // FIXME: 这里可以选择，在使用椭球体模式下，如果没有成功估计椭球体，就跳过物体优化
         if (numKFsPassedSinceInit < 50 && !pMO->reconstructed) {
             if (!use_ellipsold_pose_for_shape_optimization || \
-                mpCurrentKeyFrame->mpLocalObjectsGlobal[det_i] == NULL) {
+                mvpGlobalEllipsolds[det_i] == NULL) {
                 std::cout << "ComputeCuboidPCA" << std::endl;
                 pMO->ComputeCuboidPCA(numKFsPassedSinceInit < 15);
             }
             else{
                 // Method 2: 使用来自椭球体的位姿信息
                 std::cout << "SetPoseByEllipsold" << std::endl;
-                pMO->SetPoseByEllipsold(mpCurrentKeyFrame->mpLocalObjectsGlobal[det_i]);
+                pMO->SetPoseByEllipsold(mvpGlobalEllipsolds[det_i]);
             }
         }
         else { // when we have relative good object shape
@@ -515,26 +530,35 @@ void LocalMapping::ProcessDetectedObjects()
             continue;
         }
 
-
-
         std::vector<MapPoint*> points_on_object = pMO->GetMapPointsOnObject();
         int n_points = points_on_object.size();
         int n_valid_points = 0;
 
-        for (auto pMP : points_on_object)
-        {
-            if (!pMP)
-                continue;
-            if (pMP->isBad())
-                continue;
-            if (pMP->isOutlier())
-                continue;
-            n_valid_points++;
+        if (add_depth_pcd_to_map_object && use_depth_pcd_to_reconstruct){
+
+            std::shared_ptr<PointCloud> mPointsPtr = pMO->GetPointCloud();
+            PointCloud* pPoints = mPointsPtr.get();
+
+            // auto points = pMO->GetPointCloud();
+            n_valid_points = pPoints->size();
         }
-        
+        else{
+            for (auto pMP : points_on_object)
+            {
+                if (!pMP)
+                    continue;
+                if (pMP->isBad())
+                    continue;
+                if (pMP->isOutlier())
+                    continue;
+                n_valid_points++;
+            }
+        }
+
         // 记录物体上的关键点的数量
         int n_rays = 0;
         auto map_points_vector = mpCurrentKeyFrame->GetMapPointMatches();
+
         for (auto idx : det->GetFeaturePoints())
         {
             auto pMP = map_points_vector[idx];
@@ -549,35 +573,65 @@ void LocalMapping::ProcessDetectedObjects()
             n_rays++;
         }
 
-        cout << "Object " << pMO->mnId << ": " << n_points << " points observed, " << "with " << n_valid_points << " valid points, and " << n_rays << " rays" << endl;
+        int n_background_ray = det->background_rays.rows();
+
+        cout << "\n==> Object " << pMO->mnId << ": " \
+             << n_points << " points observed, " << "with " \
+             << n_valid_points << " valid points, " \
+             << n_rays << " rays, and " \
+             << n_background_ray << " back_ground_rays" \
+             << endl;
 
         // Surface points
         // std::cout << " =>" << "n_valid_points: " << n_valid_points << ", n_rays: " << n_rays << std::endl;
-        if (n_valid_points >= 50 && n_rays > 20)
-        {   
+        if (n_valid_points >= min_valid_points && n_rays > min_valid_rays)
+        {
             //！获取surface_points_cam
             Eigen::MatrixXf surface_points_cam = Eigen::MatrixXf::Zero(n_valid_points, 3);
             int p_i = 0;
-            for (auto pMP : points_on_object)
+
+
+            if (add_depth_pcd_to_map_object && use_depth_pcd_to_reconstruct)
             {
-                if (!pMP)
-                    continue;
-                if (pMP->isBad())
-                    continue;
-                if (pMP->isOutlier())
-                    continue;
+                std::shared_ptr<PointCloud> mPointsPtr = pMO->GetPointCloud();
+                PointCloud* pPoints = mPointsPtr.get();
 
-                cv::Mat x3Dw = pMP->GetWorldPos();
-                cv::Mat x3Dc = Rcw * x3Dw + tcw;
-                float xc = x3Dc.at<float>(0);
-                float yc = x3Dc.at<float>(1);
-                float zc = x3Dc.at<float>(2);
-                surface_points_cam(p_i, 0) = xc;
-                surface_points_cam(p_i, 1) = yc;
-                surface_points_cam(p_i, 2) = zc;
-                p_i++;
+                for(int i=0; i<pPoints->size(); i=i+1)
+                {
+                    PointXYZRGB &p = (*pPoints)[i];
+                    cv::Mat x3Dw = (cv::Mat_<float>(3,1) << p.x, p.y, p.z);
+                    cv::Mat x3Dc = Rcw * x3Dw + tcw;
+                    float xc = x3Dc.at<float>(0);
+                    float yc = x3Dc.at<float>(1);
+                    float zc = x3Dc.at<float>(2);
+                    surface_points_cam(p_i, 0) = xc;
+                    surface_points_cam(p_i, 1) = yc;
+                    surface_points_cam(p_i, 2) = zc;
+                    p_i++;
+                }
+
             }
+            else{
+                for (auto pMP : points_on_object)
+                {
+                    if (!pMP)
+                        continue;
+                    if (pMP->isBad())
+                        continue;
+                    if (pMP->isOutlier())
+                        continue;
 
+                    cv::Mat x3Dw = pMP->GetWorldPos();
+                    cv::Mat x3Dc = Rcw * x3Dw + tcw;
+                    float xc = x3Dc.at<float>(0);
+                    float yc = x3Dc.at<float>(1);
+                    float zc = x3Dc.at<float>(2);
+                    surface_points_cam(p_i, 0) = xc;
+                    surface_points_cam(p_i, 1) = yc;
+                    surface_points_cam(p_i, 2) = zc;
+                    p_i++;
+                }
+            }
 
             // 椭球体本身能否用于深度渲染约束？
 
@@ -605,7 +659,7 @@ void LocalMapping::ProcessDetectedObjects()
                 k_i++;
             }
 
-            // 像素点的归一化的向量
+            // 像素点的归一化的向量 [[x,y,1], ... ]
             Eigen::MatrixXf u_hom(n_rays, 3);
             u_hom << ray_pixels, Eigen::MatrixXf::Ones(n_rays, 1);
 
@@ -630,8 +684,8 @@ void LocalMapping::ProcessDetectedObjects()
 
             PyThreadStateLock PyThreadLock;
 
-            std::cout << "mpCurrentKeyFrame->pose = \n" << SE3Tcw.matrix() << std::endl;
-            std::cout << "pMO->Sim3Two = \n" << pMO->Sim3Two.matrix() << std::endl;
+            // std::cout << "mpCurrentKeyFrame->pose = \n" << SE3Tcw.matrix() << std::endl;
+            // std::cout << "pMO->Sim3Two = \n" << pMO->Sim3Two.matrix() << std::endl;
 
             auto Sim3Two_pMO = pMO->Sim3Two;
 
@@ -652,11 +706,12 @@ void LocalMapping::ProcessDetectedObjects()
             }
 
             cout << "Before reconstruct_object" << std::endl;
+
             auto pyMapObject = optimizer_ptr->attr("reconstruct_object")
                     (SE3Tcw * Sim3Two_pMO, surface_points_cam, rays, depth_obs, pMO->vShapeCode);
 
-            std::cout << "0 rad, is_good: " << pyMapObject.attr("is_good").cast<bool>()\
-                      << ", loss: " << pyMapObject.attr("loss").cast<float>() << std::endl;
+            // std::cout << "0 rad, is_good: " << pyMapObject.attr("is_good").cast<bool>()\
+            //           << ", loss: " << pyMapObject.attr("loss").cast<float>() << std::endl;
 
             auto& pyMapObjectLeastLoss = pyMapObject;
 
@@ -712,12 +767,15 @@ void LocalMapping::ProcessDetectedObjects()
             auto t_cam_obj = pyMapObjectLeastLoss.attr("t_cam_obj");
 
             if (t_cam_obj.is_none()) {
-                std::cout << "Output t_cam_obj == None, reconstruction failed." << std::endl;
+                std::cout << "!!!! Output t_cam_obj == None, reconstruction failed." << std::endl;
+                std::cout << "Sim3Two_raw = " << Sim3Two_raw.matrix() << std::endl;
+                std::cout << "pMO->SE3Two = " << pMO->SE3Two.matrix() << std::endl;
+                std::cout << "pMO->scale = " << pMO->scale << std::endl;
                 continue;
             }
             auto Sim3Tco = t_cam_obj.cast<Eigen::Matrix4f>();
 
-            std::cout << "Sim3Tco = " << Sim3Tco.matrix() << std::endl;
+            // std::cout << "Sim3Tco = " << Sim3Tco.matrix() << std::endl;
 
             // auto Sim3Tco = SE3Tcw * pMO->Sim3Two;
 
@@ -729,7 +787,7 @@ void LocalMapping::ProcessDetectedObjects()
             // Sim3 可以乘在前面但不能乘在后面?
             Eigen::Matrix4f Sim3Two = SE3Twc * Sim3Tco;
 
-            std::cout << "Sim3Two = " << Sim3Two.matrix() << std::endl;
+            // std::cout << "Sim3Two = " << Sim3Two.matrix() << std::endl;
 
             // int code_len = pyOptimizer.attr("code_len").cast<int>();
 
@@ -814,6 +872,30 @@ void LocalMapping::ProcessDetectedObjects()
     // if (show_ellipsold_process && mvpObjectDetections.size()){
     //     cv::destroyWindow("Image with Bbox");
     // }
+}
+
+void LocalMapping::UpdateObjectsToMap()
+{
+    cout << "[UpdateObjectsToMap]" << endl;
+    auto mapObjects = mpMap->GetAllMapObjects();
+    cout << "Get " << mapObjects.size() << " map objects in total" << endl;
+    // 每次都会重新更新一遍地图中的物体椭球体
+    mpMap->ClearEllipsoidsObjects();
+    cout << "ClearEllipsoidsObjects Finished" << endl;
+    for (auto &pMO: mapObjects){
+        // FIXME：这里添加了一个没有初始化的ellipsold导致显示错误，暂时通过判断e的概率小于0.001
+        auto e = pMO->GetEllipsold();
+        if (e == NULL) {
+            cout << "continue bacause e->prob < 1e-2" << endl;
+            continue;
+        }
+        mpMap->addEllipsoidObjects(e);
+    }
+}
+
+void LocalMapping::SetOptimizer(Optimizer* optimizer)
+{
+    mpOptimizer = optimizer;
 }
 
 }

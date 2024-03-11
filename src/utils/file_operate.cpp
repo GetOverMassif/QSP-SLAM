@@ -1,4 +1,5 @@
 #include <boost/filesystem.hpp>
+#include <sys/resource.h>
 
 #include <iostream>
 
@@ -13,4 +14,13 @@ bool CreateDirIfNotExist(const std::string file_path)
     }
   }
   return true;
+}
+
+void printMemoryUsage(){
+  struct rusage rusage;
+  if (getrusage(RUSAGE_SELF, &rusage) == 0) {
+      std::cout << "\nMemory usage: " << (double)rusage.ru_maxrss / 1024. << " MB" << std::endl;
+  } else {
+      std::cerr << "Failed to get memory usage." << std::endl;
+  }
 }

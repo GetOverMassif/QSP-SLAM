@@ -32,6 +32,12 @@
 
 #include <pangolin/pangolin.h>
 
+
+#include <sys/resource.h>
+#include <iostream>
+
+
+
 using namespace std;
 
 /**
@@ -60,6 +66,11 @@ int main(int argc, char **argv)
 
     cv::FileStorage fSettings(string(argv[2]), cv::FileStorage::READ);
 
+    if(fSettings["CoutToFile"].isNamed()) {
+        ofstream fout("logs/log.txt"); //文件输出流对象
+        streambuf* pOld =cout.rdbuf(fout.rdbuf());
+    }
+
     LoadImages(strAssociationFilename, vstrImageFilenamesRGB, vstrImageFilenamesD, vTimestamps);
 
     int nImages = vstrImageFilenamesRGB.size();
@@ -84,6 +95,16 @@ int main(int argc, char **argv)
 
     // Create SLAM system. It initializes all system threads and gets ready to process frames.
     ORB_SLAM2::System SLAM(argv[1], argv[2], argv[3], msensor);
+
+    struct rusage rusage;
+    long long memory_init, memory_last, memory_curr;
+    if (getrusage(RUSAGE_SELF, &rusage) == 0) {
+        memory_init = rusage.ru_maxrss;
+        memory_last = memory_init;
+        std::cout << "\nMemory usage: " << (double)memory_init / 1024. << " MB" << std::endl;
+    } else {
+        std::cerr << "Failed to get memory usage." << std::endl;
+    }
 
     string strSettingsFile = argv[2];
 
@@ -173,7 +194,7 @@ int main(int argc, char **argv)
         {
             cerr << endl << "Failed to load image at: "
                  << string(argv[3]) << "/" << vstrImageFilenamesRGB[ni] << endl;
-            return 1;
+            return 1;/*  */
         }
 
         if(frame_by_frame) {
@@ -205,6 +226,22 @@ int main(int argc, char **argv)
             SLAM.TrackMonocular(imRGB, tframe);
         else
             printf("暂时不支持这个模式\n");
+
+
+        // FIXME: 如有必要，将内存使用的变化情况存储下来检查一下
+        if (getrusage(RUSAGE_SELF, &rusage) == 0) {
+            memory_curr = rusage.ru_maxrss;
+
+            double me_ratio = memory_curr / memory_init;
+            std::cout << "Memory curr/add/init = "
+                      << (double)memory_curr / 1024. << " MB /"
+                      << (double)(memory_curr - memory_last) / 1024. << "MB /"
+                      << (double)memory_init / 1024. << " MB"
+                      << std::endl;
+            memory_last = memory_curr;
+        } else {
+            std::cerr << "Failed to get memory usage." << std::endl;
+        }
 
         std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
 

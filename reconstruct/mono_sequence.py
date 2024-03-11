@@ -24,6 +24,19 @@ from reconstruct.utils import ForceKeyErrorDict
 from reconstruct import get_detectors
 from contents import object_classes, object_classes_on_ground, object_classes_on_table
 
+from reconstruct.tools import show_cuda_memory
+
+import resource
+
+def get_memory_usage():
+    # 获取当前进程的内存使用情况
+    usage = resource.getrusage(resource.RUSAGE_SELF)
+    # 获取最大内存使用量（单位：字节）
+    max_memory = usage.ru_maxrss
+    # 将字节转换为兆字节（MB）
+    max_memory_mb = max_memory / 1024 / 1024
+    return max_memory_mb
+
 
 class Frame:
     def __init__(self, sequence, frame_id=-1, frame_name = None):
@@ -217,10 +230,24 @@ class MonoSequence:
         return self.detections_in_current_frame
     
     def get_frame_by_name(self, frame_id, frame_name):
-        print("Before Frame creation")
+
+        show_cuda_memory("get_frame_by_name head")
+        # print("Before Frame creation")
+        # 调用函数并输出内存使用情况
+        # memory_usage = get_memory_usage()
+        # print("Memory usage: {:.2f} MB".format(memory_usage))
+
+        del self.current_frame
         self.current_frame = Frame(self, frame_id = frame_id, frame_name = frame_name)
-        print("Before get_detections")
+
+        # print("Before get_detections")
         self.current_frame.get_detections()
+
         self.detections_in_current_frame = self.current_frame.instances
+
+        # del self.current_frame
+
+        show_cuda_memory("get_frame_by_name end")
+
         return self.detections_in_current_frame
 

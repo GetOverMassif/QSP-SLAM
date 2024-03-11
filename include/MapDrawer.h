@@ -66,6 +66,8 @@ public:
     bool drawEllipsoids(double prob_thresh = 0);
     bool drawObservationEllipsoids(double prob_thresh = 0);
 
+    bool drawEllipsoidsObjects(double prob_thresh = 0);
+
     bool drawPlanes(int visual_group=0);
     // bool drawPoints();
     // void setCalib(Eigen::Matrix3d& calib);
@@ -101,12 +103,12 @@ public:
     void DrawDepthPointCloud();
 
     // 可能被ObjectDrawer调用
-    void drawEllipsoidInVector(ellipsoid* e);
+    void drawEllipsoidInVector(ellipsoid* e, int color_mode = 0); // 0: Red, 1: Green, 2:Blue
 
 private:
     // void drawPlaneWithEquationDense(plane* p);
     void drawPlaneWithEquation(plane* p);
-    void drawAllEllipsoidsInVector(std::vector<ellipsoid*>& ellipsoids);
+    void drawAllEllipsoidsInVector(std::vector<ellipsoid*>& ellipsoids, int color_mode = 0);
     
     // void drawLabelTextOfEllipsoids(std::vector<ellipsoid*>& ellipsoids);
 

@@ -72,6 +72,7 @@ public:
     void SetDynamicFlag();
     bool isDynamic();
 
+    g2o::ellipsoid* GetEllipsold();
     void SetPoseByEllipsold(g2o::ellipsoid* e);
 
     bool AddDepthPointCloudFromObjectDetection(ObjectDetection* det);
@@ -131,6 +132,7 @@ public:
     std::mutex mMutexObject;
     std::mutex mMutexFeatures;
     std::mutex mMutexPointCloud;
+    std::mutex mMutexEllipsold;
 
 
     static bool lId(MapObject* pMO1, MapObject* pMO2){
@@ -141,7 +143,7 @@ public:
 
     bool findGoodOrientation;
 
-    g2o::ellipsoid* mpEllipsold;
+    g2o::ellipsoid* mpEllipsold = NULL;
 
     int label;
 

@@ -61,6 +61,7 @@ public:
     int nPts;
     bool isNew;  // 记录是否已经与一个地图物体关联
     bool isGood;  // 记录是否有足够多关联特征点
+    bool isValidPcd;
     std::mutex mMutexFeatures;
     std::mutex mMutexDetection;
 

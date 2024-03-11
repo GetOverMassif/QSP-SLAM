@@ -58,6 +58,9 @@ class Detector2D(object):
         self.model.eval()
         self.min_bb_area = configs.min_bb_area
         self.predictions = None
+        self.mRow = configs.image.mRow
+        self.mCol = configs.image.mCol
+        self.mEdge = configs.image.mEdge
 
     def make_prediction(self, image, object_classes=["cars"]):
         
@@ -126,8 +129,11 @@ class Detector2D(object):
 
     def get_valid_detections(self, boxes, masks, labels, probs):
 
-        # # Remove those on the margin
-        # cond1 = (boxes[:, 0] >= 30) & (boxes[:, 1] > 10) & (boxes[:, 2] < 1211) & (boxes[:, 3] < 366)
+        # Remove those on the margin
+        cond1 = (boxes[:, 0] >= self.mEdge) \
+                & (boxes[:, 1] > self.mEdge) \
+                & (boxes[:, 2] < self.mCol - self.mEdge) \
+                & (boxes[:, 3] < self.mRow - self.mEdge)
         
         boxes_area = (boxes[:, 2] - boxes[:, 0]) * (boxes[:, 3] - boxes[:, 1])
         # Remove those with too small bounding boxes
@@ -137,7 +143,7 @@ class Detector2D(object):
         cond3 = (scores >= 0.60)
 
         # valid_mask = (cond2 & cond3)
-        valid_mask = (cond2 & cond3)
+        valid_mask = (cond1 & cond2 & cond3)
 
         valid_instances = {"pred_boxes": boxes[valid_mask, :4],
                            "pred_masks": masks[valid_mask, ...],

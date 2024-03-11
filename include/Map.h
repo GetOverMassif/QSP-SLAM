@@ -189,6 +189,10 @@ public:
     std::vector<ellipsoid*> GetAllEllipsoidsVisual();
     void ClearEllipsoidsVisual();
 
+    void addEllipsoidObjects(ellipsoid* pObj);
+    std::vector<ellipsoid*> GetAllEllipsoidsObjects();
+    void ClearEllipsoidsObjects();
+
     void addEllipsoidObservation(ellipsoid* pObj);
     std::vector<ellipsoid*> GetObservationEllipsoids();
     void ClearEllipsoidsObservation();
@@ -200,6 +204,9 @@ public:
 
 protected:
     std::vector<ellipsoid*> mspEllipsoidsVisual;
+
+    std::vector<ellipsoid*> mspEllipsoidsObjects;
+
     std::vector<ellipsoid*> mspEllipsoidsObservation;
     std::vector<Boundingbox*> mvBoundingboxes;
 };

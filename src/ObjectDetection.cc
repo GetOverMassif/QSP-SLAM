@@ -43,6 +43,7 @@ ObjectDetection::ObjectDetection(const Eigen::Matrix4f &T, const Eigen::MatrixXf
     nRays = (int) RayDirections.size() / 3;
     isNew = true;
     isGood = true;
+    isValidPcd = true;
 }
 
 ObjectDetection::ObjectDetection() : isNew(true), isGood(true)
@@ -83,6 +84,11 @@ int ObjectDetection::NumberOfPoints()
 void ObjectDetection::setPcdPtr(pcl::PointCloud<PointType>::Ptr& pcd_ptr_)
 {
     // 这里有待考虑是否单独设置锁更合理
+    if (pcd_ptr_ == NULL){
+        pcd_ptr==nullptr;
+        isGood = true;
+        return;
+    }
     std::unique_lock<std::mutex> lock(mMutexFeatures);
     if (pcd_ptr==nullptr) {
         pcd_ptr = pcl::PointCloud<PointType>::Ptr(new pcl::PointCloud<PointType>);

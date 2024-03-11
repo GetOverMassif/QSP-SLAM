@@ -53,8 +53,12 @@
 
 #include <src/dense_builder/builder.h>
 
+#include "utils/file_operate.h"
+
 #include <mutex>
 #include <ctime>
+
+#include <sys/resource.h>
 
 namespace ORB_SLAM2
 {

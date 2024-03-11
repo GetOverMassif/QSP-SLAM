@@ -10,9 +10,16 @@ Tracking.AddSuffixToPcd: 0
 Tracking.AssociateObjectWithEllipsold: 1
 Tracking.AssociateDebug: 0
 Tracking.AddDepthPcdToMapObject: 1
-Tracking.AssociateIoUThresold: 0.59
+Tracking.UseDepthPcdToReconstruct: 1
+
+LocalMapping.MinValidPoints: 50
+LocalMapping.MinValidRays: 1
+
+Tracking.AssociateIoUThresold: 0.52
 
 Tracking.MinimumPtNumToJudgeGood: 5  # default 20
+
+# CoutToFile: 1
 
 #--------------------------------------------------------------------------------------------
 # yolo
@@ -255,7 +262,7 @@ Tracking.KeyFrameCheck.Close: 1
 
 # Visualization
 Visualization.Builder.Open: 1
-Visualization.Builder.Global.Open: 0
+Visualization.Builder.Global.Open: 1
 
 # when >0, filter using dis to groundplane
 Visualization.Map.Filter.DisThresh: 2.3

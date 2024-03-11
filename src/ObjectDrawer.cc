@@ -124,7 +124,7 @@ void ObjectDrawer::DrawObjects(bool bFollow, const Eigen::Matrix4f &Tec, double 
             continue;
         }
         if (pMO->isBad()) {
-            std::cout << "pMO->isBad()" << std::endl;
+            // std::cout << "pMO->isBad()" << std::endl;
             continue;
         }
 
@@ -142,12 +142,20 @@ void ObjectDrawer::DrawObjects(bool bFollow, const Eigen::Matrix4f &Tec, double 
 
         DrawCuboid(pMO);
 
-        if(pMO->mpEllipsold && pMO->mpEllipsold->prob > prob_thresh )
-            mpMapDrawer->drawEllipsoidInVector(pMO->mpEllipsold);
+        // 程序的停滞与这里的椭球体获取有关
+        // auto obj_ellipsold = pMO->GetEllipsold();
 
-        std::shared_ptr<PointCloud> mPointsPtr = pMO->GetPointCloud();
-        PointCloud* rawPtr = mPointsPtr.get();
-        mpMapDrawer->drawPointCloud(rawPtr, pointcloudSize);
+        // if(obj_ellipsold) {
+        //     // cout << "obj_ellipsold->prob = " << obj_ellipsold->prob << endl;
+        //     if(obj_ellipsold->prob > prob_thresh){
+        //         mpMapDrawer->drawEllipsoidInVector(obj_ellipsold);
+        //     }
+        // }
+
+        // std::shared_ptr<PointCloud> mPointsPtr = pMO->GetPointCloud();
+        // PointCloud* rawPtr = mPointsPtr.get();
+        // mpMapDrawer->drawPointCloud(rawPtr, pointcloudSize);
+
     }
 }
 

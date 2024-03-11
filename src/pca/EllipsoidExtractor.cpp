@@ -175,11 +175,11 @@ pcl::PointCloud<PointType>::Ptr EllipsoidExtractor::ExtractPointCloud(cv::Mat &d
 
     PointCloud *pPoints_planeFiltered;
     if (!mbOpenMHPlanesFilter){    // 使用支撑平面进行滤波
-        std::cout << "ApplySupportingPlaneFilter" << std::endl;
+        // std::cout << "ApplySupportingPlaneFilter" << std::endl;
         pPoints_planeFiltered = ApplySupportingPlaneFilter(pPoints_global);
     }
     else {
-        std::cout << "ApplyMHPlanesFilter" << std::endl;    // 使用曼哈顿平面进行滤波
+        // std::cout << "ApplyMHPlanesFilter" << std::endl;    // 使用曼哈顿平面进行滤波
         std::vector<g2o::plane *> vMHPlanes = mvpMHPlanes;
         vMHPlanes.push_back(mpPlane);
         pPoints_planeFiltered = ApplyMHPlanesFilter(pPoints_global, vMHPlanes);
@@ -221,17 +221,19 @@ pcl::PointCloud<PointType>::Ptr EllipsoidExtractor::ExtractPointCloud(cv::Mat &d
         return NULL;
     }
 
+    pcl::PointCloud<PointType>::Ptr clear_cloud_ptr(new pcl::PointCloud<PointType>);;
     // 计算中点
     Vector3d center;
     bool bCenter = GetCenter(depth, bbox, pose, camera, center);
     if (!bCenter) {
         miSystemState = 1;
-
-        std::cout << "Can't Find Center. Bbox: " << bbox.transpose() << std::endl;
-        return NULL;
+        std::cout << "[Pointcloud Extraction] Can't Find Center. Bbox: " << bbox.transpose() << std::endl;
+        cout << "Press Enter to continue" << endl;
+        // getchar();
+        return clear_cloud_ptr;
     }
     clock_t time_5_GetCenter = clock();
-    std::cout << "center = " << center << std::endl;
+    // std::cout << "center = " << center.transpose().matrix() << std::endl;
 
     // 使用快速欧几里德聚类进行滤波
     mDebugCenter = center;
@@ -248,7 +250,8 @@ pcl::PointCloud<PointType>::Ptr EllipsoidExtractor::ExtractPointCloud(cv::Mat &d
     std::cout << "pPointsEuFiltered.size() = " << pPointsEuFiltered->size() << std::endl;
 
     // we have gotten the object points in the world coordinate
-    pcl::PointCloud<PointType>::Ptr clear_cloud_ptr = QuadricPointCloudToPclXYZ(*pPointsEuFiltered);
+    // pcl::PointCloud<PointType>::Ptr clear_cloud_ptr = QuadricPointCloudToPclXYZ(*pPointsEuFiltered);
+    clear_cloud_ptr = QuadricPointCloudToPclXYZ(*pPointsEuFiltered);
 
     mpPoints = pPointsEuFiltered;
 
@@ -707,7 +710,7 @@ ORB_SLAM2::PointCloud *EllipsoidExtractor::ApplySupportingPlaneFilter(ORB_SLAM2:
 //  and their average 3D positions will be taken as the output.
 bool EllipsoidExtractor::GetCenter(cv::Mat &depth, Eigen::Vector4d &bbox, Eigen::VectorXd &pose, camera_intrinsic &camera, Vector3d &center) {
     double depth_range = Config::ReadValue<double>("EllipsoidExtractor_DEPTH_RANGE");
-    cout << "[EllipsoidExtractor::GetCenter] depth_range = " << depth_range << std::endl;
+    // cout << "[EllipsoidExtractor::GetCenter] depth_range = " << depth_range << std::endl;
     // get the center of the bounding box
     int x = int((bbox(0) + bbox(2)) / 2.0);
     int y = int((bbox(1) + bbox(3)) / 2.0);
@@ -741,8 +744,10 @@ bool EllipsoidExtractor::GetCenter(cv::Mat &depth, Eigen::Vector4d &bbox, Eigen:
     }
     mDebugCenterCloud = pCloud; // store for visualization
 
-    if (cloud.size() < 2)
+    if (cloud.size() < 2){
+        cout << "Validcloud.size() < 2" << endl;
         return false; // we need at least 2 valid points
+    }
 
     Eigen::Vector4d centroid;
     pcl::compute3DCentroid(cloud, centroid); // get their centroid

@@ -289,6 +289,8 @@ void Tracking::GetObjectDetectionsMono(KeyFrame *pKF)
 
 void Tracking::GetObjectDetectionsRGBD(KeyFrame *pKF)
 {
+    cout << "" << endl;
+    printMemoryUsage();
 
     PyThreadStateLock PyThreadLock;
 
@@ -302,7 +304,13 @@ void Tracking::GetObjectDetectionsRGBD(KeyFrame *pKF)
     // py::list detections = mpSystem->pySequence.attr("get_frame_by_id")(pKF->mnFrameId);
 
     // Get a series of object detections
+    printMemoryUsage();
     py::list detections = mpSystem->pySequence.attr("get_frame_by_name")(pKF->mnFrameId, frame_name);
+
+    cout << "sizeof (detections) = " << sizeof(detections) << " bytes" << endl;
+
+    cout << "Finish get_frame_by_name" << endl;
+    printMemoryUsage();
 
     int num_dets = detections.size();
 
@@ -357,6 +365,9 @@ void Tracking::GetObjectDetectionsRGBD(KeyFrame *pKF)
         }
 
         pKF->mvpDetectedObjects.push_back(det);
+
+        cout << "Finish detection " << detected_idx << endl;
+        printMemoryUsage();
     }
 
     // 将det结果保存到矩阵mmObservations中
@@ -377,7 +388,7 @@ void Tracking::GetObjectDetectionsRGBD(KeyFrame *pKF)
 void Tracking::AssociateObjectsByProjection(ORB_SLAM2::KeyFrame *pKF)
 {
     
-    std::cout << "\n[ Tracking - AssociateObjectsByProjection ]" << std::endl;
+    std::cout << "\n >> [ Tracking - AssociateObjectsByProjection ] << " << std::endl;
     // => Step 1: 获取该关键帧关联的地图点、物体检测
     auto mvpMapPoints = pKF->GetMapPointMatches();
     // Try to match and triangulate key-points with last key-frame
@@ -388,20 +399,29 @@ void Tracking::AssociateObjectsByProjection(ORB_SLAM2::KeyFrame *pKF)
     {
         // Step 2.1: 遍历检测关联的地图点，判断其是否合法且为内点
         //           记录这些地图点中已经关联的物体编号
-        // cout << "Detection: " << d_i + 1 << endl;
+        cout << "Detection: " << d_i + 1 << endl;
         auto detKF1 = detectionsKF1[d_i];
+        vector<double> iou_stats;
+        bool has_associate = false;
 
         auto bbox_det = detKF1->bbox;
         auto label_bbox = detKF1->label;
         // int x1 = (int)bbox_det(1), y1 = (int)bbox_det(2), x2 = (int)bbox_det(3), y2 = (int)bbox_det(4);
         cv::Rect r2_bbox(cv::Point(bbox_det[0], bbox_det[1]), cv::Point(bbox_det[2], bbox_det[3]));
 
+        // 如果使用椭球体投影的椭圆进行关联，则不进行后续的使用地图点的关联
         if (associate_object_with_ellipsold) {
-            cout << "Tracking::AssociateObjectsByProjection" << endl;
+            // cout << "Tracking::AssociateObjectsByProjection" << endl;
             auto mapObjects = mpMap->GetAllMapObjects();
             for (auto pMO: mapObjects){
+                // FIXME：这里暂时对于 e 为 NULL 的情况跳过处理
                 cv::Mat img_show = mCurrentFrame.rgb_img.clone();
-                auto e = pMO->mpEllipsold;
+                auto e = pMO->GetEllipsold();
+
+                if (e==NULL){
+                    continue;
+                }
+
                 auto label_obj = pMO->label;
                 auto campose_cw = mCurrentFrame.cam_pose_Tcw;
                 auto ellipse = e->projectOntoImageEllipse(campose_cw, mCalib);
@@ -421,85 +441,102 @@ void Tracking::AssociateObjectsByProjection(ORB_SLAM2::KeyFrame *pKF)
                 cv::Rect r_and = r1_proj | r2_bbox;
                 cv::Rect r_U = r1_proj & r2_bbox;
                 double iou = r_U.area()*1.0/r_and.area();
-                std::cout << "IoU = " << iou << std::endl;
-                std::cout << "label_bbox: " << label_bbox << ", label_obj: " << label_obj << std::endl;
 
+                iou_stats.push_back(iou);
 
-                cv::imshow("Ellipse Projection", img_show);
-                cv::waitKey(10);
-
+                //TODO: 没关联上可能是因为椭球体的参数没有及时更新
                 if (associate_debug)
                 {
+                    if (iou > associate_IoU_thresold && label_bbox==label_obj){
+                        std::cout << "!! Associated !!" << std::endl;
+                    }
+                    // else {
+                    //     std::cout << "Not Associated" << std::endl;
+                    // }
+                    std::cout << "class(bbox/obj)/IoU: " << label_bbox << "/" \
+                            << label_obj << "/" << iou << std::endl;
+
+                    cv::imshow("Ellipse Projection", img_show);
+                    cv::waitKey(10);
+
                     std::cout << "Press any key to continue" << endl;
                     char key = getchar();
                 }
 
                 if (iou > associate_IoU_thresold && label_bbox==label_obj){
-                    cout << "Associate" << std::endl;
+                    // cout << "Associate" << std::endl;
                     // 这里有一个问题，被关联过的物体可能在下一个det再次被遍历到
+                    has_associate = true;
                     associateDetWithObject(pKF, pMO, d_i, detKF1, mvpMapPoints);
                     break;
                 }
             }
-            continue;
-        }
-
-        map<int, int> observed_object_id;
-        int nOutliers = 0;
-
-        for (int k_i : detKF1->GetFeaturePoints()) {
-            auto pMP = mvpMapPoints[k_i];
-            if (!pMP)
-                continue;
-            if (pMP->isOutlier())
-            {
-                nOutliers++;
-                continue;
+            std::cout << "Detection " << d_i << ", class " << label_bbox ;
+            if (has_associate) std::cout << ", associated successfully: ";
+            else std::cout << " associated failed: ";
+            for (auto &iou : iou_stats) {
+                cout << iou << ", ";
             }
-
-            // 在初始观测时都不加入具体的object_id，即为-1
-            if (pMP->object_id < 0)
-                continue;
-
-            if (observed_object_id.count(pMP->object_id))
-                observed_object_id[pMP->object_id] += 1;
-            else
-                observed_object_id[pMP->object_id] = 1;
+            cout << endl;
         }
+        else {
+            map<int, int> observed_object_id;
+            int nOutliers = 0;
 
-        // Step 2.2: 根据关键点数量寻找与哪个object编号更匹配
-        //           获取对应的物体指针，将物体、检测添加到关键帧，
-        //           设置该 det->isNew = false
-        //           将其他的检测关联地图点设置与物体关联
-
-        if (!observed_object_id.empty())
-        {
-            // Find object that has the most matches
-            int object_id_max_matches = 0;  // global object id
-            int max_matches = 0;
-            for (auto it = observed_object_id.begin(); it != observed_object_id.end(); it++) {
-                if (it->second > max_matches) {
-                    max_matches = it->second;
-                    object_id_max_matches = it->first;
+            for (int k_i : detKF1->GetFeaturePoints()) {
+                auto pMP = mvpMapPoints[k_i];
+                if (!pMP)
+                    continue;
+                if (pMP->isOutlier())
+                {
+                    nOutliers++;
+                    continue;
                 }
-            }
-            // associated object
-            // todo: 这里的关联方式过于粗糙，只要有相同地图点就关联到一起了
-            // 增加判断条件： 除了地图点验证，再增加椭球体的IOU验证
-            // bool match = CheckIoU();
-            if (max_matches > minimum_match_to_associate)
-            {
-                // std::cout << ""
-                auto pMO = mpMap->GetMapObject(object_id_max_matches);
-                int newly_matched_points = associateDetWithObject(pKF, pMO, d_i, detKF1, mvpMapPoints);
-                cout <<  "Matches: " << max_matches << ", New points: " << newly_matched_points << ", Keypoints: " <<
-                    detKF1->mvKeysIndices.size() << ", Associated to object by projection " << object_id_max_matches
-                    << endl << endl;
 
+                // 在初始观测时都不加入具体的object_id，即为-1
+                if (pMP->object_id < 0)
+                    continue;
+
+                if (observed_object_id.count(pMP->object_id))
+                    observed_object_id[pMP->object_id] += 1;
+                else
+                    observed_object_id[pMP->object_id] = 1;
             }
-            else
+
+            // Step 2.2: 根据关键点数量寻找与哪个object编号更匹配
+            //           获取对应的物体指针，将物体、检测添加到关键帧，
+            //           设置该 det->isNew = false
+            //           将其他的检测关联地图点设置与物体关联
+
+            if (!observed_object_id.empty())
             {
-                std::cout << "No association because of few MP shared" << std::endl;
+                // Find object that has the most matches
+                int object_id_max_matches = 0;  // global object id
+                int max_matches = 0;
+                for (auto it = observed_object_id.begin(); it != observed_object_id.end(); it++) {
+                    if (it->second > max_matches) {
+                        max_matches = it->second;
+                        object_id_max_matches = it->first;
+                    }
+                }
+                // associated object
+                // todo: 这里的关联方式过于粗糙，只要有相同地图点就关联到一起了
+                // 增加判断条件： 除了地图点验证，再增加椭球体的IOU验证
+                // bool match = CheckIoU();
+                if (max_matches > minimum_match_to_associate)
+                {
+                    // std::cout << ""
+                    auto pMO = mpMap->GetMapObject(object_id_max_matches);
+                    int newly_matched_points = associateDetWithObject(pKF, pMO, d_i, detKF1, mvpMapPoints);
+                    cout <<  "Matches: " << max_matches << ", New points: " << newly_matched_points << ", Keypoints: " <<
+                        detKF1->mvKeysIndices.size() << ", Associated to object by projection " << object_id_max_matches
+                        << endl << endl;
+
+                }
+                else
+                {
+                    std::cout << "No association because of few MP shared" << std::endl;
+                }
             }
         }
     }
@@ -811,6 +848,8 @@ void Tracking::UpdateDepthEllipsoidEstimation(ORB_SLAM2::Frame* pFrame, KeyFrame
     // mpEllipsoidExtractor->ClearPointCloudList();    // clear point cloud visualization
 
     bool bPlaneNotClear = true;
+
+    // 每次更新深度观测的时候都清除
     bool bEllipsoidNotClear = true;
     std::cout << "[Tracking::UpdateDepthEllipsoidEstimation] " << std::endl;
     std::cout << "共有 " << rows << " 个检测结果" << std::endl;
@@ -829,7 +868,7 @@ void Tracking::UpdateDepthEllipsoidEstimation(ORB_SLAM2::Frame* pFrame, KeyFrame
         
         Eigen::VectorXd det_vec = obs_mat.row(i);  // id x1 y1 x2 y2 label rate instanceID
 
-        std::cout << "=> Det " << i << ": " << det_vec.transpose().matrix() << std::endl;
+        std::cout << "\n=> Det " << i << ": " << det_vec.transpose().matrix() << std::endl;
 
         int label = round(det_vec(5));
         double measurement_prob = det_vec(6);
@@ -838,12 +877,25 @@ void Tracking::UpdateDepthEllipsoidEstimation(ORB_SLAM2::Frame* pFrame, KeyFrame
 
         // Filter those detections lying on the border.
         bool is_border = calibrateMeasurement(measurement, mRows, mCols, Config::Get<int>("Measurement.Border.Pixels"), Config::Get<int>("Measurement.LengthLimit.Pixels"));
+
+        // FIXME: 这里涉及到对观测框靠近边界的物体观测如何处理的问题：暂时在python检测中去除靠近边界的检测
+
+        if (is_border) {
+            cout << ">> [is_border] " 
+                 << "measure: " << measurement.transpose().matrix()
+                 << ", row: " << mRows << ", col: " << mCols 
+                 << ", length_limit: " << Config::Get<int>("Measurement.Border.Pixels")
+                 << endl;
+            cout << "Press enter to continue: " << endl;
+            getchar();
+        }
+        
         double prob_thresh = Config::Get<double>("Measurement.Probability.Thresh");
 
         bool prob_check = (measurement_prob > prob_thresh);
 
-        g2o::ellipsoid* pEllipsoidForThisObservation = NULL;
-        g2o::ellipsoid* pEllipsoidForThisObservationGlobal = NULL;
+        g2o::ellipsoid* pLocalEllipsoidThisObservation = NULL;
+        g2o::ellipsoid* pGlobalEllipsoidThisObservation = NULL;
         // 2 conditions must meet to start ellipsoid extraction:
         // C1 : the bounding box is not on border
         // C1 : 包围框是否不在边界上
@@ -876,6 +928,7 @@ void Tracking::UpdateDepthEllipsoidEstimation(ORB_SLAM2::Frame* pFrame, KeyFrame
         cout << "prob|NotBorder|HasGround|NotAssociation|NotFiltered:" \
              << prob_check << "," << c1 << "," << c2 << "," << !c3 << "," << c4 << std::endl;
 
+        // 对观测进行椭球体提取的几大条件
         if( prob_check && c1 && c2 && !c3 && c4 ){
             // std::cout << "bPlaneNotClear = " << bPlaneNotClear << std::endl;
             if(bPlaneNotClear){
@@ -898,11 +951,23 @@ void Tracking::UpdateDepthEllipsoidEstimation(ORB_SLAM2::Frame* pFrame, KeyFrame
             // TODO: 这里要将物体点云添加给观测
             pcl::PointCloud<PointType>::Ptr pcd_ptr(new pcl::PointCloud<PointType>);
 
+            // FIXME: 这里需要对不能提取出椭球体的情况进行一个分类处理
             g2o::ellipsoid e_extractByFitting_newSym = \
                 mpEllipsoidExtractor->EstimateLocalEllipsoidUsingMultiPlanes(\
                     pFrame->frame_img, measurement, label, measurement_prob, pose, mCamera, pcd_ptr, pcd_suffix);
 
-            det->setPcdPtr(pcd_ptr);
+            cout << "e_extractByFitting_newSym.prob = " << e_extractByFitting_newSym.prob << endl;
+            // FIXME: 如果点云提取不成功，则设置该帧观测为不好, 因为 mpGlobalEllipsolds 需要添加，因此不能 continue
+
+            // 无非两个特殊情况需要考虑： 椭球体提取不成功，深度点云提取不成功
+            if (pcd_ptr==NULL){
+                det->isValidPcd = false;
+                // continue;
+            }
+
+            if (add_depth_pcd_to_map_object && pcd_ptr!=NULL) {
+                det->setPcdPtr(pcd_ptr);
+            }
             
             bool c0 = mpEllipsoidExtractor->GetResult();
             std::cout << "mpEllipsoidExtractor->GetResult() = " << c0 << std::endl;
@@ -913,10 +978,14 @@ void Tracking::UpdateDepthEllipsoidEstimation(ORB_SLAM2::Frame* pFrame, KeyFrame
                 // Visualize estimated ellipsoid
                 // 将相机坐标系的椭球体转换到世界坐标系内
                 g2o::ellipsoid* pObjByFitting = new g2o::ellipsoid(e_extractByFitting_newSym.transform_from(pFrame->cam_pose_Twc));
+                
                 if(pObjByFitting->prob_3d > 0.5)
                     pObjByFitting->setColor(Vector3d(0.8,0.0,0.0), 1); // Set green color
-                else 
+                else{
+                    // prob_3d
+                    // FIXME： 如果 prob_3d < 0.5, 使用bbox边界对ellipsold进行再次refine
                     pObjByFitting->setColor(Vector3d(0.8,0,0), 0.5); // 透明颜色
+                }
 
                 // 临时更新： 此处显示的是 3d prob
                 // pObjByFitting->prob = pObjByFitting->prob_3d;
@@ -932,9 +1001,9 @@ void Tracking::UpdateDepthEllipsoidEstimation(ORB_SLAM2::Frame* pFrame, KeyFrame
 
                 mpMap->addEllipsoidVisual(pObjByFitting);
 
-                std::cout << "Add Ellipsold" << std::endl;
+                // std::cout << "Add Ellipsold" << std::endl;
                 
-                cout << "detection " << i << " = " << pObjByFitting->pose << endl;
+                // cout << "detection " << i << " = " << pObjByFitting->pose << endl;
                 
                 // std::cout << "*****************************" << std::endl;
                 // std::cout << "Show EllipsoidVisual, press [ENTER] to continue ... " << std::endl;
@@ -951,11 +1020,12 @@ void Tracking::UpdateDepthEllipsoidEstimation(ORB_SLAM2::Frame* pFrame, KeyFrame
             // if( c0 ){
 
                 g2o::ellipsoid *pE_extractByFitting = new g2o::ellipsoid(e_extractByFitting_newSym);
-                pEllipsoidForThisObservation = pE_extractByFitting;   // Store result to pE_extracted.
+                pLocalEllipsoidThisObservation = pE_extractByFitting;   // Store result to pE_extracted.
 
                 g2o::ellipsoid *pE_extractByFittingGlobal = new g2o::ellipsoid(*(pObjByFitting));
-                pEllipsoidForThisObservationGlobal = pE_extractByFittingGlobal;
+                pGlobalEllipsoidThisObservation = pE_extractByFittingGlobal;
             }
+
         }
 
         if (show_ellipsold_process) 
@@ -971,11 +1041,21 @@ void Tracking::UpdateDepthEllipsoidEstimation(ORB_SLAM2::Frame* pFrame, KeyFrame
         }
 
         // 若不成功保持为NULL
-        pFrame->mpLocalObjects.push_back(pEllipsoidForThisObservation);
-        pKF->mpLocalObjectsLocal.push_back(pEllipsoidForThisObservation);
+        // cout << "ellipsold add 1" << endl;
+        pFrame->mpLocalObjects.push_back(pLocalEllipsoidThisObservation);
+        // cout << "ellipsold add 2" << endl;
+        pKF->mpLocalEllipsolds.push_back(pLocalEllipsoidThisObservation);
+        // cout << "ellipsold add 3" << endl;
+
+        if (pGlobalEllipsoidThisObservation==NULL){
+            cout << "pGlobalEllipsoidThisObservation==NULL" << endl;
+        }
+        else{
+            cout << "pGlobalEllipsoidThisObservation->prob = " << pGlobalEllipsoidThisObservation->prob << endl;
+        }
 
         // 这里要注意创建一个新的
-        pKF->mpLocalObjectsGlobal.push_back(pEllipsoidForThisObservationGlobal);
+        pKF->mpGlobalEllipsolds.push_back(pGlobalEllipsoidThisObservation);
 
     }
 
@@ -1285,6 +1365,7 @@ void VisualizeRelations(Relations& rls, Map* pMap, g2o::SE3Quat &Twc, std::vecto
 
 void Tracking::ManageMemory()
 {
+    cout << "ManageMemory" << endl;
     if(mvpFrames.size() > 1){
         Frame* pLastFrame = mvpFrames[mvpFrames.size()-2];
 
@@ -1294,7 +1375,6 @@ void Tracking::ManageMemory()
         pLastFrame->rgb_img.release();
         // std::cout << "Released rgb and depth images." << std::endl;
     }
-
 }
 
 bool Tracking::SavePointCloudMap(const string& path)

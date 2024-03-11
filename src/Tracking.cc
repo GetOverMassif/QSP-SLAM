@@ -207,6 +207,7 @@ Tracking::Tracking(System *pSys, ORBVocabulary* pVoc, FrameDrawer *pFrameDrawer,
 void Tracking::SetLocalMapper(LocalMapping *pLocalMapper)
 {
     mpLocalMapper=pLocalMapper;
+    mpLocalMapper->SetOptimizer(mpOptimizer);
 }
 
 void Tracking::SetLoopClosing(LoopClosing *pLoopClosing)
@@ -278,6 +279,9 @@ cv::Mat Tracking::GrabImageRGBD(const cv::Mat &imRGB,const cv::Mat &imD, const d
     mImDepth = imD;
     cv::Mat imDepth = imD;
 
+    cout << "After image = " << endl;
+    printMemoryUsage();
+
     // std::cout << "imDepth.type() = " << imDepth.type() << std::endl;
 
     if(mImGray.channels()==3)
@@ -297,12 +301,20 @@ cv::Mat Tracking::GrabImageRGBD(const cv::Mat &imRGB,const cv::Mat &imD, const d
 
     if((fabs(mDepthMapFactor-1.0f)>1e-5) || imDepth.type()!=CV_32F)
         imDepth.convertTo(imDepth, CV_32F, mDepthMapFactor);
-    
+
+    cout << "Before frame creation = " << endl;
+    printMemoryUsage();
+
     // clock_t time_0_start = clock();
     mCurrentFrame = Frame(mImGray,imDepth,timestamp,mpORBextractorLeft,mpORBVocabulary,mK,mDistCoef,mbf,mThDepth,imRGB,imD);
+
     // clock_t time_frame_creation = clock();
     // cout << " -- time_frame_creation: " <<(double)(time_frame_creation - time_0_start) / CLOCKS_PER_SEC << "s" << endl;
     Track();
+
+    cout << "After Track = " << endl;
+    printMemoryUsage();
+
     // clock_t time_track = clock();
     // cout << " -- time_track: " <<(double)(time_track - time_frame_creation) / CLOCKS_PER_SEC << "s" << endl;
 
@@ -318,17 +330,24 @@ cv::Mat Tracking::GrabImageRGBD(const cv::Mat &imRGB,const cv::Mat &imD, const d
             // cv::imshow("mCurrentFrame.rgb_img", mCurrentFrame.rgb_img);
             cv::waitKey(20);
             mpBuilder->processFrame(mCurrentFrame.rgb_img, mCurrentFrame.frame_img, pose, depth_range);
-
+            cout << "338 " << endl;
+            printMemoryUsage();
             mpBuilder->voxelFilter(0.01);   // Down sample threshold; smaller the finer; depend on the hardware.
+            cout << "341 " << endl;
+            printMemoryUsage();
             PointCloudPCL::Ptr pCloudPCL = mpBuilder->getMap();
             PointCloudPCL::Ptr pCurrentCloudPCL = mpBuilder->getCurrentMap();
-
+            cout << "345 " << endl;
+            printMemoryUsage();
             auto pCloud = pclToQuadricPointCloudPtr(pCloudPCL);
             auto pCloudLocal = pclToQuadricPointCloudPtr(pCurrentCloudPCL);
             mpMap->AddPointCloudList("Builder.Global Points", pCloud);
             mpMap->AddPointCloudList("Builder.Local Points", pCloudLocal);
         }
     }
+
+    cout << "After builder = " << endl;
+    printMemoryUsage();
 
     return mCurrentFrame.mTcw.clone();
 }
@@ -1219,14 +1238,19 @@ void Tracking::CreateNewKeyFrame()
         double ttrack= std::chrono::duration_cast<std::chrono::duration<double> >(t2 - t1).count();
         cout << "Object detection takes " << ttrack << endl;
     }
+    // KEY: [Tracking] 此处进地面提取、物体检测、前端处理、投影数据关联和内存清理
     else if (mSensor == System::RGBD)
     {
         std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
         mvpFrames.push_back(&mCurrentFrame);
 
+        printMemoryUsage();
+
         // Step1: 首先进行地面检测
         // [1] process MHPlanes estimation
         TaskGroundPlane();
+
+        printMemoryUsage();
 
         if (miGroundPlaneState != 2) {
             std::cout << "Ground is not detected yet." << std::endl;
@@ -1237,7 +1261,9 @@ void Tracking::CreateNewKeyFrame()
             std::cout << "\n [ GetObjectDetectionsRGBD ]" << std::endl;
             GetObjectDetectionsRGBD(pKF);
         }
-        
+
+        printMemoryUsage();
+
         // 将这些结果也设置到对应的普通帧Frame中（这里是为了适用椭球体SLAM需求，有待未来优化）
         mCurrentFrame.SetObservations(pKF);
 
@@ -1252,6 +1278,7 @@ void Tracking::CreateNewKeyFrame()
         std::cout << " \n[ UpdateObjectObservation ] " << std::endl;
         UpdateObjectObservation(&mCurrentFrame, pKF, withAssociation);
 
+        printMemoryUsage();
 
         // if(mbDynamicOpenOptimization){
         //     NonparamOptimization(); // Optimize data associations,objects,landmarks.        
@@ -1267,8 +1294,12 @@ void Tracking::CreateNewKeyFrame()
             // 关联上之后，在LocalMapping中进行 物体点云 从detection到object的传递
             AssociateObjectsByProjection(pKF);
         }
-        
+
+        printMemoryUsage();
+
         ManageMemory();
+
+        printMemoryUsage();
 
         std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
 

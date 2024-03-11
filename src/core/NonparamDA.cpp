@@ -17,7 +17,7 @@ static int g_instance_total_id = 0;       // 宏观记录物体的instance该到
 
 const double sqrt_2pi_inv = 1 / std::sqrt( 2 * M_PI );
 
-namespace EllipsoidSLAM
+namespace ORB_SLAM2
 {
 
 class OneDAResult
@@ -715,6 +715,7 @@ void AlignObjectsToSupportingPlane(Measurements& mms, Objects& objs, Vector4d& g
     // getchar();
 }
 
+// KEY: [Optimization]使用 概率数据关联 进行 全局图优化
 void Optimizer::GlobalObjectGraphOptimizationWithPDA(std::vector<Frame *> &pFrames, Map *pMap, const Matrix3d& calib, int iRows, int iCols)
 {
     int config_iter_num = Config::Get<double>("Optimizer.NonparametricDA.Num");
@@ -746,7 +747,7 @@ void Optimizer::GlobalObjectGraphOptimizationWithPDA(std::vector<Frame *> &pFram
         // 临时debug. done. 不再需要.
         // pMap->DeletePointCloudList("Debug.DistancePoint", 1);
 
-        // step 1: estimate data association
+        // Step 1: estimate data association
         // 基于当前轨迹数据，和所有观测数据，为各物体配置数据关联. (三维空间的聚类)
         std::cout << " [Optimizer.cpp] Begin calculating the data association." << std::endl;
         clock_t da_begin = clock();
@@ -754,7 +755,7 @@ void Optimizer::GlobalObjectGraphOptimizationWithPDA(std::vector<Frame *> &pFram
         clock_t da_end = clock();
         std::cout << " - DA Time : " << double(da_end-da_begin)/CLOCKS_PER_SEC << std::endl;
 
-        // step 2: optimize as usual
+        // Step 2: optimize as usual
         // 基于新计算的数据关联结果，优化获得位姿估计，地图中路标.
         std::cout << " [Optimizer.cpp] Begin optimizing the trajectory and objects." << std::endl;
 

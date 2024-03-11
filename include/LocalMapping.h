@@ -25,9 +25,12 @@
 #include "Map.h"
 #include "LoopClosing.h"
 #include "Tracking.h"
+#include "Optimizer.h"
 #include "KeyFrameDatabase.h"
 #include "System.h"
 #include <mutex>
+
+#include <sys/resource.h>
 
 #include <pybind11/embed.h>
 #include <pybind11/eigen.h>
@@ -42,6 +45,7 @@ class LoopClosing;
 class Map;
 class System;
 class MapObject;
+class Optimizer;
 
 class LocalMapping
 {
@@ -89,7 +93,13 @@ public:
     void CreateNewMapObjects();
     void MapObjectCulling();
     void CreateNewObjectsFromDetections();
+    void AssociateObjects3D();
     void ProcessDetectedObjects();
+
+    void UpdateObjectsToMap();
+
+    void SetOptimizer(Optimizer* optimizer);
+
 
     // map<int, int> classId2decoderId;
     map<int, py::object> mmPyOptimizers;
@@ -133,6 +143,8 @@ protected:
     LoopClosing* mpLoopCloser;
     Tracking* mpTracker;
 
+    Optimizer* mpOptimizer;
+
     std::list<KeyFrame*> mlNewKeyFrames;
 
     KeyFrame* mpCurrentKeyFrame;
@@ -162,6 +174,9 @@ protected:
     bool keep_raw_pose;
 
     bool add_depth_pcd_to_map_object;
+    bool use_depth_pcd_to_reconstruct;
+
+    int min_valid_points, min_valid_rays;
 
     int cam_width, cam_height;
 };

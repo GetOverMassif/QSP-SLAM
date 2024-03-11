@@ -47,6 +47,48 @@ class Relation;
 
 typedef std::vector<Relation> Relations;
 
+class Frame;
+
+class Observation {
+public:
+    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
+    int label;
+    Vector4d bbox;   // left-top x1 y1, right-down x2 y2
+    double rate;    // accuracy:   0 - 1.0
+    Frame* pFrame;  // which frame is the observation from
+
+    int instance;  // useless , for debugging
+
+    std::vector<cv::KeyPoint> keyPoints;
+    cv::Mat descripts;
+    cv::Mat gray;
+
+    cv::Mat dtMat;
+    cv::Mat edgesMat;
+};
+typedef std::vector<Observation*> Observations;
+
+class Observation3D {
+public:
+    int label;
+    g2o::ellipsoid* pObj;
+    double rate;    // prob:   0 - 1.0
+    Frame* pFrame;  
+};
+typedef std::vector<Observation3D*> Observation3Ds;
+
+class Measurement
+{
+public:
+    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+    int measure_id;
+    int instance_id;    // associated object instance id
+    Observation ob_2d;
+    Observation3D ob_3d;
+};
+typedef std::vector<Measurement> Measurements;
+
 class Frame
 {
 public:

@@ -85,6 +85,7 @@ void Viewer::Run()
     pangolin::Var<bool> menuShowMapObjects("menu.Show MapObjects",true,true);
     pangolin::Var<bool> menuShowGroundPlane("menu.Show GroundPlane",true,true);
     pangolin::Var<bool> menuShowEllipsoids("menu.Show Ellipsoids", true, true);
+    pangolin::Var<bool> menuShowEllipsoidsObjects("menu.Show Ellipsoids Objects", true, true);
     // pangolin::Var<bool> menuShowPointCloudLists("menu.Show PointCloudLists", true, true);
 
     pangolin::Var<bool> menuShowEllipsoidsObservation("menu.Ellipsoids-Ob", true, true);
@@ -205,12 +206,16 @@ void Viewer::Run()
         double ellipsoidProbThresh = SliderEllipsoidProbThresh;
 
         // draw ellipsoids
+        // 这里绘制了
         if(menuShowEllipsoids)
             mpMapDrawer->drawEllipsoids(ellipsoidProbThresh);
 
-        // draw the result of the single-frame ellipsoid extraction
-        if(menuShowEllipsoidsObservation)
-            mpMapDrawer->drawObservationEllipsoids(ellipsoidProbThresh);
+        if(menuShowEllipsoidsObjects)
+            mpMapDrawer->drawEllipsoidsObjects(ellipsoidProbThresh);
+
+        // // draw the result of the single-frame ellipsoid extraction
+        // if(menuShowEllipsoidsObservation)
+        //     mpMapDrawer->drawObservationEllipsoids(ellipsoidProbThresh);
         
         // mpMapDrawer->drawEllipsoid();
 

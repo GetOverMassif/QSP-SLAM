@@ -79,11 +79,15 @@ LocalMapping::LocalMapping(System *pSys, Map *pMap, ObjectDrawer* pObjectDrawer,
     show_ellipsold_process = Config::Get<int>("LocalMapping.ShowEllipsoldProcess");
     keep_raw_pose = Config::Get<int>("LocalMapping.KeepRawPose");
 
-// Camera.width: 640
-// Camera.height: 480
     cam_width = Config::Get<int>("Camera.width");
     cam_height = Config::Get<int>("Camera.height");
     add_depth_pcd_to_map_object = Config::Get<int>("Tracking.AddDepthPcdToMapObject");
+    use_depth_pcd_to_reconstruct = Config::Get<int>("Tracking.UseDepthPcdToReconstruct");
+
+
+    min_valid_points = Config::Get<int>("LocalMapping.MinValidPoints");
+    min_valid_rays = Config::Get<int>("LocalMapping.MinValidRays");
+
 }
 
 void LocalMapping::SetLoopCloser(LoopClosing* pLoopCloser)
@@ -113,6 +117,7 @@ bool LocalMapping::RunWhileNewKeyFrame()
 
 bool LocalMapping::RunOneTime()
 {
+    cout << "[ LocalMapping::RunOneTime ]" << endl;
     mpMap->ShowMapInfo();
     
     // Tracking will see that Local Mapping is busy
@@ -152,7 +157,6 @@ bool LocalMapping::RunOneTime()
             MapObjectCulling();
             // 创建新的地图物体：
             CreateNewMapObjects();
-            // 
         }
         else if (mpTracker->mSensor == System::MONOCULAR)
         {
@@ -168,6 +172,7 @@ bool LocalMapping::RunOneTime()
                 ProcessDetectedObjects();
             }
         }
+        // KEY: [LocalMapping] 此处进行新物体创建、已检测物体处理和地图更新
         else if (mpTracker->mSensor == System::RGBD)
         {
             if (mpTracker->mState != Tracking::NOT_INITIALIZED)
@@ -178,8 +183,45 @@ bool LocalMapping::RunOneTime()
                     CreateNewObjectsFromDetections();
                 }
 
+                struct rusage rusage;
+                if (getrusage(RUSAGE_SELF, &rusage) == 0) {
+                    std::cout << "\nMemory usage: " << (double)rusage.ru_maxrss / 1024. << " MB" << std::endl;
+                } else {
+                    std::cerr << "Failed to get memory usage." << std::endl;
+                }
+
+                // FIXME: 在此处增加一个合并相近同类物体的操作
+                AssociateObjects3D();
+
+                // FIXME: 对地图物体进行一次全局联合优化（切平面）
+                // mpOptimizer->OptimizeWithDataAssociationUsingMultiplanes(pFrames, mms, objs, camTraj, calib, iRows, iCols);
+
                 // cout << "\n[ ProcessDetectedObjects ]" << std::endl;
+
+                /* FIXME
+                 * 这个函数中增加一个是否需要进行隐式位形优化的判断
+                 * 看看有无必要使用隐式位形优化结果中的Loss对物体点云进行剔除
+                */ 
                 ProcessDetectedObjects();
+
+                // FIXME: 将隐式位形优化的结果更新到地图物体椭球体中
+
+
+
+                if (getrusage(RUSAGE_SELF, &rusage) == 0) {
+                    std::cout << "\nMemory usage: " << (double)rusage.ru_maxrss / 1024. << " MB" << std::endl;
+                } else {
+                    std::cerr << "Failed to get memory usage." << std::endl;
+                }
+
+                // 处理完检测到的物体之后，要把它们更新到地图中
+                UpdateObjectsToMap();
+
+                if (getrusage(RUSAGE_SELF, &rusage) == 0) {
+                    std::cout << "\nMemory usage: " << (double)rusage.ru_maxrss / 1024. << " MB" << std::endl;
+                } else {
+                    std::cerr << "Failed to get memory usage." << std::endl;
+                }
             }
         }
 

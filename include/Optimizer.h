@@ -41,6 +41,36 @@ class KeyFrame;
 typedef map<KeyFrame*,g2o::Sim3,std::less<KeyFrame*>,
     Eigen::aligned_allocator<std::pair<const KeyFrame*, g2o::Sim3> >> KeyFrameAndPose;
 
+class EllipObject
+{
+public:
+    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+    inline double dp_prior(int label)
+    {
+        // 需要知道总共的 label 种类. 然后有新观测则将其翻倍.
+        int total_ob = measurementIDs.size();
+
+        int label_ob;
+        if(classVoter.find(label)!=classVoter.end())
+            label_ob = classVoter[label];
+        else 
+            label_ob = 0;
+        
+        int label_ob_new = label_ob + 1;
+        
+        double dp = double(label_ob_new) / (total_ob+1);
+        return dp;
+    }
+
+    int instance_id;
+    std::map<int,int> classVoter;
+    std::vector<int> measurementIDs;
+    ellipsoid* pEllipsoid;
+};
+typedef std::vector<EllipObject> Objects;
+
+class Relation;    // TOBECHECK: typedef出来的能否用class做声明?
+typedef std::vector<Relation> Relations;
 
 class Optimizer
 {
@@ -76,6 +106,11 @@ public:
 
     void SetGroundPlane(Vector4d& normal);
 
+private:
+    // void UpdateDataAssociation(Measurements& mms, Objects& objs, int model = 0);
+    // // 基于切平面约束完成椭球体的全局优化
+    // void OptimizeWithDataAssociationUsingMultiplanes(std::vector<Frame *> &pFrames, 
+    //                 Measurements& mms, Objects& objs, Trajectory& camTraj, const Matrix3d& calib, int iRows, int iCols);
 
 private:
     std::map<int, std::vector<float>> mMapObjectConstrain;

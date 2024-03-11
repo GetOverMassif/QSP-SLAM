@@ -108,26 +108,48 @@ bool MapDrawer::drawEllipsoids(double prob_thresh) {
             ellipsoids_prob.push_back(pE);
     }
     
-    drawAllEllipsoidsInVector(ellipsoids_prob);
+    drawAllEllipsoidsInVector(ellipsoids_prob, 4);
+
+    return true;
+}
+
+bool MapDrawer::drawEllipsoidsObjects(double prob_thresh){
+    std::vector<ellipsoid*> ellipsoids;
+    // std::vector<ellipsoid*> ellipsoids = mpMap->GetAllEllipsoidsObjects();
+    // int num_origin = ellipsoids.size();
+
+    std::vector<ellipsoid*> ellipsoidsVisual = mpMap->GetAllEllipsoidsObjects();
+    ellipsoids.insert(ellipsoids.end(), ellipsoidsVisual.begin(), ellipsoidsVisual.end());
+
+    // filter those ellipsoids with prob
+    std::vector<ellipsoid*> ellipsoids_prob;
+    for(auto& pE : ellipsoids)
+    {
+        // if(pE->prob > prob_thresh )
+            ellipsoids_prob.push_back(pE);
+    }
+    
+    drawAllEllipsoidsInVector(ellipsoids_prob, 2);
 
     return true;
 }
 
 // 加入了 transform
-void MapDrawer::drawAllEllipsoidsInVector(std::vector<ellipsoid*>& ellipsoids)
+void MapDrawer::drawAllEllipsoidsInVector(std::vector<ellipsoid*>& ellipsoids, int color_mode)
 {
     // std::cout << "[MapDrawer::drawAllEllipsoidsInVector] " \
     //     << "ellipsoids.size() = " << ellipsoids.size() << std::endl;
     
     for( size_t i=0; i<ellipsoids.size(); i++)
     {
-        drawEllipsoidInVector(ellipsoids[i]);
+        drawEllipsoidInVector(ellipsoids[i], color_mode);
     }
     return;
 }
 
-void MapDrawer::drawEllipsoidInVector(ellipsoid* e)
+void MapDrawer::drawEllipsoidInVector(ellipsoid* e, int color_mode)
 {
+    
     SE3Quat TmwSE3 = e->pose.inverse();
 
     if(mbOpenTransform)
@@ -142,14 +164,21 @@ void MapDrawer::drawEllipsoidInVector(ellipsoid* e)
 
     glLineWidth(mCameraLineWidth/3.0);
 
-    if(e->isColorSet()){
+    // glColor3f(0.0f,0.0f,1.0f);
+    if (color_mode == 0)
+        glColor3f(1.0f,0.0f,0.0f);  // BGR
+    else if (color_mode == 1)
+        glColor3f(0.0f,1.0f,0.0f);
+    else if(color_mode == 2)
+        glColor3f(0.0f,0.0f,1.0f);
+    else if(e->isColorSet()){
         Vector4d color = e->getColorWithAlpha();
         // std::cout << "color = " << color.matrix() << std::endl;
         glColor4d(color(0),color(1),color(2),color(3));
     }
     else
         glColor3f(0.0f,0.0f,1.0f);
-
+    
     GLUquadricObj *pObj;
     pObj = gluNewQuadric();
     gluQuadricDrawStyle(pObj, GLU_LINE);
@@ -179,7 +208,7 @@ bool MapDrawer::drawObservationEllipsoids(double prob_thresh)
             ellipsoids_prob.push_back(pE);
     }
 
-    drawAllEllipsoidsInVector(ellipsoids_prob);
+    drawAllEllipsoidsInVector(ellipsoids_prob, 4);
     return true;
 }
 

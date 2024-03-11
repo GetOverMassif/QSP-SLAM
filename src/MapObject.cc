@@ -220,7 +220,7 @@ void MapObject::SetObjectPoseSim3(const Eigen::Matrix4f &Two)
     SE3Two.topLeftCorner<3, 3>() = Rwo;
     SE3Two.topRightCorner<3, 1>() = two;
     SE3Tow = SE3Two.inverse();
-    cout << "SE3Two = \n" << SE3Two.matrix() << endl;
+    // cout << "SE3Two = \n" << SE3Two.matrix() << endl;
 }
 
 void MapObject::SetObjectPoseSE3(const Eigen::Matrix4f &Two)
@@ -456,16 +456,49 @@ void MapObject::ComputeCuboidPCA(bool updatePose)
     }
 }
 
+g2o::ellipsoid* MapObject::GetEllipsold()
+{
+    unique_lock<mutex> lock(mMutexObject);
+    // TODO: 这里待解开，为何返回未定义的mpEllipsold会报错
+    if (mpEllipsold == NULL) {
+        // cout << "mpEllipsold == NULL" << endl;
+        cout << "This MapObject' mpEllipsold == NULL" << endl;
+        return NULL;
+    }
+    else{
+        return mpEllipsold;
+    }
+    // cout << "MapObject::GetEllipsold, Object_id = " << mnId << endl;
+    // cout << "In MapObject, mpEllipsold->prob = " << mpEllipsold->prob << endl;
+    // auto prob = mpEllipsold->prob;
+    // return mpEllipsold;
+}
+
 void MapObject::SetPoseByEllipsold(g2o::ellipsoid* e)
 {
-    mpEllipsold = e;
+    Eigen::Matrix4f Two;
+
+    {
+    // 这里遇到了一个死锁的问题
+    unique_lock<mutex> lock(mMutexObject);
+    
+    // cout << "In SetPoseByEllipsold, e->prob = " << e->prob << endl;
+    if(mpEllipsold == NULL) {
+        mpEllipsold = new g2o::ellipsoid(*(e));
+        // mpEllipsold = e;
+
+        cout << "mpEllipsold->prob = " << mpEllipsold->prob << endl;
+    }
+    // else  
+    cout << "MapObject::SetPoseByEllipsold, Object_id = " << mnId << endl;
+    cout << "MapObject::SetPoseByEllipsold, mpEllipsold->prob = " << mpEllipsold->prob << endl;
+
     // SE3Quat pose;  // rigid body transformation, object in world coordinate
     // Vector3d scale; // a,b,c : half length of axis x,y,z
 
     // world -> object
-    Eigen::Matrix4f Two = Converter::toMatrix4f(e->pose);
-
-    cout << "Ellipsold->pose, Two = \n" << Two.matrix() << endl;
+    Two = Converter::toMatrix4f(e->pose);
+    // cout << "Ellipsold->pose, Two = \n" << Two.matrix() << endl;
 
     Vector3d& scale = e->scale;
     float s = scale.norm() * 2;
@@ -484,14 +517,9 @@ void MapObject::SetPoseByEllipsold(g2o::ellipsoid* e)
     h = e->scale(2) * 2;
     l = e->scale(0) * 2;
 
-    // w = 0.4;  
-    // h = 0.8;
-    // l = 1.6;
-
     // std::cout << "Setting scale = " << e->scale.transpose().matrix() << std::endl;
-
     // cout << "in setPoseByEllipsold: Two = \n" << Two.matrix() << endl;
-
+    }
     SetObjectPoseSim3(Two); // Two
 }
 
@@ -503,12 +531,12 @@ bool MapObject::AddDepthPointCloudFromObjectDetection(ObjectDetection* det)
     // std::cout << "mnId = " << mnId << std::endl;
     
     if (pcd_ptr == nullptr) {
-        std::cout << "pcd_ptr = nullptr" << std::endl;
+        // std::cout << "pcd_ptr = nullptr" << std::endl;
         pcd_ptr = pcl::PointCloud<PointType>::Ptr(new pcl::PointCloud<PointType>);
         *pcd_ptr = *(det->pcd_ptr);
     }
     else{
-        std::cout << "Merging .. " << std::endl;
+        // std::cout << "Merging .. " << std::endl;
         pcl::PointCloud<PointType>::Ptr mergedCloud(new pcl::PointCloud<PointType>);
         pcl::concatenate(*(det->pcd_ptr), *pcd_ptr, *mergedCloud);
         pcd_ptr->clear();
@@ -517,7 +545,7 @@ bool MapObject::AddDepthPointCloudFromObjectDetection(ObjectDetection* det)
     }
     // 打印合并后的点云的大小
     // std::cout << "Merged Cloud Size: " << pcd_ptr->size() << std::endl;
-    std::cout << "mnId = " << mnId << ", Merged Cloud Size: " << std::endl;
+    // std::cout << "mnId = " << mnId << ", Merged Cloud Size: " << std::endl;
 
     mPoints = std::make_shared<PointCloud>(pclXYZToQuadricPointCloud(pcd_ptr));
 

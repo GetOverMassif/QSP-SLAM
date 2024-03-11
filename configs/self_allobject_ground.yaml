@@ -5,6 +5,17 @@ CreateSingleObject: 0
 MinimumMatchToAssociate: 10
 Tracking.ShowEllipsoldProcess: 0
 LocalMapping.ShowEllipsoldProcess: 0
+LocalMapping.KeepRawPose: 0
+Tracking.AddSuffixToPcd: 0
+Tracking.AssociateObjectWithEllipsold: 1
+Tracking.AssociateDebug: 0
+Tracking.AddDepthPcdToMapObject: 1
+Tracking.UseDepthPcdToReconstruct: 1
+
+LocalMapping.MinValidPoints: 50
+LocalMapping.MinValidRays: 1
+
+Tracking.AssociateIoUThresold: 0.52
 
 Tracking.MinimumPtNumToJudgeGood: 5  # default 20
 
@@ -136,7 +147,7 @@ Objects.maskErrosion: 5
 
 
 System.UseEllipsoldPoseForDSP.Open: 1
-Running.skip_num: 5
+Running.skip_num: 2
 Running.total_ratio: 1.0
 
 flip_sample_num: 4

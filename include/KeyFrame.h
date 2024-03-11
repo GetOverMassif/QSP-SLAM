@@ -200,8 +200,9 @@ public:
     // For depth ellipsoid extraction.
     // todo: mpLocalObjects may need a mutex?
     bool mbHaveLocalObject;
-    std::vector<g2o::ellipsoid*> mpLocalObjectsLocal; // local 3d ellipsoid
-    std::vector<g2o::ellipsoid*> mpLocalObjectsGlobal; // local 3d ellipsoid
+    std::vector<g2o::ellipsoid*> mpLocalEllipsolds; // local 3d ellipsoid
+
+    std::vector<g2o::ellipsoid*> mpGlobalEllipsolds; // global 3d ellipsoid
 
     // Variables used in object-based graph optimization
     int nObj;
@@ -216,6 +217,8 @@ public:
     void EraseMapObjectMatch(const size_t &idx);
     void EraseMapObjectMatch(MapObject *pMO);
     void ReplaceMapObjectMatch(const size_t &idx, MapObject* pMO);
+
+    std::vector<g2o::ellipsoid*> GetEllipsoldsGlobal();
 
     // The following variables need to be accessed trough a mutex to be thread safe.
 protected:

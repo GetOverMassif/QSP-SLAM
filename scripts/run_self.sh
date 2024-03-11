@@ -14,17 +14,17 @@
 # dishes # configs/tum_fr2_dishes.yaml \
 
 
-./qsp_slam_rgbd \
-Vocabulary/ORBvoc.bin \
-configs/self_allobject_circle.yaml \
-/media/lj/TOSHIBA/dataset/FromZHJD/circle \
-/media/lj/TOSHIBA/dataset/FromZHJD/circle/associate.txt \
-map/self/circle
-
-
 # ./qsp_slam_rgbd \
 # Vocabulary/ORBvoc.bin \
-# configs/self_allobject_ground.yaml \
-# /media/lj/TOSHIBA/dataset/MySimDataset/GroundObjects \
-# /media/lj/TOSHIBA/dataset/MySimDataset/GroundObjects/associate.txt \
-# map/self/GroundObjects
+# configs/self_allobject_circle.yaml \
+# /media/lj/TOSHIBA/dataset/FromZHJD/circle \
+# /media/lj/TOSHIBA/dataset/FromZHJD/circle/associate.txt \
+# map/self/circle
+
+
+./qsp_slam_rgbd \
+Vocabulary/ORBvoc.bin \
+configs/self_allobject_ground.yaml \
+/media/lj/TOSHIBA/dataset/MySimDataset/GroundObjects \
+/media/lj/TOSHIBA/dataset/MySimDataset/GroundObjects/associate.txt \
+map/self/GroundObjects
