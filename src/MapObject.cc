@@ -54,7 +54,9 @@ MapObject::MapObject(const Eigen::Matrix4f &T, const Eigen::Vector<float, 64> &v
     vShapeCode = vCode;
     velocity = Eigen::Vector3f::Zero();
     mnId = nNextId++;
-    findGoodOrientation=false;
+    findGoodOrientation = false;
+    mbValidEllipsoldFlag = false;
+    mbValidPointCloudFlag = false;
     label = class_id;
 }
 
@@ -71,7 +73,11 @@ MapObject::MapObject(KeyFrame *pRefKF, Map *pMap, int class_id) :
 
     vShapeCode = Eigen::Vector<float, 64>::Zero();
     findGoodOrientation = false;
+    mbValidEllipsoldFlag = false;
+    mbValidPointCloudFlag = false;
     label = class_id;
+    // hasSetEllipsold = false;
+
 }
 
 void MapObject::AddObservation(KeyFrame *pKF, int idx)
@@ -145,6 +151,18 @@ bool MapObject::isBad()
 {
     unique_lock<mutex> lock(mMutexObject);
     return mbBad;
+}
+
+bool MapObject::hasValidEllipsold()
+{
+    unique_lock<mutex> lock(mMutexObject);
+    return mbValidEllipsoldFlag;
+}
+
+bool MapObject::hasValidPointCloud()
+{
+    unique_lock<mutex> lock(mMutexObject);
+    return mbValidPointCloudFlag;
 }
 
 int MapObject::GetIndexInKeyFrame(KeyFrame *pKF)
@@ -462,7 +480,7 @@ g2o::ellipsoid* MapObject::GetEllipsold()
     // TODO: 这里待解开，为何返回未定义的mpEllipsold会报错
     if (mpEllipsold == NULL) {
         // cout << "mpEllipsold == NULL" << endl;
-        cout << "This MapObject' mpEllipsold == NULL" << endl;
+        // cout << "This MapObject' mpEllipsold == NULL" << endl;
         return NULL;
     }
     else{
@@ -479,16 +497,25 @@ void MapObject::SetPoseByEllipsold(g2o::ellipsoid* e)
     Eigen::Matrix4f Two;
 
     {
-    // 这里遇到了一个死锁的问题
-    unique_lock<mutex> lock(mMutexObject);
+
     
     // cout << "In SetPoseByEllipsold, e->prob = " << e->prob << endl;
     if(mpEllipsold == NULL) {
-        mpEllipsold = new g2o::ellipsoid(*(e));
+        {
+            // 这里遇到了一个死锁的问题
+            unique_lock<mutex> lock(mMutexObject);
+            mpEllipsold = new g2o::ellipsoid(*(e));
+        }
+        
         // mpEllipsold = e;
-
+        // this->SetBadFlag();
         cout << "mpEllipsold->prob = " << mpEllipsold->prob << endl;
+        
     }
+    // 这里遇到了一个死锁的问题
+    unique_lock<mutex> lock(mMutexObject);
+
+    mbValidEllipsoldFlag = true;
     // else  
     cout << "MapObject::SetPoseByEllipsold, Object_id = " << mnId << endl;
     cout << "MapObject::SetPoseByEllipsold, mpEllipsold->prob = " << mpEllipsold->prob << endl;
@@ -513,9 +540,9 @@ void MapObject::SetPoseByEllipsold(g2o::ellipsoid* e)
     Two.topLeftCorner(3, 3) = 0.40 * s * Two.topLeftCorner(3, 3);
 
 
-    w = e->scale(1) * 2;
-    h = e->scale(2) * 2;
-    l = e->scale(0) * 2;
+    w = e->scale(1) * 2;  // x
+    h = e->scale(2) * 2;  // y
+    l = e->scale(0) * 2;  // z
 
     // std::cout << "Setting scale = " << e->scale.transpose().matrix() << std::endl;
     // cout << "in setPoseByEllipsold: Two = \n" << Two.matrix() << endl;

@@ -92,6 +92,7 @@ void LocalMapping::MapObjectCulling()
     }
 }
 
+// KEY：这里有进行距离上的判断
 void LocalMapping::GetNewObservations()
 {
     PyThreadStateLock PyThreadLock;
@@ -113,8 +114,6 @@ void LocalMapping::GetNewObservations()
         auto pMO = mvpAssociatedObjects[i];
         if (pMO)
         {
-            
-
             // Tco obtained by transforming Two to camera frame
             Eigen::Matrix4f iniSE3Tco = Tcw * pMO->GetPoseSE3();
             g2o::SE3Quat Tco = Converter::toSE3Quat(iniSE3Tco);
@@ -293,17 +292,15 @@ void LocalMapping::CreateNewMapObjects()
  */
 void LocalMapping::CreateNewObjectsFromDetections()
 {
-
     /*这一帧中进行新物体的创建*/
 
     cout << "\n[ LocalMapping - CreateNewObjectsFromDetections ]" << endl;
 
     // Step 1: 获取当前帧的旋转、平移和物体检测
-    cv::Mat Rcw = mpCurrentKeyFrame->GetRotation();
-    cv::Mat tcw = mpCurrentKeyFrame->GetTranslation();
+    // cv::Mat Rcw = mpCurrentKeyFrame->GetRotation();
+    // cv::Mat tcw = mpCurrentKeyFrame->GetTranslation();
     auto mvpObjectDetections = mpCurrentKeyFrame->GetObjectDetections();
-
-    std::cout << " => " << "KF" << mpCurrentKeyFrame->mnId << ", mvpObjectDetections.size() = " << mvpObjectDetections.size() << std::endl;
+    // std::cout << " => " << "KF" << mpCurrentKeyFrame->mnId << ", mvpObjectDetections.size() = " << mvpObjectDetections.size() << std::endl;
 
     // Step 2: 遍历检测
     // Create new objects first, otherwise data association might fail
@@ -311,14 +308,11 @@ void LocalMapping::CreateNewObjectsFromDetections()
     {
         std::cout << "\n=> det_i : " << det_i << std::endl;
         // Step 2.1: 如果该检测如果已经与物体关联/关键点过少，则continue
-
         auto det = mvpObjectDetections[det_i];
-
         int class_id = det->label;
 
         // If the detection is a new object, create a new map object.
         // todo: 这里原本根据点云数量进行判断是否创建物体
-
 
         if (!det->isNew) {
             std::cout << "continue because !det->isNew" << std::endl;
@@ -337,7 +331,6 @@ void LocalMapping::CreateNewObjectsFromDetections()
 
         // New add
         det->isNew = false;
-
         auto mvpMapPoints = mpCurrentKeyFrame->GetMapPointMatches();
         int n_valid_points = 0;
         for (int k_i : det->GetFeaturePoints())
@@ -362,11 +355,6 @@ void LocalMapping::CreateNewObjectsFromDetections()
             return;  // for mono sequences, we only focus on the single object in the middle
         }
     }
-}
-
-void LocalMapping::AssociateObjects3D()
-{
-    // for 
 }
 
 
@@ -398,6 +386,8 @@ void LocalMapping::ProcessDetectedObjects()
         // key = getchar();
 
         auto det = mvpObjectDetections[det_i];
+        MapObject *pMO = mvpAssociatedObjects[det_i];
+        
 
         // If the detection is associated with an existing map object, we consider 2 different situations:
         // 1. 物体已经被重建： 更新观测
@@ -448,8 +438,6 @@ void LocalMapping::ProcessDetectedObjects()
             continue;
         }
 
-        MapObject *pMO = mvpAssociatedObjects[det_i];
-
         if (!pMO) {
             std::cout << "  Conitinue because !pMO" << std::endl;
             continue;
@@ -497,18 +485,25 @@ void LocalMapping::ProcessDetectedObjects()
          *       
          */
         
+
         // FIXME: 这里可以选择，在使用椭球体模式下，如果没有成功估计椭球体，就跳过物体优化
         if (numKFsPassedSinceInit < 50 && !pMO->reconstructed) {
-            if (!use_ellipsold_pose_for_shape_optimization || \
-                mvpGlobalEllipsolds[det_i] == NULL) {
+            if (!use_ellipsold_pose_for_shape_optimization) {
                 std::cout << "ComputeCuboidPCA" << std::endl;
                 pMO->ComputeCuboidPCA(numKFsPassedSinceInit < 15);
             }
             else{
-                // Method 2: 使用来自椭球体的位姿信息
-                std::cout << "SetPoseByEllipsold" << std::endl;
-                pMO->SetPoseByEllipsold(mvpGlobalEllipsolds[det_i]);
+                if (mvpGlobalEllipsolds[det_i] == NULL) {
+                    cout << "mvpGlobalEllipsolds[" << det_i << "] == NULL" << endl;
+                    pMO->SetBadFlag();
+                }
+                else{
+                    // Method 2: 使用来自椭球体的位姿信息
+                    std::cout << "SetPoseByEllipsold" << std::endl;
+                    pMO->SetPoseByEllipsold(mvpGlobalEllipsolds[det_i]);
+                }
             }
+
         }
         else { // when we have relative good object shape
             std::cout << "RemoveOutliersModel" << std::endl;
@@ -836,7 +831,6 @@ void LocalMapping::ProcessDetectedObjects()
 
             auto pyMesh = mesh_extracter_ptr->attr("extract_mesh_from_code")(code);
 
-
             pMO->vertices = pyMesh.attr("vertices").cast<Eigen::MatrixXf>();
             pMO->faces = pyMesh.attr("faces").cast<Eigen::MatrixXi>();
             pMO->reconstructed = true;
@@ -869,6 +863,8 @@ void LocalMapping::ProcessDetectedObjects()
         cv::destroyWindow("Image with Bbox");
     }
 
+
+    
     // if (show_ellipsold_process && mvpObjectDetections.size()){
     //     cv::destroyWindow("Image with Bbox");
     // }
@@ -883,10 +879,13 @@ void LocalMapping::UpdateObjectsToMap()
     mpMap->ClearEllipsoidsObjects();
     cout << "ClearEllipsoidsObjects Finished" << endl;
     for (auto &pMO: mapObjects){
+        if (pMO->isBad()) {
+            continue;
+        }
         // FIXME：这里添加了一个没有初始化的ellipsold导致显示错误，暂时通过判断e的概率小于0.001
         auto e = pMO->GetEllipsold();
         if (e == NULL) {
-            cout << "continue bacause e->prob < 1e-2" << endl;
+            // cout << "continue bacause e->prob < 1e-2" << endl;
             continue;
         }
         mpMap->addEllipsoidObjects(e);
@@ -896,6 +895,68 @@ void LocalMapping::UpdateObjectsToMap()
 void LocalMapping::SetOptimizer(Optimizer* optimizer)
 {
     mpOptimizer = optimizer;
+}
+
+void LocalMapping::AssociateObjects3D()
+{
+    cout << "AssociateObjects3D" << endl;
+    auto allMapObjects = mpMap->GetAllMapObjects();
+    int obj_num = allMapObjects.size();
+
+    for (int i = 0; i < obj_num-1; i++) {
+        for (int j = obj_num - 1; j > i; j--) {
+            // FIXME: 这里只能暂且不考虑同一个物体被检测出不同类别的情况了，根据情况考虑是否只对上次新添加的物体进行处理
+            // if (same_class && close && others), 
+            //  merge obj_j into obj_i, set obj_j bad
+            auto pMO_i = allMapObjects[i], pMO_j = allMapObjects[j];
+            if (!pMO_i->hasValidEllipsold() || !pMO_j->hasValidEllipsold()) {
+                continue;
+            }
+            bool c0 = (pMO_i->label == pMO_j->label);
+            auto SE3Two_i = pMO_i->GetPoseSE3();
+            auto SE3Two_j = pMO_j->GetPoseSE3();
+
+            auto scale_i = pMO_i->GetEllipsold()->scale; // 长，宽，高
+            auto scale_j = pMO_j->GetEllipsold()->scale;
+
+            float dist_limit = scale_i.head<2>().norm() + scale_j.head<2>().norm();
+
+            // TODO：这个距离是在世界坐标系中的，但是世界坐标系并不与地面对齐
+            Eigen::Vector3f dist3D = SE3Two_i.topRightCorner<3, 1>() - SE3Two_j.topRightCorner<3, 1>();
+            float dist3D_norm = dist3D.norm();
+
+            // FIXME: 这里的0.5有待改成配置文件中进行设置
+            bool c1 = (dist3D_norm < dist_filt_param * dist_limit);
+            // if (c0 && c1) {
+            if (c1) {
+                // 这里应该把 pMO_j 合并到 pMO_i 中
+                cout << "MergeMapObject " << endl;
+                MergeMapObject(pMO_i, pMO_j);
+            }
+        }
+    }
+}
+
+void LocalMapping::MergeMapObject(MapObject* pMO_i, MapObject* pMO_j)
+{   
+    // TODO：这里可能需要同时获取到两个物体的锁，或者转移到MapObject的函数中
+    // 需要考虑如果两个物体的尺寸差异很大怎么办
+
+    // 点云合并
+
+
+    // 观测合并: 需要考虑如果两个物体都在某同一关键帧有观测怎么办
+    // auto objs_i = pMO_i->GetObservations();
+    // auto objs_j = pMO_j->GetObservations();
+
+    // for 
+
+    // 椭球体合并
+
+    // 合并完之后的隐式编码应该如何处理
+
+    // 设置 pMO_j 为 bad
+    pMO_j->SetBadFlag();
 }
 
 }

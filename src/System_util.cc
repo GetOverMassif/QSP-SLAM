@@ -130,7 +130,7 @@ void System::SaveEntireMap(const string &dir) {
     auto mvpMapObjects = mpMap->GetAllMapObjects();
     sort(mvpMapObjects.begin(), mvpMapObjects.end(), MapObject::lId);
 
-    f_obj << "mnId" << '\r' << "Two(3*4)" << "\r" << "Shape_code(64)";
+    // f_obj << "mnId" << ', ' << ",class" << ",Two(3*4)" << ", " << "Shape_code(64)" << endl;
 
     for (MapObject *pMO : mvpMapObjects) {
         if (!pMO)
@@ -142,11 +142,11 @@ void System::SaveEntireMap(const string &dir) {
         if (pMO->isDynamic())
             continue;
 
-        f_obj << pMO->mnId << " ";
+        f_obj << pMO->mnId << " " << pMO->label << "" << endl;
         auto Two = pMO->GetPoseSim3();
         f_obj << setprecision(9) << Two(0, 0) << " " << Two(0, 1) << " " << Two(0, 2) << " " << Two(0, 3) << " " <<
               Two(1, 0) << " " << Two(1, 1) << " " << Two(1, 2) << " " << Two(1, 3) << " " <<
-              Two(2, 0) << " " << Two(2, 1) << " " << Two(2, 2) << " " << Two(2, 3) << " ";
+              Two(2, 0) << " " << Two(2, 1) << " " << Two(2, 2) << " " << Two(2, 3) << " "  << endl;
         f_obj << setprecision(9) << pMO->GetShapeCode().transpose() << endl;
     }
     f_obj.close();

@@ -84,6 +84,8 @@ LocalMapping::LocalMapping(System *pSys, Map *pMap, ObjectDrawer* pObjectDrawer,
     add_depth_pcd_to_map_object = Config::Get<int>("Tracking.AddDepthPcdToMapObject");
     use_depth_pcd_to_reconstruct = Config::Get<int>("Tracking.UseDepthPcdToReconstruct");
 
+    dist_filt_param = Config::Get<double>("LocalMapping.DistFiltParam");
+
 
     min_valid_points = Config::Get<int>("LocalMapping.MinValidPoints");
     min_valid_rays = Config::Get<int>("LocalMapping.MinValidRays");
@@ -173,6 +175,13 @@ bool LocalMapping::RunOneTime()
             }
         }
         // KEY: [LocalMapping] 此处进行新物体创建、已检测物体处理和地图更新
+
+        /**
+         * 首先，从观测中创建新物体: 检查观测是否正常，创建物体注册到帧/地图中，把相应的地图点加入到物体上
+         * 然后，处理已经检测到的物体，
+         * 进行3D层面的关联和剔除：
+         * 最后，对这些结果进行
+        */
         else if (mpTracker->mSensor == System::RGBD)
         {
             if (mpTracker->mState != Tracking::NOT_INITIALIZED)
@@ -183,45 +192,31 @@ bool LocalMapping::RunOneTime()
                     CreateNewObjectsFromDetections();
                 }
 
-                struct rusage rusage;
-                if (getrusage(RUSAGE_SELF, &rusage) == 0) {
-                    std::cout << "\nMemory usage: " << (double)rusage.ru_maxrss / 1024. << " MB" << std::endl;
-                } else {
-                    std::cerr << "Failed to get memory usage." << std::endl;
-                }
+                // printMemoryUsage();
+                /* FIXME，在处理已经检测到的物体时，需要考虑是否增加的新的观测
+                 * 这个函数中增加一个是否需要进行隐式位形优化的判断
+                 * 看看有无必要使用隐式位形优化结果中的Loss对物体点云进行剔除
+                */
+                ProcessDetectedObjects();
 
                 // FIXME: 在此处增加一个合并相近同类物体的操作
                 AssociateObjects3D();
 
+
                 // FIXME: 对地图物体进行一次全局联合优化（切平面）
+
                 // mpOptimizer->OptimizeWithDataAssociationUsingMultiplanes(pFrames, mms, objs, camTraj, calib, iRows, iCols);
 
                 // cout << "\n[ ProcessDetectedObjects ]" << std::endl;
 
-                /* FIXME
-                 * 这个函数中增加一个是否需要进行隐式位形优化的判断
-                 * 看看有无必要使用隐式位形优化结果中的Loss对物体点云进行剔除
-                */ 
-                ProcessDetectedObjects();
-
                 // FIXME: 将隐式位形优化的结果更新到地图物体椭球体中
 
-
-
-                if (getrusage(RUSAGE_SELF, &rusage) == 0) {
-                    std::cout << "\nMemory usage: " << (double)rusage.ru_maxrss / 1024. << " MB" << std::endl;
-                } else {
-                    std::cerr << "Failed to get memory usage." << std::endl;
-                }
+                // printMemoryUsage();
 
                 // 处理完检测到的物体之后，要把它们更新到地图中
                 UpdateObjectsToMap();
 
-                if (getrusage(RUSAGE_SELF, &rusage) == 0) {
-                    std::cout << "\nMemory usage: " << (double)rusage.ru_maxrss / 1024. << " MB" << std::endl;
-                } else {
-                    std::cerr << "Failed to get memory usage." << std::endl;
-                }
+                // printMemoryUsage();
             }
         }
 

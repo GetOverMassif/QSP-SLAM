@@ -1244,13 +1244,13 @@ void Tracking::CreateNewKeyFrame()
         std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
         mvpFrames.push_back(&mCurrentFrame);
 
-        printMemoryUsage();
+        // printMemoryUsage();
 
         // Step1: 首先进行地面检测
         // [1] process MHPlanes estimation
         TaskGroundPlane();
 
-        printMemoryUsage();
+        // printMemoryUsage();
 
         if (miGroundPlaneState != 2) {
             std::cout << "Ground is not detected yet." << std::endl;
@@ -1262,7 +1262,7 @@ void Tracking::CreateNewKeyFrame()
             GetObjectDetectionsRGBD(pKF);
         }
 
-        printMemoryUsage();
+        // printMemoryUsage();
 
         // 将这些结果也设置到对应的普通帧Frame中（这里是为了适用椭球体SLAM需求，有待未来优化）
         mCurrentFrame.SetObservations(pKF);
@@ -1278,7 +1278,7 @@ void Tracking::CreateNewKeyFrame()
         std::cout << " \n[ UpdateObjectObservation ] " << std::endl;
         UpdateObjectObservation(&mCurrentFrame, pKF, withAssociation);
 
-        printMemoryUsage();
+        // printMemoryUsage();
 
         // if(mbDynamicOpenOptimization){
         //     NonparamOptimization(); // Optimize data associations,objects,landmarks.        
@@ -1295,11 +1295,11 @@ void Tracking::CreateNewKeyFrame()
             AssociateObjectsByProjection(pKF);
         }
 
-        printMemoryUsage();
+        // printMemoryUsage();
 
         ManageMemory();
 
-        printMemoryUsage();
+        // printMemoryUsage();
 
         std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
 

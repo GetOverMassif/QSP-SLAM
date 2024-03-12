@@ -1,6 +1,5 @@
 %YAML:1.0
 
-
 CreateSingleObject: 0
 MinimumMatchToAssociate: 10
 Tracking.ShowEllipsoldProcess: 0
@@ -18,6 +17,8 @@ LocalMapping.MinValidRays: 1
 Tracking.AssociateIoUThresold: 0.52
 
 Tracking.MinimumPtNumToJudgeGood: 5  # default 20
+
+LocalMapping.DistFiltParam: 0.8
 
 #--------------------------------------------------------------------------------------------
 # yolo

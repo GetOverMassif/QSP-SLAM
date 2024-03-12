@@ -779,6 +779,8 @@ void Optimizer::SetGroundPlane(Vector4d& normal){
 *   [新版本] 基于切平面完成椭球体的全局优化!
 *   10-4 Ours 论文发表使用的版本。
 */
+
+
 // void Optimizer::OptimizeWithDataAssociationUsingMultiplanes(std::vector<Frame *> &pFrames,
 //                 Measurements& mms, Objects& objs, Trajectory& camTraj, const Matrix3d& calib, int iRows, int iCols) {
 //     // ************* 系统调试 ***************

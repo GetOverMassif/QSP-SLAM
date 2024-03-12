@@ -108,6 +108,7 @@ public:
 
 private:
     // void UpdateDataAssociation(Measurements& mms, Objects& objs, int model = 0);
+    
     // // 基于切平面约束完成椭球体的全局优化
     // void OptimizeWithDataAssociationUsingMultiplanes(std::vector<Frame *> &pFrames, 
     //                 Measurements& mms, Objects& objs, Trajectory& camTraj, const Matrix3d& calib, int iRows, int iCols);
@@ -118,13 +119,12 @@ private:
     bool mbGroundPlaneSet;
     Vector4d mGroundPlaneNormal;
 
-
     // bool mbRelationLoaded;
     // Relations mRelations;
     // SupportingPlanes mSupportingPlanes;
 
     // // 保存优化结果
-    // Objects mObjects; 
+    // Objects mObjects;
     // Measurements mMeasurements;
 };
 

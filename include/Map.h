@@ -42,7 +42,6 @@ using namespace g2o;
 
 namespace ORB_SLAM2
 {
-
 class MapPoint;
 class KeyFrame;
 class MapObject;

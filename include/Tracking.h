@@ -58,7 +58,6 @@
 #include <mutex>
 #include <ctime>
 
-#include <sys/resource.h>
 
 namespace ORB_SLAM2
 {

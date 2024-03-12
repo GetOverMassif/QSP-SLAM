@@ -30,6 +30,8 @@
 #include "System.h"
 #include <mutex>
 
+#include "utils/file_operate.h"
+
 #include <sys/resource.h>
 
 #include <pybind11/embed.h>
@@ -97,6 +99,9 @@ public:
     void ProcessDetectedObjects();
 
     void UpdateObjectsToMap();
+    
+    // Merge pMO_j into pMO_i
+    void MergeMapObject(MapObject* pMO_i, MapObject* pMO_j);
 
     void SetOptimizer(Optimizer* optimizer);
 
@@ -175,6 +180,8 @@ protected:
 
     bool add_depth_pcd_to_map_object;
     bool use_depth_pcd_to_reconstruct;
+
+    double dist_filt_param;
 
     int min_valid_points, min_valid_rays;
 

@@ -52,6 +52,10 @@ public:
     void EraseObservation(KeyFrame *pKF);
     void SetBadFlag();
     bool isBad();
+
+    bool hasValidEllipsold();
+    bool hasValidPointCloud();
+
     void SetVelocity(const Eigen::Vector3f &v);
     void Replace(MapObject *pMO);
     bool IsInKeyFrame(KeyFrame *pKF);
@@ -97,7 +101,7 @@ public:
     KeyFrame *mpRefKF;
     KeyFrame *mpNewestKF;
     long unsigned int mnBALocalForKF;
-    long unsigned int mnAssoRefID;  // 
+    long unsigned int mnAssoRefID;
     long unsigned int mnFirstKFid;
 
     // variables used for loop closing
@@ -142,6 +146,9 @@ public:
     double outlierThreDis = 1.0;
 
     bool findGoodOrientation;
+
+    bool mbValidEllipsoldFlag;
+    bool mbValidPointCloudFlag;
 
     g2o::ellipsoid* mpEllipsold = NULL;
 

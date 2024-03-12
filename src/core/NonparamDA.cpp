@@ -93,7 +93,7 @@ void InitMeasurements(Measurements &mms, std::vector<Frame *> &pFrames)
 
 // 注意：本函数也会修改measurements
 // 1) 设定关联的物体id
-// 2) 更新measure_id 为全局索引 ( 原本是帧内的索引　)
+// 2) 更新measure_id 为全局索引 ( 原本是帧内的索引 )
 void InitObjectsWithMeasurements(Measurements &mms, Objects &objectObservations)
 {
     Objects objs;
@@ -323,6 +323,7 @@ void UpdateObjectInformation(Objects& objs)
     }
 }
 
+// 可视化优化的轨迹
 void VisualizeOptimizedTraj(Trajectory &camTraj, Map *pMap)
 {
     pMap->clearTrajectoryWithName("OptimizedTrajectory");
@@ -331,6 +332,7 @@ void VisualizeOptimizedTraj(Trajectory &camTraj, Map *pMap)
     }
 }
 
+// 初始化关系
 void InitRelations(Relations &rls,  std::vector<Frame *> &pFrames)
 {
     Relations rlsOut;
@@ -345,6 +347,7 @@ void InitRelations(Relations &rls,  std::vector<Frame *> &pFrames)
     return;
 }
 
+// 更新关联的(支撑)平面
 void UpdateAssociationPlanes(Relations &rls, SupportingPlanes &spls)
 {
     int rl_num = rls.size();
@@ -394,6 +397,7 @@ void UpdateAssociationPlanes(Relations &rls, SupportingPlanes &spls)
     return;
 }
 
+// 初始化有关联的支撑平面
 void InitSupportingPlanesWithRelations(Relations& rls, SupportingPlanes& spls_)
 {
     SupportingPlanes spls;
@@ -412,6 +416,7 @@ void InitSupportingPlanesWithRelations(Relations& rls, SupportingPlanes& spls_)
     spls_ = spls;
 }
 
+// 输出支撑平面
 void OutputSupportingPlanes(SupportingPlanes &spls)
 {
     ofstream out_obj("./supportingplanes.txt");
@@ -443,7 +448,6 @@ void OutputSupportingPlanes(SupportingPlanes &spls)
     return;
 }
 
-
 // 该函数专门获取平面上支撑的物体
 void GetObjectInstanceOnSupportingPlanes(SupportingPlanes& spls, Relations& rls, Measurements& mms, std::vector<Frame *> &pFrames)
 {
@@ -464,6 +468,7 @@ void GetObjectInstanceOnSupportingPlanes(SupportingPlanes& spls, Relations& rls,
     return;
 }
 
+// 更新高度
 void UpdateHeight(SupportingPlanes& spls, Vector4d& mGroundPlaneNormal)
 {
     g2o::plane pl_gd(mGroundPlaneNormal);
@@ -569,7 +574,6 @@ void UpdateWorldConstrainPlanesForObjects(Objects& objs, Measurements& mms)
     // ************************************************
 }
 
-
 // 该函数参照论文 IROS17, 使用基本的点模型作为物体模型.
 void Optimizer::GlobalObjectGraphOptimizationWithPDAPointModel(std::vector<Frame *> &pFrames, Map *pMap)
 {
@@ -624,6 +628,7 @@ void Optimizer::GlobalObjectGraphOptimizationWithPDAPointModel(std::vector<Frame
     mMeasurements = mms;
 }
 
+
 void StaticOutput(Measurements& mms)
 {
     int count_total = mms.size();
@@ -672,6 +677,7 @@ Eigen::Matrix3d calibRotMatAccordingToGroundPlane(Matrix3d& rotMat, const Vector
 
     return rotMat_calibrated;
 }
+
 
 void AlignObjectsToSupportingPlane(Measurements& mms, Objects& objs, Vector4d& groundplane, Map* pMap)
 {
@@ -907,7 +913,6 @@ double distanceFromPlaneToEllipsoid(g2o::plane& pl, g2o::ellipsoid& e)
 //     {
 //         Vector4d param = vCPlanes[i]->pPlane->param.head(4);
 //         // double error = param.transpose() * Q_star * param;
-
 //         g2o::plane pl(param);
 //         double dis = distanceFromPlaneToEllipsoid(pl, e_ob);
 
@@ -918,11 +923,9 @@ double distanceFromPlaneToEllipsoid(g2o::plane& pl, g2o::ellipsoid& e)
 //         total_plane_error += dis;
 //     }
 //     double average_plane_error = total_plane_error / num;
-
 //     // 误差转概率
 //     double sigma_dis = Config::Get<double>("DataAssociation.PlaneError.DisSigma");    // 1cm
 //     double prob = exp( - 1.0/sigma_dis/sigma_dis/2.0 * average_plane_error * average_plane_error);
-
 //     return prob;
 // }
 
@@ -933,14 +936,10 @@ double distanceFromPlaneToEllipsoid(g2o::plane& pl, g2o::ellipsoid& e)
 //     // Vector9d vec_9dof = e_mea.min_log_error_9dof(e_ob);
 //     // Vector9d inv_sigma; inv_sigma.fill(1);
 //     // Matrix9d info = inv_sigma.asDiagonal();
-
 //     // double chi2 = vec_9dof.dot(info * vec_9dof);    // 卡方统计量..?
-
 //     // 如何将 chi2 转化为概率???????
 //     // return chi2;    // 先tm试试看
-
 //     double prob = e_mea.minus3d(e_ob);
-
 //     return prob;
 // }
 
@@ -1040,6 +1039,7 @@ double chi2cdf_(int degree, double chi)
     return p;
 }
 
+// 椭球体
 double EllipsoidDiffProb(g2o::ellipsoid& e_mea, g2o::ellipsoid& e_ob)
 {
     Vector9d vec_9 = e_mea.min_log_error_9dof(e_ob);

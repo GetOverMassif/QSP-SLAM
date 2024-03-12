@@ -471,7 +471,9 @@ void Tracking::AssociateObjectsByProjection(ORB_SLAM2::KeyFrame *pKF)
                     break;
                 }
             }
+            
             std::cout << "Detection " << d_i << ", class " << label_bbox ;
+            
             if (has_associate) std::cout << ", associated successfully: ";
             else std::cout << " associated failed: ";
             for (auto &iou : iou_stats) {
@@ -542,10 +544,20 @@ void Tracking::AssociateObjectsByProjection(ORB_SLAM2::KeyFrame *pKF)
     }
 }
 
+// KEY: 将一个观测关联到某个物体之后的操作：
+/**
+ * 1. 对关键帧和物体进行分别的设置
+ * 2. （Done）地图点融合
+*/
 int Tracking::associateDetWithObject(ORB_SLAM2::KeyFrame *pKF, MapObject* pMO, int d_i, ObjectDetection* detKF1, vector<MapPoint*>& mvpMapPoints)
 {
+    // 设置该帧的某个观测对应的物体
     pKF->AddMapObject(pMO, d_i);
+    pMO->AddObservation(pKF, d_i);
+
+    // 设置物体所包含的观测
     detKF1->isNew = false;
+
     int associate_object_id = pMO->mnId;
     // pMO
 
