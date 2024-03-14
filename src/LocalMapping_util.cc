@@ -878,17 +878,43 @@ void LocalMapping::UpdateObjectsToMap()
     // 每次都会重新更新一遍地图中的物体椭球体
     mpMap->ClearEllipsoidsObjects();
     cout << "ClearEllipsoidsObjects Finished" << endl;
+    mpMap->DeletePointCloudList("MapObject PointCloud", 0);
+
     for (auto &pMO: mapObjects){
+
+        // if (pMO->isBad()) {
+        //     continue;
+        // }
+
+        // // Default type = 0: replace when exist , 1: add when exist
+        // bool Map::AddPointCloudList(const string &name, PointCloud *pCloud, int type) {
+        
+        // TODO: 下一步考虑如何将所有物体的点云都添加到地图中，并且可以在每个新帧进行更新
+        if (pMO->hasValidPointCloud()){
+            // std::shared_ptr<PointCloud> mPointsPtr = pMO->GetPointCloud();
+            // PointCloud* pPoints = mPointsPtr.get();
+            auto pcl_ptr= pMO->GetPointCloudPCL();
+            auto pPoints = pclXYZToQuadricPointCloudPtr(pcl_ptr);
+            // auto pcd = pMO->GetPointCloud();
+
+            mpMap->AddPointCloudList("MapObject PointCloud", pPoints, 1);
+
+            // int n_valid_points = pPoints->size();
+            cout << "MapObject PointCloud size = " << pPoints->size() << endl;
+        }
+
+
         if (pMO->isBad()) {
             continue;
         }
+
+
+
         // FIXME：这里添加了一个没有初始化的ellipsold导致显示错误，暂时通过判断e的概率小于0.001
         auto e = pMO->GetEllipsold();
-        if (e == NULL) {
-            // cout << "continue bacause e->prob < 1e-2" << endl;
-            continue;
+        if (e != NULL) {
+            mpMap->addEllipsoidObjects(e);
         }
-        mpMap->addEllipsoidObjects(e);
     }
 }
 

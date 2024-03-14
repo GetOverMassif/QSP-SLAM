@@ -94,7 +94,7 @@ bool Map::AddPointCloudList(const string &name, std::vector<pcl::PointCloud<pcl:
     return true;
 }
 
-// Default type = 0
+// Default type = 0: replace when exist , 1: add when exist
 bool Map::AddPointCloudList(const string &name, PointCloud *pCloud, int type) {
     unique_lock<mutex> lock(mMutexMap);
     if (pCloud == NULL) {

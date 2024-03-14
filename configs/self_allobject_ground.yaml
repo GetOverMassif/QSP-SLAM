@@ -255,7 +255,7 @@ Optimizer.Edges.GravityPrior.Scale: 100
 
 
 Optimizer.Edges.2DConstrain.Close: 0
-Optimizer.Edges.3DConstrain.Close: 0
+Optimizer.Edges.3DConstrain.Close: 1
 # ------------------------------
 # Other Parameters
 # ------------------------------

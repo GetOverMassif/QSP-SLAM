@@ -561,6 +561,7 @@ bool MapObject::AddDepthPointCloudFromObjectDetection(ObjectDetection* det)
         // std::cout << "pcd_ptr = nullptr" << std::endl;
         pcd_ptr = pcl::PointCloud<PointType>::Ptr(new pcl::PointCloud<PointType>);
         *pcd_ptr = *(det->pcd_ptr);
+        mbValidPointCloudFlag = true;
     }
     else{
         // std::cout << "Merging .. " << std::endl;
@@ -571,7 +572,7 @@ bool MapObject::AddDepthPointCloudFromObjectDetection(ObjectDetection* det)
         *pcd_ptr = *mergedCloud;
     }
     // 打印合并后的点云的大小
-    // std::cout << "Merged Cloud Size: " << pcd_ptr->size() << std::endl;
+    std::cout << "Merged Cloud Size: " << pcd_ptr->size() << std::endl;
     // std::cout << "mnId = " << mnId << ", Merged Cloud Size: " << std::endl;
 
     mPoints = std::make_shared<PointCloud>(pclXYZToQuadricPointCloud(pcd_ptr));
@@ -584,6 +585,12 @@ std::shared_ptr<PointCloud> MapObject::GetPointCloud()
     unique_lock<mutex> lock(mMutexPointCloud);
     return mPoints;
 }
+
+pcl::PointCloud<PointType>::Ptr MapObject::GetPointCloudPCL()
+{
+    return pcd_ptr;
+}
+
 
 void MapObject::AddMapPoints(MapPoint *pMP)
 {

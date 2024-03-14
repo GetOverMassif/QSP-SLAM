@@ -20,7 +20,7 @@ namespace ORB_SLAM2
 // 提取结果保存为  obj_id -> plane_id 的映射. 以及结构体.
 class Frame;
 
-// 关联关系，包含物体索引、支撑平面索引？、平面索引、
+// 关联关系，包含物体索引、支撑平面索引、平面索引、
 class Relation
 {
 public:

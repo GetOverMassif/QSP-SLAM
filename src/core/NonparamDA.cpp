@@ -771,6 +771,8 @@ void Optimizer::GlobalObjectGraphOptimizationWithPDA(std::vector<Frame *> &pFram
         GetObjectInstanceOnSupportingPlanes(spls, rls, mms, pFrames);
         this->LoadRelations(rls, spls); // 将关系加载到优化器, 在优化时将载入.
 
+        
+
         // 新版本优化: 使用多平面相切约束
         OptimizeWithDataAssociationUsingMultiplanes(pFrames, mms, objs, camTraj, calib, iRows, iCols);
 

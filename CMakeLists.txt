@@ -127,7 +127,7 @@ add_library(${PROJECT_NAME} SHARED
 #     src/core/DataAssociation.cpp
     src/core/BasicEllipsoidEdges.cpp
 #     src/core/NonparamDA.cpp
-#     src/core/SupportingPlane.cpp
+    src/core/SupportingPlane.cpp
     src/core/ConstrainPlane.cpp
 #     src/core/SemanticLabel.cpp
     src/core/PriorInfer.cpp
@@ -186,9 +186,9 @@ add_executable(qsp_slam_rgbd qsp_slam_rgbd.cc)
 target_link_libraries(qsp_slam_rgbd ${PROJECT_NAME})
 
 
-# set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR})
-add_executable(label_tool label_tool.cc)
-target_link_libraries(label_tool ${PROJECT_NAME})
+# # set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR})
+# add_executable(label_tool label_tool.cc)
+# target_link_libraries(label_tool ${PROJECT_NAME})
 
 
 add_executable(pcd2bin src/tools/pcd2bin.cc)

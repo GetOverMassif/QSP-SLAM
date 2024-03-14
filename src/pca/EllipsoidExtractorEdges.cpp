@@ -50,7 +50,7 @@ void GetNearestAndFarthestPointOnEllipsoidToPlane(g2o::plane &pl, g2o::ellipsoid
     // 获得椭球体参数向量形式
     // ax^2+bxy+c^..... = 0;
     Matrix4d Q_star = e_e.generateQuadric();
-    Matrix4d Q = Q_star.inverse();
+    Matrix4d Q = Q_star.inverse();    // 系数矩阵
 
     // 获得系数
     // ax^2+by^2+cz^2+dxy+eyz+fxz+gx+hy+iz+j=0

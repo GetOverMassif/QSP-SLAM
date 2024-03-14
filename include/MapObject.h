@@ -65,6 +65,8 @@ public:
 
     std::shared_ptr<PointCloud> GetPointCloud();
 
+    pcl::PointCloud<PointType>::Ptr GetPointCloudPCL();
+
     void AddMapPoints(MapPoint *pMP);
     void RemoveOutliersSimple();
     void RemoveOutliersModel();

@@ -5,8 +5,10 @@
 #include <vector>
 #include <set>
 
-namespace EllipsoidSLAM
+namespace ORB_SLAM2
 {
+
+class Relation;
 
 class SupportingPlane
 {
@@ -32,6 +34,7 @@ private:
     void refreshInstance();
 
 };
+
 typedef std::vector<SupportingPlane> SupportingPlanes;
 
 }

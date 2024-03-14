@@ -4,7 +4,7 @@
 #include <Eigen/Core>
 using namespace Eigen;
 
-namespace EllipsoidSLAM
+namespace ORB_SLAM2
 {
 int SupportingPlane::total_sup_plane=0;
 

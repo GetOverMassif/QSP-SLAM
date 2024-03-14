@@ -217,7 +217,8 @@ public:
     std::vector<std::size_t> mGrid[FRAME_GRID_COLS][FRAME_GRID_ROWS];
 
 
-    // int frame_seq_id;    // image topic sequence id, fixed
+    int static total_frame;
+    int frame_seq_id;    // image topic sequence id, fixed
 
     cv::Mat frame_img;      // depth img for processing
     cv::Mat rgb_img;        // rgb img for visualization.

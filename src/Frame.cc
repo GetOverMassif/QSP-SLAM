@@ -27,6 +27,7 @@ namespace ORB_SLAM2
 {
 
 long unsigned int Frame::nNextId=0;
+int Frame::total_frame = 0;
 bool Frame::mbInitialComputations=true;
 float Frame::cx, Frame::cy, Frame::fx, Frame::fy, Frame::invfx, Frame::invfy;
 float Frame::mnMinX, Frame::mnMinY, Frame::mnMaxX, Frame::mnMaxY;
@@ -55,6 +56,7 @@ Frame::Frame(const Frame &frame)
 
     if(!frame.mTcw.empty())
         SetPose(frame.mTcw);
+    
 }
 
 
@@ -65,6 +67,7 @@ Frame::Frame(const cv::Mat &imLeft, const cv::Mat &imRight, const double &timeSt
 {
     // Frame ID
     mnId=nNextId++;
+    frame_seq_id = total_frame++;
 
     // Scale Level Info
     mnScaleLevels = mpORBextractorLeft->GetLevels();
@@ -154,6 +157,7 @@ Frame::Frame(const cv::Mat &imGray, const cv::Mat &imDepth, const double &timeSt
 
     // Frame ID
     mnId=nNextId++;
+    frame_seq_id = total_frame++;
 
     // Scale Level Info
     mnScaleLevels = mpORBextractorLeft->GetLevels();
@@ -209,6 +213,7 @@ Frame::Frame(const cv::Mat &imGray, const double &timeStamp, ORBextractor* extra
 {
     // Frame ID
     mnId=nNextId++;
+    frame_seq_id = total_frame++;
 
     // Scale Level Info
     mnScaleLevels = mpORBextractorLeft->GetLevels();

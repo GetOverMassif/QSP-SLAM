@@ -23,7 +23,15 @@
 # include "Thirdparty/g2o/g2o/core/robust_kernel_impl.h"
 # include "Thirdparty/g2o/g2o/solvers/linear_solver_dense.h"
 # include "Thirdparty/g2o/g2o/core/factory.h"
+#include "Thirdparty/g2o/g2o/types/types_seven_dof_expmap.h"
+
 # include "ObjectPoseGraph.h"
+
+
+#include "src/pca/EllipsoidExtractorEdges.h"
+#include "include/core/ConstrainPlane.h"
+// #include "include/core/SupportingPlane.h"
+#include "src/plane/PlaneVertexEdges.h"
 
 namespace ORB_SLAM2
 {
@@ -206,7 +214,7 @@ void Optimizer::JointBundleAdjustment(const vector<KeyFrame *> &vpKFs, const vec
             // Get detections
             auto mvpObjectDetections = pKFi->GetObjectDetections();
 
-            // cout << "Object KF ID: " << pKFi->mnId << endl;
+            // cout << "EllipObject KF ID: " << pKFi->mnId << endl;
             EdgeSE3LieAlgebra *e = new EdgeSE3LieAlgebra();
             e->setVertex(0, optimizer.vertex(pKFi->mnId));
             e->setVertex(1, optimizer.vertex(id));
@@ -562,7 +570,7 @@ void Optimizer::LocalJointBundleAdjustment(KeyFrame *pKF, bool *pbStopFlag, Map 
                 if(!pKFi->isBad())
                 {
                     auto mvpObjectDetections = pKFi->GetObjectDetections();
-                    // cout << "Object KF ID: " << pKFi->mnId << endl;
+                    // cout << "EllipObject KF ID: " << pKFi->mnId << endl;
                     EdgeSE3LieAlgebra* e = new EdgeSE3LieAlgebra();
                     e->setVertex(0, optimizer.vertex(pKFi->mnId));
                     e->setVertex(1, optimizer.vertex(id));
@@ -770,566 +778,764 @@ void Optimizer::LocalJointBundleAdjustment(KeyFrame *pKF, bool *pbStopFlag, Map 
 
 }
 
+/**
+ *   [关系加载]
+ * 将 Relations / SupportingPlanes 加载到图中并返回边的指针数组.
+ * 输入参数：
+*/
+
+// typedef std::vector<SupportingPlane> SupportingPlanes;
+
+void LoadRelationsToGraph(Relations& relations, SupportingPlanes& supportingPlanes, 
+            g2o::SparseOptimizer& graph, std::vector<g2o::VertexSE3Expmap*>& vSE3Vertex, std::vector<g2o::EdgePlaneSE3*>& vEdgePlaneSE3_)
+{
+    double config_plane_weight = Config::ReadValue<double>("DEBUG.PLANE.WEIGHT");
+    cout << " * DEBUG-Plane weight : " << config_plane_weight << endl;
+
+    // 仿造 mms, objs 的加载方式.
+    int spl_num = supportingPlanes.size();
+    std::map<int, g2o::VertexPlane3DOF *> mapPlaneVertices;
+    std::vector<g2o::EdgePlaneSE3*> vEdgePlaneSE3;
+
+    // 遍历支撑平面
+    for(int sp_id=0; sp_id<spl_num; sp_id++ )        
+    {
+        SupportingPlane &spl = supportingPlanes[sp_id];
+        int instance = spl.instance_id;
+        g2o::plane* pCPlane = spl.pPlane;
+
+        // 创建 plane 顶点，设置初始估计，设置不固定，设置顶点，并且使用一个map记录进行优化的平面
+        g2o::VertexPlane3DOF *vPlane = new g2o::VertexPlane3DOF();
+        vPlane->setEstimate(*pCPlane);
+        vPlane->setId(graph.vertices().size());
+        vPlane->setFixed(false);
+
+        graph.addVertex(vPlane);
+        mapPlaneVertices.insert(make_pair(instance, vPlane)); 
+
+        // 开始添加平面的观测
+        std::set<int>& relation_ids = spl.vRelation;
+        for( auto iter=relation_ids.begin(); iter!=relation_ids.end(); iter++ )
+        {
+            int rl_id = *iter;
+            Relation& rl = relations[rl_id];
+            g2o::plane* plane_local = rl.pPlane;
+
+            // 寻找 frame vertex
+            int frame_index = rl.pFrame->frame_seq_id;
+            auto vSE3 = vSE3Vertex[frame_index];
+
+            if( plane_local == NULL ) continue;
+
+            g2o::EdgePlaneSE3* pEdge = new g2o::EdgePlaneSE3;
+            pEdge->setId(graph.edges().size());
+            pEdge->setVertex(0, dynamic_cast<g2o::OptimizableGraph::Vertex *>( vPlane ));
+            pEdge->setVertex(1, dynamic_cast<g2o::OptimizableGraph::Vertex *>( vSE3 ));
+            pEdge->setMeasurement(*plane_local);
+
+            Vector3d inv_sigma;
+            inv_sigma << 1,1,1;
+            inv_sigma = inv_sigma * config_plane_weight;
+            MatrixXd info = inv_sigma.cwiseProduct(inv_sigma).asDiagonal();
+            pEdge->setInformation(info);
+
+            graph.addEdge(pEdge);
+            vEdgePlaneSE3.push_back(pEdge);
+               
+        } // plane的观测: relations 遍历
+    } // supporting planes 遍历
+
+    // 保存输出
+    vEdgePlaneSE3_ = vEdgePlaneSE3;
+    return;
+}
+
 void Optimizer::SetGroundPlane(Vector4d& normal){
     mbGroundPlaneSet = true;
     mGroundPlaneNormal = normal;
 }
 
+const char* GetLabelText_Optimizer(int id)
+{
+    static const char *coco_classes[] = {"person","bicycle","car","motorcycle","airplane","bus","train",
+    "truck","boat","traffic light","fire hydrant","stop sign","parking meter","bench","bird",
+    "cat","dog","horse","sheep","cow","elephant","bear","zebra","giraffe","backpack","umbrella",
+    "handbag","tie","suitcase","frisbee","skis","snowboard","sports ball","kite","baseball bat",
+    "baseball glove","skateboard","surfboard","tennis racket","bottle","wine glass","cup","fork",
+    "knife","spoon","bowl","banana","apple","sandwich","orange","broccoli","carrot","hot dog",
+    "pizza","donut","cake","chair","couch","potted plant","bed","dining table","toilet","monitor",
+    "laptop","mouse","remote","keyboard","cell phone","microwave","oven","toaster","sink",
+    "refrigerator","book","clock","vase","scissors","teddy bear","hair drier","toothbrush"};
+    if(id >= 0)
+        return coco_classes[id];
+    else 
+        return "Unknown";
+}
+
+// TODO: 根据语义标签，若该物体是对称的，则赋予对称性质. 
+// 目前该性质仅仅用于：
+// 1) 判断旋转约束是否生效 
+// 2) evo中是否评估其与gt的旋转error.
+bool IsSymmetry(int label)
+{
+    static const std::set<std::string> symLabels = 
+    {
+        "vase", "bowl", "cup", "potted plant", "bottle"
+    };
+    const char* txtLabel = GetLabelText_Optimizer(label);
+    if( symLabels.find(std::string(txtLabel)) != symLabels.end() )
+        return true;
+    else 
+        return false;
+}
+
+// 输出函数
+void OutputOptimizationEdgeErrors(Objects& objs, std::map<int, std::vector<g2o::EdgeSE3EllipsoidPlane*>>& mapInsEdgePlanes, 
+    std::map<int, std::vector<g2o::EdgeSE3EllipsoidPlanePartial*>>& mapInsEdgePlanesPartial)
+{
+    ofstream out_obj("./optimization_edges.txt");
+    for( int i=0;i<objs.size();i++)
+    {
+        EllipObject& obj = objs[i];
+        int instance = obj.instance_id;
+
+        std::vector<g2o::EdgeSE3EllipsoidPlane*>& vEdgesValid = mapInsEdgePlanes[instance];
+        std::vector<g2o::EdgeSE3EllipsoidPlanePartial*>& vEdgesPartial = mapInsEdgePlanesPartial[instance];
+
+        int num_valid = vEdgesValid.size();
+        int num_partial = vEdgesPartial.size();
+        int num_total = num_valid + num_partial;
+
+        out_obj << "EllipObject " << instance << ", PlaneEdges " << num_total << "( V " << num_valid << ", P " << num_partial << " )" << std::endl;
+        out_obj << " -> Valid edges : " << std::endl;
+        for( int n =0;n<num_valid; n++)
+        {
+            g2o::EdgeSE3EllipsoidPlane* e = vEdgesValid[n];
+            double error = e->error()(0,0);
+            out_obj << "   v " << n << " : " << error << std::endl;
+        }
+
+        out_obj << std::endl;
+        out_obj << " -> Partial edges : " << std::endl;
+        for( int n =0;n<num_partial; n++)
+        {
+            g2o::EdgeSE3EllipsoidPlanePartial* e = vEdgesPartial[n];
+            double error = e->error()(0,0);
+            out_obj << "   p " << n << " : " << error << std::endl;
+        }
+        out_obj << std::endl;
+    }
+
+    out_obj.close();
+}
+
+void OutputInstanceObservationNum(std::map<int,int>& map)
+{
+    ofstream out_obj("./instance_observation_num.txt");
+
+    for(auto pair : map)
+    {
+        out_obj << pair.first << " " << pair.second << std::endl;
+    }
+    out_obj.close();
+
+    return ;
+}
+
+
 /*
 *   [新版本] 基于切平面完成椭球体的全局优化!
 *   10-4 Ours 论文发表使用的版本。
 */
+void Optimizer::OptimizeWithDataAssociationUsingMultiplanes(std::vector<Frame *> &pFrames,
+                Measurements& mms, Objects& objs, Trajectory& camTraj, const Matrix3d& calib, int iRows, int iCols) {
+    // ************* 系统调试 ***************
+    // 是否使用平面作为3D约束、是否使用法向约束、3D约束？
+    bool bUsePlanesAs3DConstrains = true;
+    bool bUseNormalConstrain = true; // 是否使用三维切平面的法向量约束
 
-
-// void Optimizer::OptimizeWithDataAssociationUsingMultiplanes(std::vector<Frame *> &pFrames,
-//                 Measurements& mms, Objects& objs, Trajectory& camTraj, const Matrix3d& calib, int iRows, int iCols) {
-//     // ************* 系统调试 ***************
-//     bool bUsePlanesAs3DConstrains = true;
-//     bool bUseNormalConstrain = true; // 是否使用三维切平面的法向量约束
-
-//     double config_plane_angle_sigma = Config::Get<double>("Optimizer.Edges.3DConstrain.PlaneAngle.Sigma");
+    double config_plane_angle_sigma = Config::Get<double>("Optimizer.Edges.3DConstrain.PlaneAngle.Sigma");
     
-//     // 注意 ： 开启了3d 平面的局部过滤. 30 pixel
-//     // 注意 ： 开启了2d 平面的局部过滤. param设置 30pixel. 只有非局部平面才添加约束.
-//     // *************************************
+    // 注意 ： 开启了3d 平面的局部过滤. 30 pixel
+    // 注意 ： 开启了2d 平面的局部过滤. param设置 30pixel. 只有非局部平面才添加约束.
+    // *************************************
 
-//     // ************************ LOAD CONFIGURATION ************************
-//     double config_ellipsoid_3d_scale = Config::ReadValue<double>("Optimizer.Edges.3DEllipsoid.Scale");
-//     double config_ellipsoid_2d_scale = Config::ReadValue<double>("Optimizer.Edges.2D.Scale");
-//     // if(config_ellipsoid_2d_scale <= 0.01)
-//     //     config_ellipsoid_2d_scale = 1.0;
-//     bool mbSetGravityPrior = Config::Get<int>("Optimizer.Edges.GravityPrior.Open") == 1;  
-//     double dGravityPriorScale = Config::Get<double>("Optimizer.Edges.GravityPrior.Scale");
-//     bool mbOpenPartialObservation = Config::Get<int>("Optimizer.PartialObservation.Open") == 1;
-//     bool mbOpen3DProb = true;  
+    // ************************ 加载优化相关的配置参数 ************************
+    /**
+     * 3D约束：使用单帧物体观测中椭球体包络立方体的平面进行约束
+     * 2D约束：使用2D bbox 边线构成的平面进行约束
+    */
 
-//     std::cout << " -- Image : " << iCols << " x " << iRows << std::endl;
+    /**
+     * - 椭球体3d scale, 2d scale
+     * - 是否设置重力先验、重力先验scale、是否开启部分观测、是否使用3D概率
+     * - 里程计权重
+     * - 3D 2D 约束开关
+    */
 
-//     // OUTPUT
-//     std::cout << " -- Optimization parameters : " << std::endl;
-//     if(mbGroundPlaneSet)
-//         std::cout << " [ Using Ground Plane: " << mGroundPlaneNormal.transpose() << " ] " << std::endl;
+    double config_ellipsoid_3d_scale = Config::ReadValue<double>("Optimizer.Edges.3DEllipsoid.Scale");
+    double config_ellipsoid_2d_scale = Config::ReadValue<double>("Optimizer.Edges.2D.Scale");
+    // if(config_ellipsoid_2d_scale <= 0.01)
+    //     config_ellipsoid_2d_scale = 1.0;
 
-//     if(!mbGroundPlaneSet || !mbSetGravityPrior )   
-//         std::cout << " * Gravity Prior : closed." << std::endl;
-//     else
-//         std::cout << " * Gravity Prior : Open." << std::endl;
-    
-//     cout<<" * Scale_3dedge: " << config_ellipsoid_3d_scale << endl;
-//     cout<<" * Scale_2dedge: " << config_ellipsoid_2d_scale << endl;
-//     cout<<" * Scale_GravityPrior: " << dGravityPriorScale << endl;
-//     cout<<" * config_plane_angle_sigma: " << config_plane_angle_sigma << endl;
+    bool mbSetGravityPrior = Config::Get<int>("Optimizer.Edges.GravityPrior.Open") == 1;  
+    double dGravityPriorScale = Config::Get<double>("Optimizer.Edges.GravityPrior.Scale");
+    bool mbOpenPartialObservation = Config::Get<int>("Optimizer.PartialObservation.Open") == 1;
+    bool mbOpen3DProb = true;
 
-//     double config_odometry_weight = Config::ReadValue<double>("DEBUG.ODOM.WEIGHT");
-//     // double exp_config_odometry_weight = pow(10, config_odometry_weight);    //exp
-//     double exp_config_odometry_weight = config_odometry_weight; // normal
-//     cout << " * DEBUG-Odometry weight : " << exp_config_odometry_weight << endl;
+    // 输出图片大小、优化参数
+    std::cout << " -- Image : " << iCols << " x " << iRows << std::endl;
+    std::cout << " -- Optimization parameters : " << std::endl;
+    if(mbGroundPlaneSet)
+        std::cout << " [ Using Ground Plane: " << mGroundPlaneNormal.transpose() << " ] " << std::endl;
+    if(!mbGroundPlaneSet || !mbSetGravityPrior )   
+        std::cout << " * Gravity Prior : closed." << std::endl;
+    else
+        std::cout << " * Gravity Prior : Open." << std::endl;
+    cout<<" * Scale_3dedge: " << config_ellipsoid_3d_scale << endl;
+    cout<<" * Scale_2dedge: " << config_ellipsoid_2d_scale << endl;
+    cout<<" * Scale_GravityPrior: " << dGravityPriorScale << endl;
+    cout<<" * config_plane_angle_sigma: " << config_plane_angle_sigma << endl;
 
-//     // 添加一个关闭 2D 约束的开关.
-//     bool mbClose2DConstrain = Config::Get<int>("Optimizer.Edges.2DConstrain.Close") > 0;
-//     if(mbClose2DConstrain)
-//         cout << "********** CLOSE 2D Constrain. **********" << endl;
-//     bool bOpen3DEllipsoidEdges = !(Config::Get<int>("Optimizer.Edges.3DConstrain.Close") > 0);
-//     if(!bOpen3DEllipsoidEdges)
-//         cout << "********** CLOSE 3D Constrain. **********" << endl;
-//     // ************************************************************************
+    double config_odometry_weight = Config::ReadValue<double>("DEBUG.ODOM.WEIGHT");
+    // double exp_config_odometry_weight = pow(10, config_odometry_weight);    //exp
+    double exp_config_odometry_weight = config_odometry_weight; // normal
+    cout << " * DEBUG-Odometry weight : " << exp_config_odometry_weight << endl;
 
-//     // Initialize variables.
-//     int total_frame_number = int(pFrames.size());
-//     int objects_num = int(objs.size());
+    // 添加一个关闭 2D 约束的开关.
+    bool mbClose2DConstrain = Config::Get<int>("Optimizer.Edges.2DConstrain.Close") > 0;
+    if(mbClose2DConstrain)
+        cout << "********** CLOSE 2D Constrain. **********" << endl;
+    bool bOpen3DEllipsoidEdges = !(Config::Get<int>("Optimizer.Edges.3DConstrain.Close") > 0);
+    if(!bOpen3DEllipsoidEdges)
+        cout << "********** CLOSE 3D Constrain. **********" << endl;
+    // ************************************************************************
 
-//     // initialize graph optimization.
-//     g2o::SparseOptimizer graph;
-//     g2o::BlockSolverX::LinearSolverType* linearSolver;
-//     linearSolver = new g2o::LinearSolverDense<g2o::BlockSolverX::PoseMatrixType>();
-//     g2o::BlockSolverX * solver_ptr = new g2o::BlockSolverX(linearSolver);
-//     g2o::OptimizationAlgorithmLevenberg* solver = new g2o::OptimizationAlgorithmLevenberg(solver_ptr);
-//     graph.setAlgorithm(solver);
-//     graph.setVerbose(false);        // Set output.
 
-//     std::map<int, g2o::VertexEllipsoidXYZABCYaw*> vEllipsoidVertexMaps;
-//     std::vector<g2o::EdgeSE3EllipsoidProj*> edges, edgesValid, edgesInValid;
-//     std::vector<bool> validVec; validVec.resize(total_frame_number);
-//     std::vector<g2o::EdgeEllipsoidGravityPlanePrior *> edgesEllipsoidGravityPlanePrior;     // Gravity prior
-//     std::vector<g2o::VertexSE3Expmap*> vSE3Vertex;
+    // Initialize variables.
+    // 总共帧数、物体数量
+    int total_frame_number = int(pFrames.size());
+    int objects_num = int(objs.size());
 
-//     std::vector<g2o::EdgeSE3Ellipsoid7DOF*> vEllipsoid3DEdges;
-//     std::vector<g2o::EdgeSE3Expmap*> vEdgesOdom;
-//     std::vector<g2o::EdgeSE3EllipsoidPlane*> vEdgeEllipsoidPlane;
-//     std::vector<g2o::EdgeSE3EllipsoidPlane*> vEdgeEllipsoidPlane3D;
-//     std::vector<g2o::EdgeSE3EllipsoidPlaneWithNormal*> vEdgeEllipsoidPlane3DWithNormal;
-//     std::vector<g2o::EdgeSE3EllipsoidPlanePartial*> vEdgeEllipsoidPlanePartial;
-//     std::vector<g2o::EdgeSE3EllipsoidCenterFull*> vEdgeSE3EllipsoidCenterFull;
+    // initialize graph optimization.
+    // 创建g2o稀疏优化器、线性求解器、块求解器、LB算法，设置优化过程不输出
+    g2o::SparseOptimizer graph;
+    g2o::BlockSolverX::LinearSolverType* linearSolver;
+    linearSolver = new g2o::LinearSolverDense<g2o::BlockSolverX::PoseMatrixType>();
+    g2o::BlockSolverX * solver_ptr = new g2o::BlockSolverX(linearSolver);
+    g2o::OptimizationAlgorithmLevenberg* solver = new g2o::OptimizationAlgorithmLevenberg(solver_ptr);
+    graph.setAlgorithm(solver);
+    graph.setVerbose(false);        // Set output.
 
-//     std::map<int, std::vector<g2o::EdgeSE3EllipsoidPlane*>> mapInsEdgePlanes;       // 8-27 check : 该部分统计并没有考虑新的带 normal 的法向量
-//     std::map<int, std::vector<g2o::EdgeSE3EllipsoidPlanePartial*>> mapInsEdgePlanesPartial; 
+    // 创建7Dof椭球体顶点、椭球投影边、顶点valid记录、椭球体重力平面先验、
+    std::map<int, g2o::VertexEllipsoidXYZABCYaw*> vEllipsoidVertexMaps;
+    std::vector<g2o::EdgeSE3EllipsoidProj*> edges, edgesValid, edgesInValid;
+    std::vector<bool> validVec; validVec.resize(total_frame_number);
+    std::vector<g2o::EdgeEllipsoidGravityPlanePrior *> edgesEllipsoidGravityPlanePrior;     // Gravity prior
+    // 表示欧几里德空间中刚体变换的一种方式，该顶点在内部使用一个变换矩阵表示刚体变换，外部使用它的指数映射表示
+    std::vector<g2o::VertexSE3Expmap*> vSE3Vertex;
 
-//     // Add SE3 vertices for camera poses
-//     bool bSLAM_mode = (Config::Get<int>("Optimizer.SLAM.mode") == 1);   // Mapping Mode : Fix camera poses and mapping ellipsoids only
-//     std::cout << " [ SLAM Mode : " << bSLAM_mode << " ] " << std::endl;
-//     for( int frame_index=0; frame_index< total_frame_number ; frame_index++) {
-//         g2o::SE3Quat curr_cam_pose_Twc = pFrames[frame_index]->cam_pose_Twc;
+    std::vector<g2o::EdgeSE3Ellipsoid7DOF*> vEllipsoid3DEdges;
+    std::vector<g2o::EdgeSE3Expmap*> vEdgesOdom;
 
-//         g2o::VertexSE3Expmap *vSE3 = new g2o::VertexSE3Expmap();
-//         vSE3->setId(graph.vertices().size());
-//         graph.addVertex(vSE3);
-//         vSE3->setEstimate(pFrames[frame_index]->cam_pose_Tcw); // Tcw
-//         if(!bSLAM_mode)
-//             vSE3->setFixed(true);       // Fix all the poses in mapping mode.
-//         else 
-//             vSE3->setFixed(frame_index == 0);   
-//         vSE3Vertex.push_back(vSE3);
+    std::vector<g2o::EdgeSE3EllipsoidPlane*> vEdgeEllipsoidPlane;
+    std::vector<g2o::EdgeSE3EllipsoidPlane*> vEdgeEllipsoidPlane3D;
+    std::vector<g2o::EdgeSE3EllipsoidPlaneWithNormal*> vEdgeEllipsoidPlane3DWithNormal;
+    std::vector<g2o::EdgeSE3EllipsoidPlanePartial*> vEdgeEllipsoidPlanePartial;
+    std::vector<g2o::EdgeSE3EllipsoidCenterFull*> vEdgeSE3EllipsoidCenterFull;
 
-//         // Add odom edges if in SLAM Mode
-//         if(bSLAM_mode && frame_index > 0){
-//             g2o::SE3Quat prev_cam_pose_Tcw = pFrames[frame_index-1]->cam_pose_Twc.inverse();
-//             g2o::SE3Quat curr_cam_pose_Tcw = curr_cam_pose_Twc.inverse();
+    std::map<int, std::vector<g2o::EdgeSE3EllipsoidPlane*>> mapInsEdgePlanes;       // 8-27 check : 该部分统计并没有考虑新的带 normal 的法向量
+    std::map<int, std::vector<g2o::EdgeSE3EllipsoidPlanePartial*>> mapInsEdgePlanesPartial; 
 
-//             // 最后的 inverse: 将 wc 转为 cw
-//             // g2o::SE3Quat odom_val = (curr_cam_pose_Tcw*prev_cam_pose_Tcw.inverse()).inverse();; //  odom_wc * To = T1
-//             g2o::SE3Quat odom_val = curr_cam_pose_Tcw*prev_cam_pose_Tcw.inverse(); 
+    // Add SE3 vertices for camera poses
+    // 为相机位姿添加SE3顶点
+    bool bSLAM_mode = (Config::Get<int>("Optimizer.SLAM.mode") == 1);   // Mapping Mode : Fix camera poses and mapping ellipsoids only
+    std::cout << " [ SLAM Mode : " << bSLAM_mode << " ] " << std::endl;
+    for( int frame_index=0; frame_index< total_frame_number ; frame_index++) {
+        g2o::SE3Quat curr_cam_pose_Twc = pFrames[frame_index]->cam_pose_Twc;
 
-//             g2o::EdgeSE3Expmap* e = new g2o::EdgeSE3Expmap();
-//             e->setVertex(0, dynamic_cast<g2o::OptimizableGraph::Vertex*>( vSE3Vertex[frame_index-1] ));
-//             e->setVertex(1, dynamic_cast<g2o::OptimizableGraph::Vertex*>( vSE3Vertex[frame_index] ));
-//             e->setMeasurement(odom_val);
+        g2o::VertexSE3Expmap *vSE3 = new g2o::VertexSE3Expmap();
+        vSE3->setId(graph.vertices().size());
+        graph.addVertex(vSE3);
+        vSE3->setEstimate(pFrames[frame_index]->cam_pose_Tcw); // Tcw
+        if(!bSLAM_mode)
+            vSE3->setFixed(true);       // Fix all the poses in mapping mode.
+        else 
+            vSE3->setFixed(frame_index == 0);   
+        vSE3Vertex.push_back(vSE3);
 
-//             e->setId(graph.edges().size());
-//             Vector6d inv_sigma;inv_sigma<<1,1,1,1,1,1;
-//             inv_sigma = inv_sigma*exp_config_odometry_weight;
-//             Matrix6d info = inv_sigma.cwiseProduct(inv_sigma).asDiagonal();
-//             e->setInformation(info);
-//             graph.addEdge(e);
+        // Add odom edges if in SLAM Mode
+        if(bSLAM_mode && frame_index > 0){
+            g2o::SE3Quat prev_cam_pose_Tcw = pFrames[frame_index-1]->cam_pose_Twc.inverse();
+            g2o::SE3Quat curr_cam_pose_Tcw = curr_cam_pose_Twc.inverse();
 
-//             vEdgesOdom.push_back(e);
-//         }
-//     }
+            // 最后的 inverse: 将 wc 转为 cw
+            // g2o::SE3Quat odom_val = (curr_cam_pose_Tcw*prev_cam_pose_Tcw.inverse()).inverse();; //  odom_wc * To = T1
+            g2o::SE3Quat odom_val = curr_cam_pose_Tcw*prev_cam_pose_Tcw.inverse(); 
 
-//     // 接下来： 以 mms, objs 构造图.
-//     // Initialize objects vertices and add edges of camera-objects 2d observations 
-//     int objectid_in_edge = 0;
-//     int current_ob_id = 0;  
-//     int symplaneid_in_edge = 0;
+            g2o::EdgeSE3Expmap* e = new g2o::EdgeSE3Expmap();
+            e->setVertex(0, dynamic_cast<g2o::OptimizableGraph::Vertex*>( vSE3Vertex[frame_index-1] ));
+            e->setVertex(1, dynamic_cast<g2o::OptimizableGraph::Vertex*>( vSE3Vertex[frame_index] ));
+            e->setMeasurement(odom_val);
 
-//     bool bUseProbThresh = Config::ReadValue<double>("Dynamic.Optimizer.UseProbThresh") > 0.01;
-//     double config_prob_thresh = Config::ReadValue<double>("Dynamic.Optimizer.EllipsoidProbThresh");
-//     int count_jump_prob_thresh = 0;
-//     if(bUseProbThresh)
-//         std::cout << "Use prob threshold, please make sure this is at least the second time running optimization!!" << std::endl;
+            e->setId(graph.edges().size());
+            Vector6d inv_sigma;inv_sigma<<1,1,1,1,1,1;
+            inv_sigma = inv_sigma*exp_config_odometry_weight;
+            Matrix6d info = inv_sigma.cwiseProduct(inv_sigma).asDiagonal();
+            e->setInformation(info);
+            graph.addEdge(e);
 
-//     int count_partial_3d_planes = 0;
-//     int count_pointmodel_num = 0;
-//     std::vector<std::vector<g2o::ConstrainPlane*>> vwcPlanes;
-//     std::map<int,int> mmInstanceObservationNum;
-//     for(int object_id=0; object_id<objects_num; object_id++ )        
-//     {
-//         Object &obj = objs[object_id];
-//         int instance = obj.instance_id;
-//         int label = obj.pEllipsoid->miLabel;
-//         // 查语义表格判断该物体是否具有对称性质
-//         bool bSemanticSymmetry = IsSymmetry(label);
+            vEdgesOdom.push_back(e);
+        }
+    }
 
-//         if(bUseProbThresh)
-//         {
-//             // 因为obj中的概率需要在优化完之后做更新.
-//             if(obj.pEllipsoid->prob < config_prob_thresh) {
-//                 count_jump_prob_thresh++;
-//                 continue;
-//             }
-//         }
+    // 接下来： 以 mms, objs 构造图.
+    // Initialize objects vertices and add edges of camera-objects 2d observations
+    // 初始化物体顶点，添加相机-物体2D观测之间的边
 
-//         // Add objects vertices
-//         g2o::VertexEllipsoidXYZABCYaw *vEllipsoid = new g2o::VertexEllipsoidXYZABCYaw();
-//         vEllipsoid->setEstimate(*obj.pEllipsoid);
-//         vEllipsoid->setId(graph.vertices().size());
-//         vEllipsoid->setFixed(false);
-//         graph.addVertex(vEllipsoid);
-//         vEllipsoidVertexMaps.insert(make_pair(instance, vEllipsoid)); 
+    // 物体id，当前物体id，对称平面id，是否使用概率阈值，
+    int objectid_in_edge = 0;
+    int current_ob_id = 0;  
+    int symplaneid_in_edge = 0;
 
-//         // // Add gravity prior
-//         // if(mbGroundPlaneSet && mbSetGravityPrior ){
-//         //     g2o::EdgeEllipsoidGravityPlanePrior *vGravityPriorEdge = new g2o::EdgeEllipsoidGravityPlanePrior;
-//         //     vGravityPriorEdge->setVertex(0, dynamic_cast<g2o::OptimizableGraph::Vertex *>( vEllipsoid ));
+    bool bUseProbThresh = Config::ReadValue<double>("Dynamic.Optimizer.UseProbThresh") > 0.01;
+    double config_prob_thresh = Config::ReadValue<double>("Dynamic.Optimizer.EllipsoidProbThresh");
+    int count_jump_prob_thresh = 0;
 
-//         //     vGravityPriorEdge->setMeasurement(mGroundPlaneNormal);  
-//         //     Matrix<double,1,1> inv_sigma;
-//         //     inv_sigma << 1 * dGravityPriorScale;
-//         //     MatrixXd info = inv_sigma.cwiseProduct(inv_sigma).asDiagonal();
-//         //     vGravityPriorEdge->setInformation(info);
+    if(bUseProbThresh)
+        std::cout << "Use prob threshold, please make sure this is at least the second time running optimization!!" << std::endl;
+
+    int count_partial_3d_planes = 0;
+    int count_pointmodel_num = 0;
+    std::vector<std::vector<g2o::ConstrainPlane*>> vwcPlanes;
+    std::map<int,int> mmInstanceObservationNum;
+
+    // 遍历物体，
+    for(int object_id = 0; object_id < objects_num; object_id++ )        
+    {
+        EllipObject &obj = objs[object_id];
+        int instance = obj.instance_id;
+        int label = obj.pEllipsoid->miLabel;
+
+        // 查语义表格判断该物体是否具有对称性质
+        bool bSemanticSymmetry = IsSymmetry(label);
+
+        if(bUseProbThresh)
+        {
+            // 因为obj中的概率需要在优化完之后做更新.
+            if(obj.pEllipsoid->prob < config_prob_thresh) {
+                count_jump_prob_thresh++;
+                continue;
+            }
+        }
+
+        // Add objects vertices
+        // 添加物体顶点
+        g2o::VertexEllipsoidXYZABCYaw *vEllipsoid = new g2o::VertexEllipsoidXYZABCYaw();
+        vEllipsoid->setEstimate(*obj.pEllipsoid);
+        vEllipsoid->setId(graph.vertices().size());
+        vEllipsoid->setFixed(false);
+        graph.addVertex(vEllipsoid);
+        vEllipsoidVertexMaps.insert(make_pair(instance, vEllipsoid)); 
+
+        // // Add gravity prior
+        // if(mbGroundPlaneSet && mbSetGravityPrior ){
+        //     g2o::EdgeEllipsoidGravityPlanePrior *vGravityPriorEdge = new g2o::EdgeEllipsoidGravityPlanePrior;
+        //     vGravityPriorEdge->setVertex(0, dynamic_cast<g2o::OptimizableGraph::Vertex *>( vEllipsoid ));
+
+        //     vGravityPriorEdge->setMeasurement(mGroundPlaneNormal);  
+        //     Matrix<double,1,1> inv_sigma;
+        //     inv_sigma << 1 * dGravityPriorScale;
+        //     MatrixXd info = inv_sigma.cwiseProduct(inv_sigma).asDiagonal();
+        //     vGravityPriorEdge->setInformation(info);
             
-//         //     graph.addEdge(vGravityPriorEdge);
-//         //     edgesEllipsoidGravityPlanePrior.push_back(vGravityPriorEdge);
+        //     graph.addEdge(vGravityPriorEdge);
+        //     edgesEllipsoidGravityPlanePrior.push_back(vGravityPriorEdge);
+        // }
+
+        // std::vector<g2o::ConstrainPlane*> vCPlanesWorld;
+        // MatrixXd world_constrain_planes; world_constrain_planes.resize(0,4);
+
+
+        // 添加 2d 和 3d 约束 : 来自三维立方体构造时所用的三维平面.
+        for(int i = 0; i < obj.measurementIDs.size(); i++)
+        {
+            Measurement& measurement = mms[obj.measurementIDs[i]];
+            int instance = measurement.instance_id;
             
-//         // }
-
-//         // std::vector<g2o::ConstrainPlane*> vCPlanesWorld;
-//         // MatrixXd world_constrain_planes; world_constrain_planes.resize(0,4);
-//         // 添加 3d 约束 : 来自三维立方体构造时所用的三维平面.
-//         for( int i=0; i<obj.measurementIDs.size(); i++ )
-//         {
-//             Measurement& measurement = mms[obj.measurementIDs[i]];
-//             int instance = measurement.instance_id;
+            Observation3D& ob_3d = measurement.ob_3d;
+            g2o::ellipsoid* pObj_ob = ob_3d.pObj;
             
-//             Observation3D& ob_3d = measurement.ob_3d;
-//             g2o::ellipsoid* pObj_ob = ob_3d.pObj;
-            
-//             if( pObj_ob == NULL ) continue;
+            if( pObj_ob == NULL ) continue;
 
-//             // if( i < 3 ) std::cout << "pObj_ob->prob : " << pObj_ob->prob << std::endl;
+            // if( i < 3 ) std::cout << "pObj_ob->prob : " << pObj_ob->prob << std::endl;
 
-//             int frame_index = measurement.ob_3d.pFrame->frame_seq_id;
-//             auto vEllipsoid = vEllipsoidVertexMaps[instance];  
-//             auto vSE3 = vSE3Vertex[frame_index];
+            int frame_index = measurement.ob_3d.pFrame->frame_seq_id;
+            auto vEllipsoid = vEllipsoidVertexMaps[instance];  
+            auto vSE3 = vSE3Vertex[frame_index];
 
-//             std::vector<g2o::ConstrainPlane*> vCPlanes = pObj_ob->mvCPlanes;
-//             // MatrixXd mPlanesParam = pObj_ob->cplanes;
-//             int plane_num = vCPlanes.size();
 
-//             g2o::SE3Quat &Twc = measurement.ob_2d.pFrame->cam_pose_Twc;
 
-//             if(!mbClose2DConstrain){
-//                 for( int i=0;i<plane_num;i++)
-//                 {
-//                     g2o::ConstrainPlane* pCPlane = vCPlanes[i];
-//                     Vector4d planeVec = pCPlane->pPlane->param.head(4); // local coordinate
+            std::vector<g2o::ConstrainPlane*> vCPlanes = pObj_ob->mvCPlanes;
+            // MatrixXd mPlanesParam = pObj_ob->cplanes;
+            int plane_num = vCPlanes.size();
 
-//                     // 为边缘平面添加特制的约束
-//                     if(pCPlane->valid){
-//                         g2o::EdgeSE3EllipsoidPlane* pEdge = new g2o::EdgeSE3EllipsoidPlane;
-//                         pEdge->setId(graph.edges().size());
-//                         pEdge->setVertex(0, dynamic_cast<g2o::OptimizableGraph::Vertex *>( vSE3 ));
-//                         pEdge->setVertex(1, dynamic_cast<g2o::OptimizableGraph::Vertex *>( vEllipsoid ));
-//                         pEdge->setMeasurement(planeVec);
 
-//                         Matrix<double,1,1> inv_sigma;
-//                         inv_sigma << 1 * config_ellipsoid_2d_scale;
-//                         MatrixXd info = inv_sigma.cwiseProduct(inv_sigma).asDiagonal();
-//                         pEdge->setInformation(info);
-//                         pEdge->setRobustKernel( new g2o::RobustKernelHuber() );
+            g2o::SE3Quat &Twc = measurement.ob_2d.pFrame->cam_pose_Twc;
 
-//                         graph.addEdge(pEdge);
-//                         vEdgeEllipsoidPlane.push_back(pEdge);
-//                         mapInsEdgePlanes[instance].push_back(pEdge);
+            if(!mbClose2DConstrain){
+                for( int i = 0; i < plane_num; i++)
+                {
+                    g2o::ConstrainPlane* pCPlane = vCPlanes[i];
+                    Vector4d planeVec = pCPlane->pPlane->param.head(4); // local coordinate
+
+                    // 为边缘平面添加特制的约束
+                    if(pCPlane->valid){
+                        g2o::EdgeSE3EllipsoidPlane* pEdge = new g2o::EdgeSE3EllipsoidPlane;
+                        pEdge->setId(graph.edges().size());
+                        pEdge->setVertex(0, dynamic_cast<g2o::OptimizableGraph::Vertex *>( vSE3 ));
+                        pEdge->setVertex(1, dynamic_cast<g2o::OptimizableGraph::Vertex *>( vEllipsoid ));
+                        pEdge->setMeasurement(planeVec);
+
+                        Matrix<double,1,1> inv_sigma;
+                        inv_sigma << 1 * config_ellipsoid_2d_scale;
+                        MatrixXd info = inv_sigma.cwiseProduct(inv_sigma).asDiagonal();
+                        pEdge->setInformation(info);
                         
-//                         mmInstanceObservationNum[instance]++;
-//                     }
+                        // 设置鲁棒核函数，添加边到图中，记录边，
+                        pEdge->setRobustKernel( new g2o::RobustKernelHuber() );
 
-//                     // update : 2020-7-3 
-//                     // 二维约束中的局部平面统一全部忽略.
-//                     // else
-//                     // {
-//                     //     // 局部平面
-//                     //     g2o::EdgeSE3EllipsoidPlanePartial* pEdge = new g2o::EdgeSE3EllipsoidPlanePartial;
-//                     //     pEdge->setId(graph.edges().size());
-//                     //     pEdge->setVertex(0, dynamic_cast<g2o::OptimizableGraph::Vertex *>( vSE3 ));
-//                     //     pEdge->setVertex(1, dynamic_cast<g2o::OptimizableGraph::Vertex *>( vEllipsoid ));
-//                     //     pEdge->setMeasurement(planeVec);
+                        graph.addEdge(pEdge);
+                        vEdgeEllipsoidPlane.push_back(pEdge);
+                        mapInsEdgePlanes[instance].push_back(pEdge);
+                        mmInstanceObservationNum[instance]++;
+                    }
 
-//                     //     Matrix<double,1,1> inv_sigma;
-//                     //     inv_sigma << 1 * pObj_ob->prob * config_ellipsoid_2d_scale;
-//                     //     MatrixXd info = inv_sigma.cwiseProduct(inv_sigma).asDiagonal();
-//                     //     pEdge->setInformation(info);
-//                     //     pEdge->setRobustKernel( new g2o::RobustKernelHuber() );
+                    // update : 2020-7-3 
+                    // 二维约束中的局部平面统一全部忽略.
+                    // else
+                    // {
+                    //     // 局部平面
+                    //     g2o::EdgeSE3EllipsoidPlanePartial* pEdge = new g2o::EdgeSE3EllipsoidPlanePartial;
+                    //     pEdge->setId(graph.edges().size());
+                    //     pEdge->setVertex(0, dynamic_cast<g2o::OptimizableGraph::Vertex *>( vSE3 ));
+                    //     pEdge->setVertex(1, dynamic_cast<g2o::OptimizableGraph::Vertex *>( vEllipsoid ));
+                    //     pEdge->setMeasurement(planeVec);
 
-//                     //     if(mbOpenPartialObservation)    // 注意需要开放才生效
-//                     //         graph.addEdge(pEdge);
-//                     //     vEdgeEllipsoidPlanePartial.push_back(pEdge);
-//                     //     mapInsEdgePlanesPartial[instance].push_back(pEdge);
-//                     // } // valid plane
-//                 } // plane 遍历
-//             } // 2D Constrain flag
+                    //     Matrix<double,1,1> inv_sigma;
+                    //     inv_sigma << 1 * pObj_ob->prob * config_ellipsoid_2d_scale;
+                    //     MatrixXd info = inv_sigma.cwiseProduct(inv_sigma).asDiagonal();
+                    //     pEdge->setInformation(info);
+                    //     pEdge->setRobustKernel( new g2o::RobustKernelHuber() );
+
+                    //     if(mbOpenPartialObservation)    // 注意需要开放才生效
+                    //         graph.addEdge(pEdge);
+                    //     vEdgeEllipsoidPlanePartial.push_back(pEdge);
+                    //     mapInsEdgePlanesPartial[instance].push_back(pEdge);
+                    // } // valid plane
+                } // plane 遍历
+
+            } // 2D Constrain flag
 
 
-//             // 更新: 2020-6-17日, 添加3d-ellipsoid之间的约束.
-//             // if(bOpen3DEllipsoidEdges)
-//             // {
-//             //     // 局部3d观测:pObj_ob
-//             //     g2o::EdgeSE3EllipsoidCenterFull* pEdge = new g2o::EdgeSE3EllipsoidCenterFull;
-//             //     pEdge->setId(graph.edges().size());
-//             //     pEdge->setVertex(0, dynamic_cast<g2o::OptimizableGraph::Vertex *>( vSE3 ));
-//             //     pEdge->setVertex(1, dynamic_cast<g2o::OptimizableGraph::Vertex *>( vEllipsoid ));
-//             //     pEdge->setMeasurement(*pObj_ob);
+            // 更新: 2020-6-17日, 添加3d-ellipsoid之间的约束.
+            // if(bOpen3DEllipsoidEdges)
+            // {
+            //     // 局部3d观测:pObj_ob
+            //     g2o::EdgeSE3EllipsoidCenterFull* pEdge = new g2o::EdgeSE3EllipsoidCenterFull;
+            //     pEdge->setId(graph.edges().size());
+            //     pEdge->setVertex(0, dynamic_cast<g2o::OptimizableGraph::Vertex *>( vSE3 ));
+            //     pEdge->setVertex(1, dynamic_cast<g2o::OptimizableGraph::Vertex *>( vEllipsoid ));
+            //     pEdge->setMeasurement(*pObj_ob);
 
-//             //     Matrix<double,1,1> inv_sigma;
-//             //     inv_sigma << 1 * pObj_ob->prob;
-//             //     MatrixXd info = inv_sigma.cwiseProduct(inv_sigma).asDiagonal();
-//             //     pEdge->setInformation(info);
+            //     Matrix<double,1,1> inv_sigma;
+            //     inv_sigma << 1 * pObj_ob->prob;
+            //     MatrixXd info = inv_sigma.cwiseProduct(inv_sigma).asDiagonal();
+            //     pEdge->setInformation(info);
 
-//             //     graph.addEdge(pEdge);
-//             //     vEdgeSE3EllipsoidCenterFull.push_back(pEdge);
-//             //     // mapInsEdgePlanes[instance].push_back(pEdge);
-//             // }
+            //     graph.addEdge(pEdge);
+            //     vEdgeSE3EllipsoidCenterFull.push_back(pEdge);
+            //     // mapInsEdgePlanes[instance].push_back(pEdge);
+            // }
 
-//             // 更新： 切换成完整约束
-//             bool bPointModel = pObj_ob->bPointModel;    // 参与不能是点模型.
-//             if(bPointModel) count_pointmodel_num++; // 统计
-//             if(bOpen3DEllipsoidEdges && !bPointModel){
-//                 // bool bUsePlanesAs3DConstrains = Config::Get<double>("Optimizer.Edges.3DEllipsoid.PlanesAsConstrains") > 0;
+            // 更新： 切换成完整约束
+            bool bPointModel = pObj_ob->bPointModel;    // 参与不能是点模型.
+            if(bPointModel) count_pointmodel_num++; // 统计
+            
+            if(bOpen3DEllipsoidEdges && !bPointModel){
+                // bool bUsePlanesAs3DConstrains = Config::Get<double>("Optimizer.Edges.3DEllipsoid.PlanesAsConstrains") > 0;
 
-//                 // 使用切平面的3d约束
-//                 // ****************** 7-3 更新代码: 添加未被遮挡的平面 ********************
-//                 // 要不先测试简单的，所有平面都放进来. 取消三维约束.
-//                 if(bUsePlanesAs3DConstrains)
-//                 {
-//                     // std::vector<g2o::plane*> vecPlanes = pObj_ob->GetCubePlanes();
-//                     // 开始判断是否在界外
+                // 使用切平面的3d约束
+                // ****************** 7-3 更新代码: 添加未被遮挡的平面 ********************
+                // 要不先测试简单的，所有平面都放进来. 取消三维约束.
+                if(bUsePlanesAs3DConstrains)
+                {
+                    // std::vector<g2o::plane*> vecPlanes = pObj_ob->GetCubePlanes();
+                    // 开始判断是否在界外
                     
-//                     std::vector<g2o::plane*> vecPlanes = pObj_ob->GetCubePlanesInImages(g2o::SE3Quat(),calib,iRows, iCols, 30);
-//                     // 看怎么封装好一点，把边缘的都给我去掉.
+                    std::vector<g2o::plane*> vecPlanes = pObj_ob->GetCubePlanesInImages(g2o::SE3Quat(),calib,iRows, iCols, 30);
+                    // 看怎么封装好一点，把边缘的都给我去掉.
 
-//                     count_partial_3d_planes += (6 - vecPlanes.size());
+                    count_partial_3d_planes += (6 - vecPlanes.size());
 
-//                     // 将界内的边构建并加入到图优化中
-//                     // 先尝试普通平面边，之后再tm尝试带法向量约束的边.
+                    // 将界内的边构建并加入到图优化中
+                    // 先尝试普通平面边，之后再尝试带法向量约束的边.
 
-//                     for(int i=0;i<vecPlanes.size();i++)
-//                     {
-//                         // 取一个平面
-//                         g2o::plane* ppl = vecPlanes[i];
-//                         Vector4d planeVec = ppl->param;
+                    for(int i=0;i<vecPlanes.size();i++)
+                    {
+                        // 取一个平面
+                        g2o::plane* ppl = vecPlanes[i];
+                        Vector4d planeVec = ppl->param;
 
-//                         if(bUseNormalConstrain)
-//                         {
-//                             int flag_valid_angle =  !bSemanticSymmetry ? 1 : 0;
-//                             g2o::EdgeSE3EllipsoidPlaneWithNormal* pEdge = new g2o::EdgeSE3EllipsoidPlaneWithNormal;
-//                             pEdge->setId(graph.edges().size());
-//                             pEdge->setVertex(0, dynamic_cast<g2o::OptimizableGraph::Vertex *>( vSE3 ));
-//                             pEdge->setVertex(1, dynamic_cast<g2o::OptimizableGraph::Vertex *>( vEllipsoid ));
-//                             pEdge->setMeasurement(planeVec);
+                        if(bUseNormalConstrain)
+                        {
+                            int flag_valid_angle =  !bSemanticSymmetry ? 1 : 0;
+                            g2o::EdgeSE3EllipsoidPlaneWithNormal* pEdge = new g2o::EdgeSE3EllipsoidPlaneWithNormal;
+                            pEdge->setId(graph.edges().size());
+                            pEdge->setVertex(0, dynamic_cast<g2o::OptimizableGraph::Vertex *>( vSE3 ));
+                            pEdge->setVertex(1, dynamic_cast<g2o::OptimizableGraph::Vertex *>( vEllipsoid ));
+                            pEdge->setMeasurement(planeVec);
 
-//                             Matrix<double,2,1> inv_sigma;
-//                             inv_sigma << 1, 1/(config_plane_angle_sigma * 1 / 180.0 * M_PI) * flag_valid_angle;   // 距离, 角度标准差 ; 暂时不管
-//                             inv_sigma = inv_sigma * config_ellipsoid_3d_scale;
-//                             MatrixXd info = inv_sigma.cwiseProduct(inv_sigma).asDiagonal();
-//                             pEdge->setInformation(info);
-//                             pEdge->setRobustKernel( new g2o::RobustKernelHuber() );
+                            Matrix<double,2,1> inv_sigma;
+                            inv_sigma << 1, 1/(config_plane_angle_sigma * 1 / 180.0 * M_PI) * flag_valid_angle;   // 距离, 角度标准差 ; 暂时不管
+                            inv_sigma = inv_sigma * config_ellipsoid_3d_scale;
+                            MatrixXd info = inv_sigma.cwiseProduct(inv_sigma).asDiagonal();
+                            pEdge->setInformation(info);
+                            pEdge->setRobustKernel( new g2o::RobustKernelHuber() );
 
-//                             graph.addEdge(pEdge);
-//                             vEdgeEllipsoidPlane3DWithNormal.push_back(pEdge);
+                            graph.addEdge(pEdge);
+                            vEdgeEllipsoidPlane3DWithNormal.push_back(pEdge);
 
-//                             mmInstanceObservationNum[instance]++;
-//                         }
-//                         else // 不使用法向量约束
-//                         {
-//                             g2o::EdgeSE3EllipsoidPlane* pEdge = new g2o::EdgeSE3EllipsoidPlane;
-//                             pEdge->setId(graph.edges().size());
-//                             pEdge->setVertex(0, dynamic_cast<g2o::OptimizableGraph::Vertex *>( vSE3 ));
-//                             pEdge->setVertex(1, dynamic_cast<g2o::OptimizableGraph::Vertex *>( vEllipsoid ));
-//                             pEdge->setMeasurement(planeVec);
+                            mmInstanceObservationNum[instance]++;
+                        }
+                        else // 不使用法向量约束
+                        {
+                            g2o::EdgeSE3EllipsoidPlane* pEdge = new g2o::EdgeSE3EllipsoidPlane;
+                            pEdge->setId(graph.edges().size());
+                            pEdge->setVertex(0, dynamic_cast<g2o::OptimizableGraph::Vertex *>( vSE3 ));
+                            pEdge->setVertex(1, dynamic_cast<g2o::OptimizableGraph::Vertex *>( vEllipsoid ));
+                            pEdge->setMeasurement(planeVec);
 
-//                             Matrix<double,1,1> inv_sigma;
-//                             inv_sigma << 1 * config_ellipsoid_3d_scale;
-//                             MatrixXd info = inv_sigma.cwiseProduct(inv_sigma).asDiagonal();
-//                             pEdge->setInformation(info);
-//                             pEdge->setRobustKernel( new g2o::RobustKernelHuber() );
+                            Matrix<double,1,1> inv_sigma;
+                            inv_sigma << 1 * config_ellipsoid_3d_scale;
+                            MatrixXd info = inv_sigma.cwiseProduct(inv_sigma).asDiagonal();
+                            pEdge->setInformation(info);
+                            pEdge->setRobustKernel( new g2o::RobustKernelHuber() );
 
-//                             graph.addEdge(pEdge);
-//                             vEdgeEllipsoidPlane3D.push_back(pEdge);
-//                             // mapInsEdgePlanes[instance].push_back(pEdge);
-//                         }
-//                     }
-//                 }
-//                 else 
-//                 {
-//                     // 完整3d约束
-//                     g2o::EdgeSE3Ellipsoid7DOF* vEllipsoid3D = new g2o::EdgeSE3Ellipsoid7DOF; 
-//                     vEllipsoid3D->setId(graph.edges().size()); 
-//                     vEllipsoid3D->setVertex(0, dynamic_cast<g2o::OptimizableGraph::Vertex *>( vSE3 ));
-//                     vEllipsoid3D->setVertex(1, dynamic_cast<g2o::OptimizableGraph::Vertex *>( vEllipsoid ));                
-//                     vEllipsoid3D->setMeasurement(*pObj_ob); 
+                            graph.addEdge(pEdge);
+                            vEdgeEllipsoidPlane3D.push_back(pEdge);
+                            // mapInsEdgePlanes[instance].push_back(pEdge);
+                        }
+                    }
+                }
+                else 
+                {
+                    // 完整3d约束
+                    g2o::EdgeSE3Ellipsoid7DOF* vEllipsoid3D = new g2o::EdgeSE3Ellipsoid7DOF; 
+                    vEllipsoid3D->setId(graph.edges().size()); 
+                    vEllipsoid3D->setVertex(0, dynamic_cast<g2o::OptimizableGraph::Vertex *>( vSE3 ));
+                    vEllipsoid3D->setVertex(1, dynamic_cast<g2o::OptimizableGraph::Vertex *>( vEllipsoid ));                
+                    vEllipsoid3D->setMeasurement(*pObj_ob); 
 
-//                     Vector7d inv_sigma;
-//                     inv_sigma << 1,1,1,1,1,1,1;
-//                     // if(mbOpen3DProb)
-//                     //     inv_sigma = inv_sigma * sqrt(pObj_ob->prob);
-//                     // Matrix7d info = inv_sigma.cwiseProduct(inv_sigma).asDiagonal() * config_ellipsoid_3d_scale * pObj_ob->prob;
-//                     Matrix7d info = inv_sigma.cwiseProduct(inv_sigma).asDiagonal() * config_ellipsoid_3d_scale * pObj_ob->prob;
-//                     vEllipsoid3D->setInformation(info);
-//                     vEllipsoid3D->setRobustKernel( new g2o::RobustKernelHuber() );
+                    Vector7d inv_sigma;
+                    inv_sigma << 1,1,1,1,1,1,1;
+                    // if(mbOpen3DProb)
+                    //     inv_sigma = inv_sigma * sqrt(pObj_ob->prob);
+                    // Matrix7d info = inv_sigma.cwiseProduct(inv_sigma).asDiagonal() * config_ellipsoid_3d_scale * pObj_ob->prob;
+                    Matrix7d info = inv_sigma.cwiseProduct(inv_sigma).asDiagonal() * config_ellipsoid_3d_scale * pObj_ob->prob;
+                    vEllipsoid3D->setInformation(info);
+                    vEllipsoid3D->setRobustKernel( new g2o::RobustKernelHuber() );
 
-//                     graph.addEdge(vEllipsoid3D);
-//                     vEllipsoid3DEdges.push_back(vEllipsoid3D);
-//                 }
-//             }
+                    graph.addEdge(vEllipsoid3D);
+                    vEllipsoid3DEdges.push_back(vEllipsoid3D);
+                }
+            }
 
-//             bool bOpenYawConstrain = false;
-//             // 旋转角度观测约束.
+            bool bOpenYawConstrain = false;
+            // 旋转角度观测约束.
+
         
-//         } // 观测遍历
+        } // 观测遍历
 
-//     } // objs 遍历
+    } // objs 遍历
 
-//     // 处理关系
-//     bool bOpenPlaneOptimization = Config::ReadValue<double>("Dynamic.Optimizer.OptimizeRelationPlane") > 0;
-//     if(bOpenPlaneOptimization){
-//         std::vector<g2o::EdgePlaneSE3*> vEdgeRelations;
-//         if(mbRelationLoaded){
-//             // 该函数加载所有平面观测到图优化中
-//             // cout << "CLOSE RELATION OPTIMIZATION." << endl;
-//             LoadRelationsToGraph(mRelations, mSupportingPlanes, graph, vSE3Vertex, vEdgeRelations);
-//             mbRelationLoaded = false;
+    /**
+     * 是否对相关的平面进行优化
+    */
+    bool bOpenPlaneOptimization = Config::ReadValue<double>("Dynamic.Optimizer.OptimizeRelationPlane") > 0;
+    if(bOpenPlaneOptimization){
+        std::vector<g2o::EdgePlaneSE3*> vEdgeRelations;
+        if(mbRelationLoaded){
+            // 该函数加载所有平面观测到图优化中
+            // cout << "CLOSE RELATION OPTIMIZATION." << endl;
+            LoadRelationsToGraph(mRelations, mSupportingPlanes, graph, vSE3Vertex, vEdgeRelations);
+            mbRelationLoaded = false;
 
-//             // Output Information of Relation Planes
-//             cout << " ----- Relation Planes -----" << endl;
-//             cout<<  "   - SupportingPlanes: " << mSupportingPlanes.size() << endl;
-//             cout<<  "   - Relations: " << mRelations.size() << endl;
-//             cout<<  "   - Edge Splane-Plane: " << vEdgeRelations.size() << endl;
+            // Output Information of Relation Planes
+            cout << " ----- Relation Planes -----" << endl;
+            cout<<  "   - SupportingPlanes: " << mSupportingPlanes.size() << endl;
+            cout<<  "   - Relations: " << mRelations.size() << endl;
+            cout<<  "   - Edge Splane-Plane: " << vEdgeRelations.size() << endl;
+            cout << endl << endl;
+        }
+    }
 
-//             cout << endl << endl;
-//         }
-//     }
+    /**
+     * 输出优化器的相关信息
+     * 
+     * */ 
+    int valid_plane_num = vEdgeEllipsoidPlane.size();
+    int partial_plane_num = vEdgeEllipsoidPlanePartial.size();
+    int total_plane_num = valid_plane_num + partial_plane_num;
+    std::cout << std::endl << " ---- GRAPH INFORMATION ---- : " << std::endl;
+    cout << " * EllipObject Num : " << objects_num << endl;
+    cout<<  " * Vertices: "<<graph.vertices().size()<<endl;
+    cout << "   - SE3: " << vSE3Vertex.size() << endl;
+    cout << "   - EllipObject: " << vEllipsoidVertexMaps.size() << endl;
+    cout << " * Edges: " << graph.edges().size() << endl;
 
-//     // output 
-//     int valid_plane_num = vEdgeEllipsoidPlane.size();
-//     int partial_plane_num = vEdgeEllipsoidPlanePartial.size();
-//     int total_plane_num = valid_plane_num + partial_plane_num;
-//     std::cout << std::endl << " ---- GRAPH INFORMATION ---- : " << std::endl;
-//     cout << " * Object Num : " << objects_num << endl;
-//     cout<<  " * Vertices: "<<graph.vertices().size()<<endl;
-//     cout << "   - SE3: " << vSE3Vertex.size() << endl;
-//     cout << "   - Object: " << vEllipsoidVertexMaps.size() << endl;
-//     cout << " * Edges: " << graph.edges().size() << endl;
+    if(!mbOpenPartialObservation)
+        cout << "   - Ellipsoid-Plane: " << total_plane_num << "( partial " << partial_plane_num << " [CLOSED])" << endl;
+    else
+        cout << "   - Ellipsoid-Plane: " << total_plane_num << "( partial " << partial_plane_num << " )" << endl;
+    if(bOpen3DEllipsoidEdges){
+        cout << "   - Ellipsoid-center: " << vEdgeSE3EllipsoidCenterFull.size() << std::endl;
+        cout << "   - Ellipsoid-3D: " << vEllipsoid3DEdges.size() << std::endl;
+        cout << "   - Ellipsoid-Plane-3D: " << vEdgeEllipsoidPlane3D.size() << "(filter partial:" << count_partial_3d_planes << ")" << std::endl;
+        cout << "   - Ellipsoid-Plane-3DWithNormal: " << vEdgeEllipsoidPlane3DWithNormal.size() << "(filter partial:" << count_partial_3d_planes << ")" << std::endl;
+    }
+    cout << "   - Odom: " << vEdgesOdom.size() << endl;
+    cout<<  "   - Gravity: " << edgesEllipsoidGravityPlanePrior.size() << endl;
+    cout << " * EllipObject Measurements : " << mms.size() << endl;
+    cout << "   -- Point-Model: " << count_pointmodel_num << endl;
 
-//     if(!mbOpenPartialObservation)
-//         cout << "   - Ellipsoid-Plane: " << total_plane_num << "( partial " << partial_plane_num << " [CLOSED])" << endl;
-//     else
-//         cout << "   - Ellipsoid-Plane: " << total_plane_num << "( partial " << partial_plane_num << " )" << endl;
-//     if(bOpen3DEllipsoidEdges){
-//         cout << "   - Ellipsoid-center: " << vEdgeSE3EllipsoidCenterFull.size() << std::endl;
-//         cout << "   - Ellipsoid-3D: " << vEllipsoid3DEdges.size() << std::endl;
-//         cout << "   - Ellipsoid-Plane-3D: " << vEdgeEllipsoidPlane3D.size() << "(filter partial:" << count_partial_3d_planes << ")" << std::endl;
-//         cout << "   - Ellipsoid-Plane-3DWithNormal: " << vEdgeEllipsoidPlane3DWithNormal.size() << "(filter partial:" << count_partial_3d_planes << ")" << std::endl;
-//     }
-//     cout << "   - Odom: " << vEdgesOdom.size() << endl;
-//     cout<<  "   - Gravity: " << edgesEllipsoidGravityPlanePrior.size() << endl;
-//     cout << " * Object Measurements : " << mms.size() << endl;
-//     cout << "   -- Point-Model: " << count_pointmodel_num << endl;
+    cout << endl;
 
-//     cout << endl;
+    if(bUseProbThresh){
+        std::cout << " * ProbThresh : " << config_prob_thresh << std::endl;
+        std::cout << " * Jump objects : " << count_jump_prob_thresh << std::endl;
+    }
 
-//     if(bUseProbThresh){
-//         std::cout << " * ProbThresh : " << config_prob_thresh << std::endl;
-//         std::cout << " * Jump objects : " << count_jump_prob_thresh << std::endl;
-//     }
+    // nan check
+    bool bOpenNanCheck = false;
+    if(bOpenNanCheck)
+    {
+        std::cout << "Begin NaN checking ... " << std::endl;
+        // odom  vEdgesOdom
+        // 2d vEdgeEllipsoidPlane
+        // 3d vEdgeEllipsoidPlane3DWithNormal
 
-//     // nan check
-//     bool bOpenNanCheck = false;
-//     if(bOpenNanCheck)
-//     {
-//         std::cout << "Begin NaN checking ... " << std::endl;
-//         // odom  vEdgesOdom
-//         // 2d vEdgeEllipsoidPlane
-//         // 3d vEdgeEllipsoidPlane3DWithNormal
+        int nan_count = 0;
+        for(auto edge : vEdgesOdom)
+        {
+            edge->computeError();
+            double chi2 = edge->chi2();
+            if(std::isnan(chi2))
+            {
+                // 输出
+                nan_count++;
+            }
+        }
+        std::cout << "odom nan : " << nan_count << std::endl;
 
-//         int nan_count = 0;
-//         for(auto edge : vEdgesOdom)
-//         {
-//             edge->computeError();
-//             double chi2 = edge->chi2();
-//             if(std::isnan(chi2))
-//             {
-//                 // 输出
-//                 nan_count++;
-//             }
-//         }
-//         std::cout << "odom nan : " << nan_count << std::endl;
+        nan_count = 0;
+        for(auto edge : vEdgeEllipsoidPlane)
+        {
+            edge->computeError();
+            double chi2 = edge->chi2();
+            if(std::isnan(chi2))
+            {
+                // 输出
+                nan_count++;
+            }
+        }
+        std::cout << "2d plane nan : " << nan_count << std::endl;
 
-//         nan_count = 0;
-//         for(auto edge : vEdgeEllipsoidPlane)
-//         {
-//             edge->computeError();
-//             double chi2 = edge->chi2();
-//             if(std::isnan(chi2))
-//             {
-//                 // 输出
-//                 nan_count++;
-//             }
-//         }
-//         std::cout << "2d plane nan : " << nan_count << std::endl;
-
-//         nan_count = 0;
-//         for(auto edge : vEdgeEllipsoidPlane3DWithNormal)
-//         {
-//             edge->computeError();
-//             double chi2 = edge->chi2();
-//             if(std::isnan(chi2))
-//             {
-//                 // 输出
-//                 nan_count++;
-//             }
-//         }
-//         std::cout << "3d plane with normal nan : " << nan_count << std::endl;
+        nan_count = 0;
+        for(auto edge : vEdgeEllipsoidPlane3DWithNormal)
+        {
+            edge->computeError();
+            double chi2 = edge->chi2();
+            if(std::isnan(chi2))
+            {
+                // 输出
+                nan_count++;
+            }
+        }
+        std::cout << "3d plane with normal nan : " << nan_count << std::endl;
         
-//         std::cout << "[NAN_CHECK]Press any key to continue .. " << std::endl;
-//         getchar();
-//     }
+        std::cout << "[NAN_CHECK]Press any key to continue .. " << std::endl;
+        getchar();
+    }
+    
+    // 进行迭代优化
+    int num_optimize = Config::Get<double>("Optimizer.Optimize.Num");
+    if(graph.edges().size()>0){
+        std::cout << "Begin Optimization..." << std::endl;
+        graph.initializeOptimization();
+        graph.optimize( num_optimize );  //optimization step
+        std::cout << "Optimization done." << std::endl;
 
-//     int num_optimize = Config::Get<double>("Optimizer.Optimize.Num");
-//     if(graph.edges().size()>0){
-//         std::cout << "Begin Optimization..." << std::endl;
-//         graph.initializeOptimization();
-//         graph.optimize( num_optimize );  //optimization step
-//         std::cout << "Optimization done." << std::endl;
-
-//         // Update estimated ellispoids to the map
-//         // 更新结果到 objs
-//         for( int i = 0 ; i< objs.size() ; i++)
-//         {
-//             g2o::ellipsoid* pEllipsoid = objs[i].pEllipsoid;
-//             if(pEllipsoid!=NULL)
-//             {
-//                 int instance = objs[i].instance_id;
-//                 if(vEllipsoidVertexMaps.find(instance) == vEllipsoidVertexMaps.end()) continue;
-//                 auto pEVertex = vEllipsoidVertexMaps[instance];
+        // Update estimated ellispoids to the map
+        // 更新结果到 objs
+        for( int i = 0 ; i< objs.size() ; i++)
+        {
+            g2o::ellipsoid* pEllipsoid = objs[i].pEllipsoid;
+            if(pEllipsoid!=NULL)
+            {
+                int instance = objs[i].instance_id;
+                if(vEllipsoidVertexMaps.find(instance) == vEllipsoidVertexMaps.end()) continue;
+                auto pEVertex = vEllipsoidVertexMaps[instance];
                 
-//                 bool colorSet = pEllipsoid->isColorSet();
-//                 Vector4d old_color;
-//                 if(colorSet) old_color = pEllipsoid->getColorWithAlpha();
-//                 (*pEllipsoid) = pEVertex->estimate();
-//                 pEllipsoid->miInstanceID = instance;
-//                 if(colorSet) pEllipsoid->setColor(old_color.head(3), old_color[3]);   // 保持颜色不变.
-//             }
-//         }
+                bool colorSet = pEllipsoid->isColorSet();
+                Vector4d old_color;
+                if(colorSet) old_color = pEllipsoid->getColorWithAlpha();
+                (*pEllipsoid) = pEVertex->estimate();
+                pEllipsoid->miInstanceID = instance;
+                if(colorSet) pEllipsoid->setColor(old_color.head(3), old_color[3]);   // 保持颜色不变.
+            }
+        }
 
-//         // 更新 Frames 轨迹; 也应该用临时结构体，而非直接改frame
-//         camTraj.resize(total_frame_number);
-//         for( int i=0; i< total_frame_number; i++ )
-//         {
-//             //  直接修改到帧中
-//             // 2020-6-2 让其生效. 引入 Save/Load 实现 debugging
-//             // Frame* pF = pFrames[i];
-//             // pF->cam_pose_Tcw = vSE3Vertex[i]->estimate();
-//             // pF->cam_pose_Twc = pF->cam_pose_Tcw.inverse();
+        // 更新 Frames 轨迹; 也应该用临时结构体，而非直接改frame
+        camTraj.resize(total_frame_number);
+        for( int i=0; i< total_frame_number; i++ )
+        {
+            //  直接修改到帧中
+            // 2020-6-2 让其生效. 引入 Save/Load 实现 debugging
+            // Frame* pF = pFrames[i];
+            // pF->cam_pose_Tcw = vSE3Vertex[i]->estimate();
+            // pF->cam_pose_Twc = pF->cam_pose_Tcw.inverse();
 
-//             // 暂存版本
-//             SE3QuatWithStamp* pPoseTimestamp = new SE3QuatWithStamp;
-//             pPoseTimestamp->pose = vSE3Vertex[i]->estimate().inverse();  // Tcw -> Twc
-//             pPoseTimestamp->timestamp = pFrames[i]->timestamp;
-//             camTraj[i] = pPoseTimestamp;
-//         }
-//     }
-//     else 
-//     {
-//         std::cout << " No observations valid." << std::endl;
-//     }
+            // 暂存版本
+            SE3QuatWithStamp* pPoseTimestamp = new SE3QuatWithStamp;
+            pPoseTimestamp->pose = vSE3Vertex[i]->estimate().inverse();  // Tcw -> Twc
+            pPoseTimestamp->timestamp = pFrames[i]->mTimeStamp;
+            camTraj[i] = pPoseTimestamp;
+        }
+    }
+    else 
+    {
+        std::cout << " No observations valid." << std::endl;
+    }
 
-//     // Output : 以物体为核心, 输出所有约束边对应的error
-//     OutputOptimizationEdgeErrors(objs, mapInsEdgePlanes, mapInsEdgePlanesPartial);
-//     OutputInstanceObservationNum(mmInstanceObservationNum);
+    // Output : 以物体为核心, 输出所有约束边对应的error
+    OutputOptimizationEdgeErrors(objs, mapInsEdgePlanes, mapInsEdgePlanesPartial);
+    OutputInstanceObservationNum(mmInstanceObservationNum);
 
-//     // Output optimization information.
-//     // object list
-//     ofstream out_obj("./object_list_nonparam.txt");
-//     auto iter = vEllipsoidVertexMaps.begin();
-//     for(;iter!=vEllipsoidVertexMaps.end();iter++)
-//     {
-//         out_obj << iter->first << "\t" << iter->second->estimate().toMinimalVector().transpose() 
-//             << "\t" << iter->second->estimate().miLabel << std::endl;
-//     }
-//     out_obj.close();
+    // Output optimization information.
+    // object list
+    ofstream out_obj("./object_list_nonparam.txt");
+    auto iter = vEllipsoidVertexMaps.begin();
+    for(;iter!=vEllipsoidVertexMaps.end();iter++)
+    {
+        out_obj << iter->first << "\t" << iter->second->estimate().toMinimalVector().transpose() 
+            << "\t" << iter->second->estimate().miLabel << std::endl;
+    }
+    out_obj.close();
 
-//     return;
-// }
+    return;
+}
+
 
 // 该函数即 Matlab 中 DPSample 函数
 // Input: measurements    // 所有的观测，不会删除，以 index 索引.
@@ -1371,7 +1577,7 @@ void Optimizer::SetGroundPlane(Vector4d& normal){
 
 //         // 若与已有物体已经关联上，先取消该关联.
 //         if(index >= 0 ) {
-//             Object& ob = objs[index];
+//             EllipObject& ob = objs[index];
 //             ob.classVoter[label]--; // 该类别投票器减一
 //             if((ob.measurementIDs.size()-1)<=0)   // 若减去该观测后，没有有效观测了
 //             {
@@ -1396,7 +1602,7 @@ void Optimizer::SetGroundPlane(Vector4d& normal){
 //         std::vector<double> vec_posterior;
 //         for(int obj_id = 0; obj_id < objs.size(); obj_id++)
 //         {
-//             Object& ob_rh = objs[obj_id];
+//             EllipObject& ob_rh = objs[obj_id];
 //             // 首先获得，每个物体，在观测label上投票器内的已有观测数量  dp_prior
 
 //             int ob_num = ob_rh.measurementIDs.size();
@@ -1464,7 +1670,7 @@ void Optimizer::SetGroundPlane(Vector4d& normal){
 //             // 最大后验是否满足配置要求
 //             if(maxprior > CONFIG_DP_alpha)
 //             {
-//                 Object& ob = objs[maxpiror_obj_id];
+//                 EllipObject& ob = objs[maxpiror_obj_id];
 //                 // add measurement
 //                 if( ob.classVoter.find(label) == ob.classVoter.end())
 //                     ob.classVoter[label] = 1;  // 注意初始化时 label 一定要覆盖所有label?
@@ -1488,7 +1694,7 @@ void Optimizer::SetGroundPlane(Vector4d& normal){
 //                 if(!bPointModel){
 //                     // 无可关联物体, 初始化一个新物体
 //                     int instance_id = g_instance_total_id++;      // 这个必须是唯一 id.
-//                     Object ob_new;
+//                     EllipObject ob_new;
 //                     ob_new.instance_id = instance_id;
 //                     ob_new.classVoter[label] = 1;
 //                     ob_new.measurementIDs.push_back(k);
@@ -1518,7 +1724,7 @@ void Optimizer::SetGroundPlane(Vector4d& normal){
 //             // 无可关联物体, 初始化一个新物体
 //             if(!bPointModel){
 //                 int instance_id = g_instance_total_id++;      // 这个必须是唯一 id.
-//                 Object ob_new;
+//                 EllipObject ob_new;
 //                 ob_new.instance_id = instance_id;
 //                 ob_new.classVoter[label] = 1;
 //                 ob_new.measurementIDs.push_back(k);
@@ -1553,13 +1759,13 @@ void Optimizer::SetGroundPlane(Vector4d& normal){
 //     return;
 // }
 
-// void Optimizer::LoadRelations(Relations& rls, SupportingPlanes& spls)
-// {
-//     mRelations = rls;
-//     mSupportingPlanes = spls;
-//     mbRelationLoaded = true;
-//     std::cout << "Relations and Supportingplanes have been Loaded." << std::endl;
-//     return;
-// }
+void Optimizer::LoadRelations(Relations& rls, SupportingPlanes& spls)
+{
+    mRelations = rls;
+    mSupportingPlanes = spls;
+    mbRelationLoaded = true;
+    std::cout << "Relations and Supportingplanes have been Loaded." << std::endl;
+    return;
+}
 
 }
