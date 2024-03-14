@@ -26,6 +26,9 @@ qsp_slam_mono
 
 qsp_slam_rgbd
 
+pcd2bin
+label_tool
+
 map/
 create_json.py
 mask.png
