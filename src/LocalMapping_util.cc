@@ -963,6 +963,13 @@ void LocalMapping::AssociateObjects3D()
     }
 }
 
+void LocalMapping::GlobalOptimization()
+{
+    // mpOptimizer->OptimizeWithDataAssociationUsingMultiplanes(pFrames, mms, objs, camTraj, calib, iRows, iCols);
+
+    // mpOptimizer->GlobalObjectGraphOptimizationWithPDA(mvpFrames, mpMap, mpTracker->mCalib, mpTracker->mRows, mpTracker->mCols);
+}
+
 void LocalMapping::MergeMapObject(MapObject* pMO_i, MapObject* pMO_j)
 {   
     // TODO：这里可能需要同时获取到两个物体的锁，或者转移到MapObject的函数中

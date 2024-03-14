@@ -19,14 +19,14 @@
 # include "Thirdparty/g2o/g2o/core/block_solver.h"
 # include "Thirdparty/g2o/g2o/core/optimization_algorithm_levenberg.h"
 # include "Thirdparty/g2o/g2o/solvers/linear_solver_eigen.h"
-# include "Thirdparty/g2o/g2o/types/types_six_dof_expmap.h"
+// # include "Thirdparty/g2o/g2o/types/types_six_dof_expmap.h"
 # include "Thirdparty/g2o/g2o/core/robust_kernel_impl.h"
 # include "Thirdparty/g2o/g2o/solvers/linear_solver_dense.h"
 # include "Thirdparty/g2o/g2o/core/factory.h"
-#include "Thirdparty/g2o/g2o/types/types_seven_dof_expmap.h"
+# include "Thirdparty/g2o/g2o/types/types_six_dof_expmap.h"
+
 
 # include "ObjectPoseGraph.h"
-
 
 #include "src/pca/EllipsoidExtractorEdges.h"
 #include "include/core/ConstrainPlane.h"
@@ -1051,6 +1051,7 @@ void Optimizer::OptimizeWithDataAssociationUsingMultiplanes(std::vector<Frame *>
     // 为相机位姿添加SE3顶点
     bool bSLAM_mode = (Config::Get<int>("Optimizer.SLAM.mode") == 1);   // Mapping Mode : Fix camera poses and mapping ellipsoids only
     std::cout << " [ SLAM Mode : " << bSLAM_mode << " ] " << std::endl;
+    
     for( int frame_index=0; frame_index< total_frame_number ; frame_index++) {
         g2o::SE3Quat curr_cam_pose_Twc = pFrames[frame_index]->cam_pose_Twc;
 
@@ -1073,7 +1074,8 @@ void Optimizer::OptimizeWithDataAssociationUsingMultiplanes(std::vector<Frame *>
             // g2o::SE3Quat odom_val = (curr_cam_pose_Tcw*prev_cam_pose_Tcw.inverse()).inverse();; //  odom_wc * To = T1
             g2o::SE3Quat odom_val = curr_cam_pose_Tcw*prev_cam_pose_Tcw.inverse(); 
 
-            g2o::EdgeSE3Expmap* e = new g2o::EdgeSE3Expmap();
+            g2o::EdgeSE3Expmap *e = new g2o::EdgeSE3Expmap();
+
             e->setVertex(0, dynamic_cast<g2o::OptimizableGraph::Vertex*>( vSE3Vertex[frame_index-1] ));
             e->setVertex(1, dynamic_cast<g2o::OptimizableGraph::Vertex*>( vSE3Vertex[frame_index] ));
             e->setMeasurement(odom_val);
@@ -1142,17 +1144,14 @@ void Optimizer::OptimizeWithDataAssociationUsingMultiplanes(std::vector<Frame *>
         // if(mbGroundPlaneSet && mbSetGravityPrior ){
         //     g2o::EdgeEllipsoidGravityPlanePrior *vGravityPriorEdge = new g2o::EdgeEllipsoidGravityPlanePrior;
         //     vGravityPriorEdge->setVertex(0, dynamic_cast<g2o::OptimizableGraph::Vertex *>( vEllipsoid ));
-
         //     vGravityPriorEdge->setMeasurement(mGroundPlaneNormal);  
         //     Matrix<double,1,1> inv_sigma;
         //     inv_sigma << 1 * dGravityPriorScale;
         //     MatrixXd info = inv_sigma.cwiseProduct(inv_sigma).asDiagonal();
         //     vGravityPriorEdge->setInformation(info);
-            
         //     graph.addEdge(vGravityPriorEdge);
         //     edgesEllipsoidGravityPlanePrior.push_back(vGravityPriorEdge);
         // }
-
         // std::vector<g2o::ConstrainPlane*> vCPlanesWorld;
         // MatrixXd world_constrain_planes; world_constrain_planes.resize(0,4);
 
@@ -1221,13 +1220,11 @@ void Optimizer::OptimizeWithDataAssociationUsingMultiplanes(std::vector<Frame *>
                     //     pEdge->setVertex(0, dynamic_cast<g2o::OptimizableGraph::Vertex *>( vSE3 ));
                     //     pEdge->setVertex(1, dynamic_cast<g2o::OptimizableGraph::Vertex *>( vEllipsoid ));
                     //     pEdge->setMeasurement(planeVec);
-
                     //     Matrix<double,1,1> inv_sigma;
                     //     inv_sigma << 1 * pObj_ob->prob * config_ellipsoid_2d_scale;
                     //     MatrixXd info = inv_sigma.cwiseProduct(inv_sigma).asDiagonal();
                     //     pEdge->setInformation(info);
                     //     pEdge->setRobustKernel( new g2o::RobustKernelHuber() );
-
                     //     if(mbOpenPartialObservation)    // 注意需要开放才生效
                     //         graph.addEdge(pEdge);
                     //     vEdgeEllipsoidPlanePartial.push_back(pEdge);
@@ -1236,7 +1233,6 @@ void Optimizer::OptimizeWithDataAssociationUsingMultiplanes(std::vector<Frame *>
                 } // plane 遍历
 
             } // 2D Constrain flag
-
 
             // 更新: 2020-6-17日, 添加3d-ellipsoid之间的约束.
             // if(bOpen3DEllipsoidEdges)

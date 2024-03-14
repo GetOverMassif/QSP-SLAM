@@ -58,6 +58,8 @@ void GetNearestAndFarthestPointOnEllipsoidToPlane(g2o::plane &pl, g2o::ellipsoid
     // x^2/a^2 + y^2/b^2 + z^2/c^2 = 1
     Q = Q / (-Q(3, 3));
 
+    // 等价于求解后面拉格朗日方程的极值： f(x,y,z) = AX+BY+CZ+D - alpha_pos(x^2/a^2 + y^2/b^2 + z^2/c^2 - 1)
+
     // 对角线前3个 必须大于0, 其他项必须为0
     // std::cout << "Origin Q check : " << std::endl << Q << std::endl;
 

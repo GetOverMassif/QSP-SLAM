@@ -191,7 +191,6 @@ bool LocalMapping::RunOneTime()
                     // cout << "\n[ CreateNewObjectsFromDetections ]" << std::endl;
                     CreateNewObjectsFromDetections();
                 }
-
                 // printMemoryUsage();
                 /* FIXME，在处理已经检测到的物体时，需要考虑是否增加的新的观测
                  * 这个函数中增加一个是否需要进行隐式位形优化的判断
@@ -202,10 +201,9 @@ bool LocalMapping::RunOneTime()
                 // FIXME: 在此处增加一个合并相近同类物体的操作
                 AssociateObjects3D();
 
-
                 // FIXME: 对地图物体进行一次全局联合优化（切平面）
 
-                // mpOptimizer->OptimizeWithDataAssociationUsingMultiplanes(pFrames, mms, objs, camTraj, calib, iRows, iCols);
+                GlobalOptimization();
 
                 // cout << "\n[ ProcessDetectedObjects ]" << std::endl;
 

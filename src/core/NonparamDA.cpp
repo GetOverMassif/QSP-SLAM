@@ -241,7 +241,6 @@ void UpdateObjectInMap(Measurements& mms, Objects& objs, Map *pMap)
 {
     pMap->ClearEllipsoidsVisual();
     // pMap->ClearEllipsoidsObservation();
-
     // 按颜色光谱生成每个instance的颜色.
     // Vector3d color1(102,204,0);
     // Vector3d color2(102,204,255);

@@ -83,7 +83,7 @@ class EdgeSE3Expmap : public BaseBinaryEdge<6, SE3Quat, VertexSE3Expmap, VertexS
 {
 public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-  EdgeSE3Expmap(){};
+  EdgeSE3Expmap();
   bool read(std::istream& is);
   bool write(std::ostream& os) const;
   void computeError()

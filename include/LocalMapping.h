@@ -98,6 +98,8 @@ public:
     void AssociateObjects3D();
     void ProcessDetectedObjects();
 
+    void GlobalOptimization();
+
     void UpdateObjectsToMap();
     
     // Merge pMO_j into pMO_i
