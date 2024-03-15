@@ -79,7 +79,7 @@ void InitMeasurements(Measurements &mms, std::vector<Frame *> &pFrames)
         Measurements& meas = pF->meas;
         int mea_num = meas.size();
 
-        for( int i=0; i<mea_num; i++){
+        for( int i = 0; i < mea_num; i++){
             auto &m = meas[i];
             bool c1 = m.ob_3d.pObj!=NULL;
             if(!c1) continue;
@@ -104,13 +104,12 @@ void InitObjectsWithMeasurements(Measurements &mms, Objects &objectObservations)
         int label = m.ob_2d.label;
 
         if( m.ob_3d.pObj == NULL ) continue;
-
         // 要求不能为局部观测
         if( m.ob_3d.pObj->bPointModel == true ) continue;
 
         // 无可关联物体, 初始化一个新物体
         int instance_id = g_instance_total_id++;
-        Object ob_new;
+        EllipObject ob_new;
         ob_new.instance_id = instance_id;
         ob_new.classVoter[label] = 1;
         ob_new.measurementIDs.push_back(k);
@@ -137,9 +136,9 @@ void OutputDataAssociation(Measurements& mms, Objects& objs)
 
     for(int i=0;i<objs.size();i++)
     {
-        Object& ob = objs[i]; 
+        EllipObject& ob = objs[i]; 
         int ob_num = ob.measurementIDs.size();
-        out_obj << "[Object] Instance " << ob.instance_id << ", " << "Observation Num: " << ob_num << std::endl;
+        out_obj << "[EllipObject] Instance " << ob.instance_id << ", " << "Observation Num: " << ob_num << std::endl;
         out_obj << " -> MeasurementIDs : ";
         for(int ob_id = 0; ob_id < ob_num; ob_id++)
         {
@@ -251,7 +250,7 @@ void UpdateObjectInMap(Measurements& mms, Objects& objs, Map *pMap)
     // 可视化最后优化得到的物体
     for(int i=0;i<num_obj;i++)
     {
-        Object& ob = objs[i]; 
+        EllipObject& ob = objs[i]; 
 
         // Vector3d color = color1 + double(i)/double(num_obj)*(color2-color1);
 
@@ -306,7 +305,7 @@ void UpdateObjectInformation(Objects& objs)
 {
     for(int i=0;i<objs.size();i++)
     {
-        Object& ob = objs[i]; 
+        EllipObject& ob = objs[i]; 
         if(ob.measurementIDs.size()<=0) continue;
 
         std::map<int,int>& voter = ob.classVoter;
@@ -492,7 +491,7 @@ void UpdateConstrainPlaneState(Measurements& mms, Objects& objs)
     int obj_num = objs.size();
     for(int i=0;i<obj_num;i++)
     {
-        Object &obj = objs[i];
+        EllipObject &obj = objs[i];
         int mea_num = obj.measurementIDs.size();
 
         g2o::ellipsoid& e_w = *obj.pEllipsoid;
@@ -533,7 +532,7 @@ void UpdateWorldConstrainPlanesForObjects(Objects& objs, Measurements& mms)
     // ************************************************
     for( int i = 0 ; i< objs.size() ; i++)
     {
-        Object& obj = objs[i];
+        EllipObject& obj = objs[i];
         g2o::ellipsoid* pEllipsoid = obj.pEllipsoid;
         if(pEllipsoid==NULL) continue;
         std::vector<ConstrainPlane*> vCPlanesWorld;
@@ -573,59 +572,59 @@ void UpdateWorldConstrainPlanesForObjects(Objects& objs, Measurements& mms)
     // ************************************************
 }
 
-// 该函数参照论文 IROS17, 使用基本的点模型作为物体模型.
-void Optimizer::GlobalObjectGraphOptimizationWithPDAPointModel(std::vector<Frame *> &pFrames, Map *pMap)
-{
-    int config_iter_num = Config::Get<double>("Optimizer.NonparametricDA.Num");
-    std::cout << "Run iterations : " << config_iter_num << std::endl;
+// // 该函数参照论文 IROS17, 使用基本的点模型作为物体模型.
+// void Optimizer::GlobalObjectGraphOptimizationWithPDAPointModel(std::vector<Frame *> &pFrames, Map *pMap)
+// {
+//     int config_iter_num = Config::Get<double>("Optimizer.NonparametricDA.Num");
+//     std::cout << "Run iterations : " << config_iter_num << std::endl;
 
-    // 初始化 mms, objs
-    Measurements mms; Objects objs; 
+//     // 初始化 mms, objs
+//     Measurements mms; Objects objs; 
     
-    // 将Frames中满足条件的measurements全部提取出来组成一个大measurements
-    // 1) 3d检测非NULL   2) 观测满足概率阈值 (当前为0)
-    InitMeasurements(mms, pFrames);  
-    InitObjectsWithMeasurements(mms, objs); // 给每个measurement 初始化一个 obj
+//     // 将Frames中满足条件的measurements全部提取出来组成一个大measurements
+//     // 1) 3d检测非NULL   2) 观测满足概率阈值 (当前为0)
+//     InitMeasurements(mms, pFrames);  
+//     InitObjectsWithMeasurements(mms, objs); // 给每个measurement 初始化一个 obj
 
-    // 优化得到的轨迹
-    Trajectory camTraj; camTraj.resize(pFrames.size());
-    for( int iter_id = 0; iter_id < config_iter_num; iter_id ++ )
-    {
-        // 临时debug
-        pMap->DeletePointCloudList("Debug.DistancePoint", 1);
+//     // 优化得到的轨迹
+//     Trajectory camTraj; camTraj.resize(pFrames.size());
+//     for( int iter_id = 0; iter_id < config_iter_num; iter_id ++ )
+//     {
+//         // 临时debug
+//         pMap->DeletePointCloudList("Debug.DistancePoint", 1);
 
-        // step 1: estimate data association
-        // 存储方式: objectObservations   按 instance->obs 的方式存储了各观测
-        // 修改数据关联后，应该重新排列组成 objectObservations 结构.
+//         // step 1: estimate data association
+//         // 存储方式: objectObservations   按 instance->obs 的方式存储了各观测
+//         // 修改数据关联后，应该重新排列组成 objectObservations 结构.
 
-        // 基于当前里程计数据，帧内观测数据，为各物体配置数据关联.
-        std::cout << " [Optimizer.cpp] Begin calculating the data association." << std::endl;
-        UpdateDataAssociation(mms, objs, 1);   // 直接以新关联方式覆盖旧的.
+//         // 基于当前里程计数据，帧内观测数据，为各物体配置数据关联.
+//         std::cout << " [Optimizer.cpp] Begin calculating the data association." << std::endl;
+//         UpdateDataAssociation(mms, objs, 1);   // 直接以新关联方式覆盖旧的.
 
-        // step 2: optimize as usual
-        // 基于新计算的数据关联结果，优化获得位姿估计，地图中路标.
-        std::cout << " [Optimizer.cpp] Begin optimizing the trajectory and objects." << std::endl;
+//         // step 2: optimize as usual
+//         // 基于新计算的数据关联结果，优化获得位姿估计，地图中路标.
+//         std::cout << " [Optimizer.cpp] Begin optimizing the trajectory and objects." << std::endl;
 
-        // 新版本优化: 使用多平面相切约束
-        OptimizeWithDataAssociationUsingMultiplanesPointModel(pFrames, mms, objs, camTraj);
-    }
+//         // 新版本优化: 使用多平面相切约束
+//         OptimizeWithDataAssociationUsingMultiplanesPointModel(pFrames, mms, objs, camTraj);
+//     }
     
-    // 根据 ClassVoters 更新物体的Label.
-    UpdateObjectInformation(objs);
+//     // 根据 ClassVoters 更新物体的Label.
+//     UpdateObjectInformation(objs);
 
-    // 输出数据关联情况
-    OutputDataAssociation(mms, objs);
+//     // 输出数据关联情况
+//     OutputDataAssociation(mms, objs);
 
-    // 将优化结果得到的物体存放入地图中可视化.
-    UpdateObjectInMap(mms, objs, pMap);
+//     // 将优化结果得到的物体存放入地图中可视化.
+//     UpdateObjectInMap(mms, objs, pMap);
 
-    // 可视化轨迹
-    VisualizeOptimizedTraj(camTraj, pMap);
+//     // 可视化轨迹
+//     VisualizeOptimizedTraj(camTraj, pMap);
 
-    // 保存本次结果
-    mObjects = objs;
-    mMeasurements = mms;
-}
+//     // 保存本次结果
+//     mObjects = objs;
+//     mMeasurements = mms;
+// }
 
 
 void StaticOutput(Measurements& mms)
@@ -697,7 +696,7 @@ void AlignObjectsToSupportingPlane(Measurements& mms, Objects& objs, Vector4d& g
     std::cout << "GroundPlane Normal : " << groundplane.head(3).transpose() << std::endl;
     for(int i=0;i<obj_num;i++)
     {
-        Object& obj = objs[i];
+        EllipObject& obj = objs[i];
         g2o::ellipsoid * pE = obj.pEllipsoid;
         Eigen::Quaterniond quat = pE->pose.rotation();    // 世界系的旋转
         Matrix3d rotMat = quat.toRotationMatrix();
@@ -721,14 +720,16 @@ void AlignObjectsToSupportingPlane(Measurements& mms, Objects& objs, Vector4d& g
 }
 
 // KEY: [Optimization]使用 概率数据关联 进行 全局图优化
-void Optimizer::GlobalObjectGraphOptimizationWithPDA(std::vector<Frame *> &pFrames, Map *pMap, const Matrix3d& calib, int iRows, int iCols)
+void Optimizer::GlobalObjectGraphOptimizationWithPDA(std::vector<Frame*> &pFrames, Map *pMap, const Matrix3d& calib, int iRows, int iCols)
 {
     int config_iter_num = Config::Get<double>("Optimizer.NonparametricDA.Num");
     std::cout << "================ Run iterations : " << config_iter_num << " ================" << std::endl;
 
     // 初始化 mms, objs
-    Measurements mms; Objects objs; 
+    Measurements mms; Objects objs;
+    
     InitMeasurements(mms, pFrames);  // 旧存储方式的转换
+
     InitObjectsWithMeasurements(mms, objs); // 给每个measurement 初始化一个 obj
 
     // 考虑到局部初始化的椭球体，z轴不一定与世界平面对齐，该函数将其对齐.
@@ -743,6 +744,7 @@ void Optimizer::GlobalObjectGraphOptimizationWithPDA(std::vector<Frame *> &pFram
 
     // 优化得到的轨迹
     Trajectory camTraj; camTraj.resize(pFrames.size());
+
     for( int iter_id = 0; iter_id < config_iter_num; iter_id ++ )
     {
         std::cout << "================================" << std::endl;
@@ -766,7 +768,7 @@ void Optimizer::GlobalObjectGraphOptimizationWithPDA(std::vector<Frame *> &pFram
 
         // 全局关联支撑关系, 获得聚类的平面
         UpdateAssociationPlanes(rls, spls);
-        // 更新关联后的变量 sp.vInstance
+        // 更新关联后的变量 sp.vInstance 
         GetObjectInstanceOnSupportingPlanes(spls, rls, mms, pFrames);
         this->LoadRelations(rls, spls); // 将关系加载到优化器, 在优化时将载入.
 
@@ -774,6 +776,7 @@ void Optimizer::GlobalObjectGraphOptimizationWithPDA(std::vector<Frame *> &pFram
 
         // 新版本优化: 使用多平面相切约束
         OptimizeWithDataAssociationUsingMultiplanes(pFrames, mms, objs, camTraj, calib, iRows, iCols);
+
 
         // 包含平面关系的优化
         // OptimizeWithDataAssociationUsingMultiplanesWithRelations(pFrames, rows, cols, mCalib, mms, objs, camTraj, rls);
@@ -791,6 +794,7 @@ void Optimizer::GlobalObjectGraphOptimizationWithPDA(std::vector<Frame *> &pFram
         // getchar();
 
     }
+
     // 调试信息输出    
 
     // 关系平面的信息输出
@@ -1018,7 +1022,7 @@ std::vector<g2o::ConstrainPlane*> TransformAndGenerateConstrainPlanes(std::vecto
     return vCPlanesOut;
 }
 
-double calculateAssociationProbabilityUsingPoint(Measurement& m, Object& ob){
+double calculateAssociationProbabilityUsingPoint(Measurement& m, EllipObject& ob){
     
     g2o::SE3Quat& Twc = m.ob_2d.pFrame->cam_pose_Twc;
     g2o::ellipsoid e_measure_global = m.ob_3d.pObj->transform_from(Twc);
@@ -1059,7 +1063,7 @@ double EllipsoidDiffProb(g2o::ellipsoid& e_mea, g2o::ellipsoid& e_ob)
     return prob;
 }
 
-double calculateAssociationProbability(Measurement& m, Object& ob){
+double calculateAssociationProbability(Measurement& m, EllipObject& ob){
     
     g2o::SE3Quat& Twc = m.ob_2d.pFrame->cam_pose_Twc;
 
@@ -1122,14 +1126,14 @@ void OutputComplexDAResult(std::vector<DAResult>& daResults, Objects& objs)
         int best_ins = objs[best_obj_id].instance_id;
 
         char str[1000];
-        sprintf(str, "[Mesure %d : Result %d , Object %d] [ResultNum %d] \n", r.measure_id, r.result_id, best_ins, num_result);
+        sprintf(str, "[Mesure %d : Result %d , EllipObject %d] [ResultNum %d] \n", r.measure_id, r.result_id, best_ins, num_result);
         out_obj << str;
         sprintf(str, "  -> Highest (OBins %d) : P(%.2f) = DP(%.2f) * Label(%.2f) * Dis(%.8f) \n", best_ins, bestR.posterior, bestR.dp_prior, bestR.prob_label, bestR.prob_dis);
         out_obj << str;
         for( int n = 0; n<num_result; n ++)
         {
             OneDAResult& cR = r.results[n];
-            Object& ob = objs[cR.object_id];
+            EllipObject& ob = objs[cR.object_id];
             int ins = ob.instance_id;
             sprintf(str, "    --> (OBins %d) : P(%.2f) = DP(%.2f) * Label(%.2f) * Dis(%.8f) \n", ins, cR.posterior, cR.dp_prior, cR.prob_label, cR.prob_dis);
             out_obj << str;
@@ -1140,7 +1144,7 @@ void OutputComplexDAResult(std::vector<DAResult>& daResults, Objects& objs)
     return;
 }
 
-void CheckValidBorder(Object& ob, Measurement& m)
+void CheckValidBorder(EllipObject& ob, Measurement& m)
 {
     g2o::ellipsoid& e_mea = *m.ob_3d.pObj;
     g2o::ellipsoid& e_ob = *ob.pEllipsoid;
@@ -1218,7 +1222,7 @@ void Optimizer::UpdateDataAssociation(Measurements& mms, Objects& objs, int mode
 
         // 若与已有物体已经关联上，先取消该关联.
         if(index >= 0 ) {
-            Object& ob = objs[index];
+            EllipObject& ob = objs[index];
             ob.classVoter[label]--; // 该类别投票器减一
             if((ob.measurementIDs.size()-1)<=0)   // 若减去该观测后，没有有效观测了
             {
@@ -1243,7 +1247,7 @@ void Optimizer::UpdateDataAssociation(Measurements& mms, Objects& objs, int mode
         std::vector<double> vec_posterior;
         for(int obj_id = 0; obj_id < objs.size(); obj_id++)
         {
-            Object& ob_rh = objs[obj_id];
+            EllipObject& ob_rh = objs[obj_id];
             // 首先获得，每个物体，在观测label上投票器内的已有观测数量  dp_prior
 
             int ob_num = ob_rh.measurementIDs.size();
@@ -1311,7 +1315,7 @@ void Optimizer::UpdateDataAssociation(Measurements& mms, Objects& objs, int mode
             // 最大后验是否满足配置要求
             if(maxprior > CONFIG_DP_alpha)
             {
-                Object& ob = objs[maxpiror_obj_id];
+                EllipObject& ob = objs[maxpiror_obj_id];
                 // add measurement
                 if( ob.classVoter.find(label) == ob.classVoter.end())
                     ob.classVoter[label] = 1;  // 注意初始化时 label 一定要覆盖所有label?
@@ -1335,7 +1339,7 @@ void Optimizer::UpdateDataAssociation(Measurements& mms, Objects& objs, int mode
                 if(!bPointModel){
                     // 无可关联物体, 初始化一个新物体
                     int instance_id = g_instance_total_id++;      // 这个必须是唯一 id.
-                    Object ob_new;
+                    EllipObject ob_new;
                     ob_new.instance_id = instance_id;
                     ob_new.classVoter[label] = 1;
                     ob_new.measurementIDs.push_back(k);
@@ -1365,7 +1369,7 @@ void Optimizer::UpdateDataAssociation(Measurements& mms, Objects& objs, int mode
             // 无可关联物体, 初始化一个新物体
             if(!bPointModel){
                 int instance_id = g_instance_total_id++;      // 这个必须是唯一 id.
-                Object ob_new;
+                EllipObject ob_new;
                 ob_new.instance_id = instance_id;
                 ob_new.classVoter[label] = 1;
                 ob_new.measurementIDs.push_back(k);
@@ -1409,5 +1413,20 @@ void Optimizer::LoadRelations(Relations& rls, SupportingPlanes& spls)
     return;
 }
 
+void Optimizer::GetOptimizedResult(Objects& objs, Measurements& mms)
+{
+    objs = mObjects;
+    mms = mMeasurements;
+}
+
+int GetTotalObjectIndex(std::vector<Frame *> &pFrames, int frame_index, int index_in_frame)
+{
+    int total_id = 0;
+    for(int i=0;i<frame_index;i++)
+    {
+        total_id+= pFrames[i]->mpLocalObjects.size();
+    }
+    return total_id+index_in_frame;
+}
 
 } // namespace: EllipsoidSLAM

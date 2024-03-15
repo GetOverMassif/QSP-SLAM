@@ -1,0 +1,6 @@
+[Mesure 1 : Result 0 , EllipObject 2] [ResultNum 1] 
+  -> Highest (OBins 2) : P(0.02) = DP(2.00) * Label(1.00) * Dis(0.00877261) 
+    --> (OBins 2) : P(0.02) = DP(2.00) * Label(1.00) * Dis(0.00877261) 
+[Mesure 0 : Result 0 , EllipObject 2] [ResultNum 1] 
+  -> Highest (OBins 2) : P(0.02) = DP(2.00) * Label(1.00) * Dis(0.00877261) 
+    --> (OBins 2) : P(0.02) = DP(2.00) * Label(1.00) * Dis(0.00877261) 

@@ -666,7 +666,7 @@ void Tracking::UpdateObjectObservation(ORB_SLAM2::Frame *pFrame, KeyFrame* pKF, 
         // // [5] 对于第一次提取，Refine提取都失败的，使用点模型
         // UpdateDepthEllipsoidUsingPointModel(pFrame);
 
-        // GenerateObservationStructure(pFrame);
+        GenerateObservationStructure(pFrame);
     }
     
     // // [6] 补充调试环节： 测试语义先验对物体的影响
@@ -1406,6 +1406,57 @@ void Tracking::SetFrameByFrame()
 {
     unique_lock<mutex> (mMutexFrameByFrame);
     frame_by_frame = true;
+}
+
+
+void Tracking::GenerateObservationStructure(ORB_SLAM2::Frame* pFrame)
+{
+    // 本存储结构以物体本身观测为索引.
+    // pFrame->meas;
+    
+    Eigen::MatrixXd &obs_mat = pFrame->mmObservations;
+    int ob_num = obs_mat.rows();
+
+    // 3d ob
+    std::vector<g2o::ellipsoid*> pLocalObjects = pFrame->mpLocalObjects;
+
+    // if(ob_num != pLocalObjects.size()) 
+    // {
+    //     std::cout << " [Error] 2d observations and 3d observations should have the same size." << std::endl;
+    //     return;
+    // }
+
+    for( int i = 0; i < ob_num; i++)
+    {
+        Eigen::VectorXd det_vec = obs_mat.row(i);  // id x1 y1 x2 y2 label rate imageID
+        int label = round(det_vec(5));
+        Eigen::Vector4d bbox = Eigen::Vector4d(det_vec(1), det_vec(2), det_vec(3), det_vec(4));
+
+        Observation ob_2d;
+        ob_2d.label = label;
+        ob_2d.bbox = bbox;
+        ob_2d.rate = det_vec(6);
+        ob_2d.pFrame = pFrame;
+
+        Observation3D ob_3d;
+        ob_3d.pFrame = pFrame;
+        if(pLocalObjects.size() == ob_num)
+            ob_3d.pObj = pLocalObjects[i];
+        else 
+            ob_3d.pObj = NULL;
+
+        Measurement m;
+        m.measure_id = i;
+        m.instance_id = -1; // not associated
+        m.ob_2d = ob_2d;
+        m.ob_3d = ob_3d;
+        pFrame->meas.push_back(m);
+    }
+}
+
+std::vector<Frame*> Tracking::GetAllFramesWithKeyframe()
+{
+    return mvpFrames;
 }
 
 }

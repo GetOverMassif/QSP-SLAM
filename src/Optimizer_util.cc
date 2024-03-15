@@ -1081,8 +1081,9 @@ void Optimizer::OptimizeWithDataAssociationUsingMultiplanes(std::vector<Frame *>
             e->setMeasurement(odom_val);
 
             e->setId(graph.edges().size());
-            Vector6d inv_sigma;inv_sigma<<1,1,1,1,1,1;
+            Vector6d inv_sigma; inv_sigma << 1,1,1,1,1,1;
             inv_sigma = inv_sigma*exp_config_odometry_weight;
+
             Matrix6d info = inv_sigma.cwiseProduct(inv_sigma).asDiagonal();
             e->setInformation(info);
             graph.addEdge(e);
@@ -1156,11 +1157,13 @@ void Optimizer::OptimizeWithDataAssociationUsingMultiplanes(std::vector<Frame *>
         // MatrixXd world_constrain_planes; world_constrain_planes.resize(0,4);
 
 
+        cout << "obj.measurementIDs.size() = " << obj.measurementIDs.size() << endl;
+        
         // 添加 2d 和 3d 约束 : 来自三维立方体构造时所用的三维平面.
         for(int i = 0; i < obj.measurementIDs.size(); i++)
         {
             Measurement& measurement = mms[obj.measurementIDs[i]];
-            int instance = measurement.instance_id;
+            instance = measurement.instance_id;
             
             Observation3D& ob_3d = measurement.ob_3d;
             g2o::ellipsoid* pObj_ob = ob_3d.pObj;
@@ -1170,10 +1173,10 @@ void Optimizer::OptimizeWithDataAssociationUsingMultiplanes(std::vector<Frame *>
             // if( i < 3 ) std::cout << "pObj_ob->prob : " << pObj_ob->prob << std::endl;
 
             int frame_index = measurement.ob_3d.pFrame->frame_seq_id;
-            auto vEllipsoid = vEllipsoidVertexMaps[instance];  
+            auto vEllipsoid = vEllipsoidVertexMaps[instance];
+
+            cout << "vSE3Vertex.size() = " << vSE3Vertex.size() << endl;
             auto vSE3 = vSE3Vertex[frame_index];
-
-
 
             std::vector<g2o::ConstrainPlane*> vCPlanes = pObj_ob->mvCPlanes;
             // MatrixXd mPlanesParam = pObj_ob->cplanes;
@@ -1182,7 +1185,11 @@ void Optimizer::OptimizeWithDataAssociationUsingMultiplanes(std::vector<Frame *>
 
             g2o::SE3Quat &Twc = measurement.ob_2d.pFrame->cam_pose_Twc;
 
-            if(!mbClose2DConstrain){
+            if(!mbClose2DConstrain && plane_num > 0){
+                // 检查是否已经初始化过
+                if (mapInsEdgePlanes.find(instance) == mapInsEdgePlanes.end()) {
+                    mapInsEdgePlanes[instance] = std::vector<g2o::EdgeSE3EllipsoidPlane*>();
+                }
                 for( int i = 0; i < plane_num; i++)
                 {
                     g2o::ConstrainPlane* pCPlane = vCPlanes[i];
@@ -1190,7 +1197,7 @@ void Optimizer::OptimizeWithDataAssociationUsingMultiplanes(std::vector<Frame *>
 
                     // 为边缘平面添加特制的约束
                     if(pCPlane->valid){
-                        g2o::EdgeSE3EllipsoidPlane* pEdge = new g2o::EdgeSE3EllipsoidPlane;
+                        g2o::EdgeSE3EllipsoidPlane* pEdge = new g2o::EdgeSE3EllipsoidPlane();
                         pEdge->setId(graph.edges().size());
                         pEdge->setVertex(0, dynamic_cast<g2o::OptimizableGraph::Vertex *>( vSE3 ));
                         pEdge->setVertex(1, dynamic_cast<g2o::OptimizableGraph::Vertex *>( vEllipsoid ));
@@ -1203,7 +1210,7 @@ void Optimizer::OptimizeWithDataAssociationUsingMultiplanes(std::vector<Frame *>
                         
                         // 设置鲁棒核函数，添加边到图中，记录边，
                         pEdge->setRobustKernel( new g2o::RobustKernelHuber() );
-
+                        
                         graph.addEdge(pEdge);
                         vEdgeEllipsoidPlane.push_back(pEdge);
                         mapInsEdgePlanes[instance].push_back(pEdge);
@@ -1532,7 +1539,6 @@ void Optimizer::OptimizeWithDataAssociationUsingMultiplanes(std::vector<Frame *>
     return;
 }
 
-
 // 该函数即 Matlab 中 DPSample 函数
 // Input: measurements    // 所有的观测，不会删除，以 index 索引.
 // Input: objs              // 初始的时候，每个 mms 生成了一个objs.
@@ -1754,14 +1760,5 @@ void Optimizer::OptimizeWithDataAssociationUsingMultiplanes(std::vector<Frame *>
 //         OutputComplexDAResult(daResults, objs);
 //     return;
 // }
-
-void Optimizer::LoadRelations(Relations& rls, SupportingPlanes& spls)
-{
-    mRelations = rls;
-    mSupportingPlanes = spls;
-    mbRelationLoaded = true;
-    std::cout << "Relations and Supportingplanes have been Loaded." << std::endl;
-    return;
-}
 
 }

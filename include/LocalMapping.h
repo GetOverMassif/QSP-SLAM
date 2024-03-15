@@ -48,6 +48,7 @@ class Map;
 class System;
 class MapObject;
 class Optimizer;
+class Frame;
 
 class LocalMapping
 {
@@ -188,6 +189,10 @@ protected:
     int min_valid_points, min_valid_rays;
 
     int cam_width, cam_height;
+
+private:
+    std::vector<Frame*> mvpFrames;
+
 };
 
 } //namespace ORB_SLAM

@@ -186,6 +186,9 @@ bool LocalMapping::RunOneTime()
         {
             if (mpTracker->mState != Tracking::NOT_INITIALIZED)
             {
+                mvpFrames.clear();
+                mvpFrames = mpTracker->GetAllFramesWithKeyframe();
+                
                 // todo: 这里人为规定了只创建一次物体, 
                 if (mpMap->GetAllMapObjects().empty() || !create_single_object) {
                     // cout << "\n[ CreateNewObjectsFromDetections ]" << std::endl;

@@ -126,7 +126,7 @@ add_library(${PROJECT_NAME} SHARED
     src/core/Plane.cpp
 #     src/core/DataAssociation.cpp
     src/core/BasicEllipsoidEdges.cpp
-#     src/core/NonparamDA.cpp
+    src/core/NonparamDA.cpp
     src/core/SupportingPlane.cpp
     src/core/ConstrainPlane.cpp
 #     src/core/SemanticLabel.cpp

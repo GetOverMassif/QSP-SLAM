@@ -68,8 +68,8 @@ public:
     }
 
     int instance_id;
-    std::map<int,int> classVoter;
-    std::vector<int> measurementIDs;
+    std::map<int,int> classVoter;  // 类别投票器
+    std::vector<int> measurementIDs;  
     ellipsoid* pEllipsoid;
 };
 typedef std::vector<EllipObject> Objects;
@@ -80,6 +80,8 @@ typedef std::vector<Relation> Relations;
 class Optimizer
 {
 public:
+    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+    
     Optimizer();
 
     void static BundleAdjustment(const std::vector<KeyFrame*> &vpKF, const std::vector<MapPoint*> &vpMP,
@@ -111,8 +113,15 @@ public:
 
     void SetGroundPlane(Vector4d& normal);
 
+    void GetOptimizedResult(Objects& objs, Measurements& mms);
+
+public:
+    // Optimize with probabilistic data association
+    void GlobalObjectGraphOptimizationWithPDA(std::vector<Frame*> &pFrames, Map *pMap, const Matrix3d& calib, int iRows, int iCols);
+    // void GlobalObjectGraphOptimizationWithPDA(Map *pMap, const Matrix3d& calib, int iRows, int iCols);
+
 private:
-    // void UpdateDataAssociation(Measurements& mms, Objects& objs, int model = 0);
+    void UpdateDataAssociation(Measurements& mms, Objects& objs, int model = 0);
     
     // 基于切平面约束完成椭球体的全局优化
     void OptimizeWithDataAssociationUsingMultiplanes(std::vector<Frame *> &pFrames, 
@@ -130,10 +139,16 @@ private:
     Relations mRelations;
     SupportingPlanes mSupportingPlanes;
 
-    // // 保存优化结果
-    // Objects mObjects;
-    // Measurements mMeasurements;
+    // 保存优化结果
+    Objects mObjects;
+    Measurements mMeasurements;
 };
+
+
+    int GetTotalObjectIndex(std::vector<Frame *> &pFrames, int frame_index, int index_in_frame);
+    bool checkVisibility(g2o::EdgeSE3EllipsoidProj *edge, g2o::VertexSE3Expmap *vSE3, 
+    g2o::VertexEllipsoid *vEllipsoid, Eigen::Matrix3d &mCalib, int rows, int cols);
+
 
 } //namespace ORB_SLAM
 

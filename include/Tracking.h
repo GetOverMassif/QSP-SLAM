@@ -156,6 +156,10 @@ public:
     bool SavePointCloudMap(const string& path);
 
 public:
+    void GenerateObservationStructure(ORB_SLAM2::Frame* pFrame);
+    std::vector<Frame*> GetAllFramesWithKeyframe();
+
+public:
 
     // Tracking states
     enum eTrackingState{

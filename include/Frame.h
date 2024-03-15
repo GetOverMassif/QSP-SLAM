@@ -246,6 +246,10 @@ public:
     bool mbSetRelation;
     Relations relations;
 
+    // Store observations
+    Measurements meas;
+
+
     // Current and Next Frame id.
     static long unsigned int nNextId;
     long unsigned int mnId;
@@ -288,6 +292,7 @@ private:
     cv::Mat mtcw;
     cv::Mat mRwc;
     cv::Mat mOw; //==mtwc
+
 };
 
 }// namespace ORB_SLAM
