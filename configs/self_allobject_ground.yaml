@@ -18,7 +18,7 @@ Tracking.AssociateIoUThresold: 0.52
 
 Tracking.MinimumPtNumToJudgeGood: 5  # default 20
 
-LocalMapping.DistFiltParam: 0.8
+LocalMapping.DistFiltParam: 0.4
 
 #--------------------------------------------------------------------------------------------
 # yolo

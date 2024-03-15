@@ -1017,6 +1017,8 @@ void Optimizer::OptimizeWithDataAssociationUsingMultiplanes(std::vector<Frame *>
     int total_frame_number = int(pFrames.size());
     int objects_num = int(objs.size());
 
+    cout << total_frame_number << " frames, " << objects_num << " objects." << endl;
+
     // initialize graph optimization.
     // 创建g2o稀疏优化器、线性求解器、块求解器、LB算法，设置优化过程不输出
     g2o::SparseOptimizer graph;
@@ -1052,7 +1054,14 @@ void Optimizer::OptimizeWithDataAssociationUsingMultiplanes(std::vector<Frame *>
     bool bSLAM_mode = (Config::Get<int>("Optimizer.SLAM.mode") == 1);   // Mapping Mode : Fix camera poses and mapping ellipsoids only
     std::cout << " [ SLAM Mode : " << bSLAM_mode << " ] " << std::endl;
     
-    for( int frame_index=0; frame_index< total_frame_number ; frame_index++) {
+    std::map<int, int> frameId2FrameIndex;
+
+    for( int frame_index = 0; frame_index < total_frame_number ; frame_index++) {
+
+        int frame_id = pFrames[frame_index]->frame_seq_id;
+        frameId2FrameIndex[frame_id] = frame_index;
+
+
         g2o::SE3Quat curr_cam_pose_Twc = pFrames[frame_index]->cam_pose_Twc;
 
         g2o::VertexSE3Expmap *vSE3 = new g2o::VertexSE3Expmap();
@@ -1062,8 +1071,23 @@ void Optimizer::OptimizeWithDataAssociationUsingMultiplanes(std::vector<Frame *>
         if(!bSLAM_mode)
             vSE3->setFixed(true);       // Fix all the poses in mapping mode.
         else 
-            vSE3->setFixed(frame_index == 0);   
+            vSE3->setFixed(frame_index == 0);
+        
         vSE3Vertex.push_back(vSE3);
+
+        cout << "Add vSE3, frame_index = " << frame_index << endl;
+        cout << "vSE3Vertex.size() = " << vSE3Vertex.size() << endl;
+
+        if (vSE3 == nullptr) {
+            cout << "vSE3 == nullptr" << endl;
+        }
+        else{
+            cout << "vSE3 != nullptr" << endl;
+        }
+
+        cout << "pFrames[frame_index]->cam_pose_Tcw = "
+             << pFrames[frame_index]->cam_pose_Tcw.toVector().transpose().matrix() << endl;
+
 
         // Add odom edges if in SLAM Mode
         if(bSLAM_mode && frame_index > 0){
@@ -1157,7 +1181,7 @@ void Optimizer::OptimizeWithDataAssociationUsingMultiplanes(std::vector<Frame *>
         // MatrixXd world_constrain_planes; world_constrain_planes.resize(0,4);
 
 
-        cout << "obj.measurementIDs.size() = " << obj.measurementIDs.size() << endl;
+        // cout << "obj.measurementIDs.size() = " << obj.measurementIDs.size() << endl;
         
         // 添加 2d 和 3d 约束 : 来自三维立方体构造时所用的三维平面.
         for(int i = 0; i < obj.measurementIDs.size(); i++)
@@ -1172,16 +1196,25 @@ void Optimizer::OptimizeWithDataAssociationUsingMultiplanes(std::vector<Frame *>
 
             // if( i < 3 ) std::cout << "pObj_ob->prob : " << pObj_ob->prob << std::endl;
 
-            int frame_index = measurement.ob_3d.pFrame->frame_seq_id;
+            int frame_id = measurement.ob_3d.pFrame->frame_seq_id;
+            int frame_index = frameId2FrameIndex[frame_id];
+            
             auto vEllipsoid = vEllipsoidVertexMaps[instance];
 
+            cout << "frame_index = " << frame_index << endl;
             cout << "vSE3Vertex.size() = " << vSE3Vertex.size() << endl;
             auto vSE3 = vSE3Vertex[frame_index];
+            cout << "Get from vSE3Vertex" << endl;
+            if (vSE3 == nullptr) {
+                cout << "vSE3 == nullptr" << endl;
+            }
+            else{
+                cout << "vSE3 != nullptr" << endl;
+            }
 
             std::vector<g2o::ConstrainPlane*> vCPlanes = pObj_ob->mvCPlanes;
             // MatrixXd mPlanesParam = pObj_ob->cplanes;
             int plane_num = vCPlanes.size();
-
 
             g2o::SE3Quat &Twc = measurement.ob_2d.pFrame->cam_pose_Twc;
 
@@ -1203,6 +1236,22 @@ void Optimizer::OptimizeWithDataAssociationUsingMultiplanes(std::vector<Frame *>
                         pEdge->setVertex(1, dynamic_cast<g2o::OptimizableGraph::Vertex *>( vEllipsoid ));
                         pEdge->setMeasurement(planeVec);
 
+                        cout << "planeVec = " << planeVec.transpose().matrix() << endl;
+
+                        if (vSE3 == nullptr) {
+                            cout << "vSE3 == nullptr" << endl;
+                        }
+                        else{
+                            cout << "vSE3 != nullptr" << endl;
+                        }
+
+                        if (vEllipsoid == nullptr) {
+                            cout << "vEllipsoid == nullptr" << endl;
+                        }
+                        else{
+                            cout << "vEllipsoid != nullptr" << endl;
+                        }
+
                         Matrix<double,1,1> inv_sigma;
                         inv_sigma << 1 * config_ellipsoid_2d_scale;
                         MatrixXd info = inv_sigma.cwiseProduct(inv_sigma).asDiagonal();
@@ -1210,8 +1259,19 @@ void Optimizer::OptimizeWithDataAssociationUsingMultiplanes(std::vector<Frame *>
                         
                         // 设置鲁棒核函数，添加边到图中，记录边，
                         pEdge->setRobustKernel( new g2o::RobustKernelHuber() );
-                        
+
+                        if (pEdge == nullptr) {
+                            cout << "pEdge == nullptr" << endl;
+                        }
+                        else{
+                            cout << "pEdge != nullptr" << endl;
+                        }
+
+                        cout << "Ready to graph.addEdge(pEdge)" << endl;
                         graph.addEdge(pEdge);
+                        cout << "Done, graph.addEdge(pEdge)" << endl;
+
+
                         vEdgeEllipsoidPlane.push_back(pEdge);
                         mapInsEdgePlanes[instance].push_back(pEdge);
                         mmInstanceObservationNum[instance]++;
