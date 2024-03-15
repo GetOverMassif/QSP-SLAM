@@ -92,17 +92,42 @@ void MapDrawer::drawEllipsoid() {
     // return true;
 }
 
+// // draw ellipsoids
+// bool MapDrawer::drawEllipsoidsVisual(double prob_thresh) {
+//     // std::vector<ellipsoid*> ellipsoids = mpMap->GetAllEllipsoids();
+//     // int num_origin = ellipsoids.size();
+
+//     std::vector<ellipsoid*> ellipsoidsVisual = mpMap->GetAllEllipsoidsVisual();
+
+//     // ellipsoids.insert(ellipsoids.end(), ellipsoidsVisual.begin(), ellipsoidsVisual.end());
+
+//     // filter those ellipsoids with prob
+//     // std::vector<ellipsoid*> ellipsoids_prob;
+//     std::vector<ellipsoid*> ellipsoids_prob;
+//     for(auto& pE : ellipsoidsVisual)
+//     {
+//         if(pE->prob > prob_thresh )
+//             ellipsoids_prob.push_back(pE);
+//     }
+    
+//     drawAllEllipsoidsInVector(ellipsoids_prob, 4);
+
+//     return true;
+// }
+
 // draw ellipsoids
-bool MapDrawer::drawEllipsoids(double prob_thresh) {
-    std::vector<ellipsoid*> ellipsoids = mpMap->GetAllEllipsoids();
-    int num_origin = ellipsoids.size();
+bool MapDrawer::drawEllipsoidsVisual(double prob_thresh) {
+    // std::vector<ellipsoid*> ellipsoids = mpMap->GetAllEllipsoids();
+    // int num_origin = ellipsoids.size();
 
     std::vector<ellipsoid*> ellipsoidsVisual = mpMap->GetAllEllipsoidsVisual();
-    ellipsoids.insert(ellipsoids.end(), ellipsoidsVisual.begin(), ellipsoidsVisual.end());
+
+    // ellipsoids.insert(ellipsoids.end(), ellipsoidsVisual.begin(), ellipsoidsVisual.end());
 
     // filter those ellipsoids with prob
+    // std::vector<ellipsoid*> ellipsoids_prob;
     std::vector<ellipsoid*> ellipsoids_prob;
-    for(auto& pE : ellipsoids)
+    for(auto& pE : ellipsoidsVisual)
     {
         if(pE->prob > prob_thresh )
             ellipsoids_prob.push_back(pE);

@@ -40,7 +40,7 @@ void SaveEllipsoidsToFile(const std::map<int, g2o::ellipsoid>& mapInsEllipsoid, 
     return;
 }
 
-void ReplaceInitEllipsoid(const g2o::ellipsoid& e, Objects& objs)
+void ReplaceInitEllipsoid(const g2o::ellipsoid& e, EllipObjects& objs)
 {
     // 注意只替换第一个
     if(objs.size() == 1)
@@ -61,7 +61,7 @@ void ExperiementQuadricSLAM(std::vector<FrameData>& frameDatas,  Matrix3d& calib
     // 对frameDatas执行优化过程
     std::vector<Frame *> pFrames = GenerateFrames(frameDatas);
     Measurements mms = GenerateMeasurements(frameDatas, pFrames);
-    Objects objs = GenerateObjects(e, mms);
+    EllipObjects objs = GenerateObjects(e, mms);
 
     // QuadricSLAM 全角度优化
     g2o::ellipsoid e_opt = OptimizeFrameDatas(e, pFrames, mms, objs, calib, rows, cols, OPTIMIZE_TYPE_QUADRICSLAM);
@@ -74,7 +74,7 @@ void ExperiementQuadricSLAM(std::vector<FrameData>& frameDatas,  Matrix3d& calib
 
 void ExperiementStoSLAM(std::vector<FrameData>& frameDatas,  Matrix3d& calib, int rows, int cols,
             g2o::ellipsoid& e_init_, g2o::ellipsoid& e_opt_, g2o::ellipsoid& e_opt_ground_, g2o::ellipsoid& e_opt_ground_pri_, g2o::ellipsoid& e_opt_texture_,
-            std::vector<Frame *>& pFrames_, Measurements& mms_, Objects& objs_)
+            std::vector<Frame *>& pFrames_, Measurements& mms_, EllipObjects& objs_)
 {
     // ******** STEP 1 : Initialize *********
     // 基于frameData做初始化
@@ -83,7 +83,7 @@ void ExperiementStoSLAM(std::vector<FrameData>& frameDatas,  Matrix3d& calib, in
     // 对frameDatas执行优化过程
     std::vector<Frame *> pFrames = GenerateFrames(frameDatas);
     Measurements mms = GenerateMeasurements(frameDatas, pFrames);
-    Objects objs = GenerateObjects(e, mms);
+    EllipObjects objs = GenerateObjects(e, mms);
 
     // ******** STEP 2 : Optimize *********
     // XYZABCYaw版本的优化
@@ -116,7 +116,7 @@ void ExperiementStoSLAM(std::vector<FrameData>& frameDatas,  Matrix3d& calib, in
     return;
 }
 
-void VisualizeGradientMat(Measurements& mms, Objects& objs, const Matrix3d& calib, int rows, int cols)
+void VisualizeGradientMat(Measurements& mms, EllipObjects& objs, const Matrix3d& calib, int rows, int cols)
 {
     if(objs.size() == 0) return;
 
@@ -154,7 +154,7 @@ void VisualizeGradientMat(Measurements& mms, Objects& objs, const Matrix3d& cali
 }
 
 void VisualizeExperienmentResult(ORB_SLAM2::System* pSLAM, std::vector<FrameData>& frameDatas,  Matrix3d& calib, int rows, int cols,
-            std::vector<Frame *>& pFrames, Measurements& mms, Objects& objs,
+            std::vector<Frame *>& pFrames, Measurements& mms, EllipObjects& objs,
             g2o::ellipsoid& e_svd, g2o::ellipsoid& e_quadricslam, 
             g2o::ellipsoid& e_init, g2o::ellipsoid& e_opt, g2o::ellipsoid& e_opt_ground, g2o::ellipsoid& e_opt_ground_pri, g2o::ellipsoid& e_opt_texture,
             bool DebugMode = true)
@@ -273,7 +273,7 @@ int main(int argc,char* argv[])
     std::string dir_gtassociation = dataset.GetDatasetDir() + "/gt_associate.txt";
     std::cout << "Load multiple objects associations from : " << dir_gtassociation << std::endl;
     std::map<int,std::map<double, int>> objObs = LoadFrameObjSettingsFromFile(dir_gtassociation);
-    std::cout << "Total Objects Num : " << objObs.size() << std::endl;
+    std::cout << "Total EllipObjects Num : " << objObs.size() << std::endl;
 
     // *********** 系统初始化 *********** 
     // 可视化地平面

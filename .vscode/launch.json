@@ -48,7 +48,7 @@
             "map/self/GroundObjects"
 
         ],
-        "stopAtEntry": true,
+        "stopAtEntry": false,
         "cwd": "${workspaceFolder}",
         "externalConsole": false,
         "MIMode": "gdb",

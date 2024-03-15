@@ -24,11 +24,17 @@ namespace ORB_SLAM2 {
 
 void Map::AddMapObject(MapObject *pMO) {
     unique_lock<mutex> lock(mMutexMap);
+
+    int id = pMO->mnId;
+    cout << " !! Map add Object " << id << endl;
+
     mspMapObjects.insert(pMO);
 }
 
 void Map::EraseMapObject(MapObject *pMO) {
     unique_lock<mutex> lock(mMutexMap);
+    int id = pMO->mnId;
+    cout << " !! Map erase Object " << id << endl;
     mspMapObjects.erase(pMO);
 }
 
@@ -344,9 +350,30 @@ vector<ellipsoid *> Map::GetAllEllipsoids() {
 void Map::ShowMapInfo()
 {
     unique_lock<mutex> lock(mMutexMap);
-    std::cout << "\n[Map Info]" << std::endl;
-    int obj_num = mspMapObjects.size();
-    std::cout << obj_num << " objects" << std::endl;
+    // std::cout << "\n[Map::ShowMapInfo]" << std::endl;
+    // int obj_num = mspMapObjects.size();
+    // std::cout << obj_num << " objects" << std::endl;
+
+    auto& mapObjects = mspMapObjects;
+
+
+    vector<int> valid_obj_ids;
+    for (auto &pMO: mapObjects){
+        if (!pMO->isBad()) {
+            valid_obj_ids.push_back(pMO->mnId);
+        }
+    }
+    int obj_num_valid = valid_obj_ids.size();
+    int obj_num_dropped = mapObjects.size() - obj_num_valid;
+
+    cout << " - Get EllipObjects: " << obj_num_valid << " valid, "
+         << obj_num_dropped << " dropped" << endl;
+    sort(valid_obj_ids.begin(), valid_obj_ids.end());
+    cout << " - Valid objects's Ids: ";
+    for (auto &obj_id: valid_obj_ids) {
+        cout << obj_id <<  ", ";
+    }
+    cout << endl;
 }
 
 } // namespace ORB_SLAM2

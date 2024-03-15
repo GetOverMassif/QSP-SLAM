@@ -46,7 +46,7 @@ DepthMapFactor: 5000.0
 #--------------------------------------------------------------------------------------------
 # Config path for Python detectors
 DetectorConfigPath: configs/config_tum_fr1_desk.json
-Objects.maskErrosion: 5
+EllipObjects.maskErrosion: 5
 
 #--------------------------------------------------------------------------------------------
 # ORB Parameters

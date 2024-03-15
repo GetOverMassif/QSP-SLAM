@@ -1096,7 +1096,7 @@ namespace evo
         int total_valid_num = results.size();
         if(total_valid_num == 0) 
         {
-            std::cout << "EVO : No Valid associated Estimation Objects!!!" << std::endl;
+            std::cout << "EVO : No Valid associated Estimation EllipObjects!!!" << std::endl;
             return staticResult;
         }
         aver_IoU /= total_valid_num;

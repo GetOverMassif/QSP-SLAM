@@ -39,7 +39,7 @@ public:
     TextureOptimizer();
 
     std::vector<g2o::ellipsoid*> graphOptimize(std::vector<ORB_SLAM2::Frame *> &pFrames, Measurements& mms, 
-    Objects& objs, Matrix3d& mCalib, int rows, int cols);
+    EllipObjects& objs, Matrix3d& mCalib, int rows, int cols);
 
     g2o::ellipsoid optimizeWithTexture(const g2o::ellipsoid &e, const Vector4d &bbox, const Matrix3d &calib, const cv::Mat &im);
     TextureOptimizerResult GetResult();
@@ -61,7 +61,7 @@ public:
 
     std::map<double, double, std::less<double>> GetThetaValueMap(g2o::ellipsoid& e_local, const Matrix3d& calib, std::vector<cv::KeyPoint>& keyPoints, cv::Mat& dtMat, int sample_num = 90);
     std::vector<g2o::ellipsoid*> SampleRotationWithTexture(std::vector<Frame *> &pFrames, Measurements& mms, 
-        Objects& objs, Matrix3d& mCalib, int rows, int cols);
+        EllipObjects& objs, Matrix3d& mCalib, int rows, int cols);
 private:
     TextureOptimizerResult mResult;
 

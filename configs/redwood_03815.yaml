@@ -45,7 +45,7 @@ DepthMapFactor: 1000
 #--------------------------------------------------------------------------------------------
 # Config path for Python detectors
 DetectorConfigPath: configs/config_redwood_03815.json
-Objects.maskErrosion: 5
+EllipObjects.maskErrosion: 5
 
 #--------------------------------------------------------------------------------------------
 # ORB Parameters

@@ -166,7 +166,7 @@ Tracking::Tracking(System *pSys, ORBVocabulary* pVoc, FrameDrawer *pFrameDrawer,
     if(sensor==System::RGBD)
     {
         mDepthMapFactor = fSettings["DepthMapFactor"];
-        maskErrosion = fSettings["Objects.maskErrosion"];
+        maskErrosion = fSettings["EllipObjects.maskErrosion"];
         cout << endl << "maskErrosion: " << maskErrosion << endl;
         if(fabs(mDepthMapFactor)<1e-5)
             mDepthMapFactor=1;
@@ -176,7 +176,7 @@ Tracking::Tracking(System *pSys, ORBVocabulary* pVoc, FrameDrawer *pFrameDrawer,
     // Object SLAM by Jingwen
     if (sensor == System::MONOCULAR)
     {
-        maskErrosion = fSettings["Objects.maskErrosion"];
+        maskErrosion = fSettings["EllipObjects.maskErrosion"];
         cout << endl << "maskErrosion: " << maskErrosion << endl;
     }
     DetectorConfigFile = fSettings["DetectorConfigPath"].string();
@@ -202,6 +202,8 @@ Tracking::Tracking(System *pSys, ORBVocabulary* pVoc, FrameDrawer *pFrameDrawer,
     associate_IoU_thresold = Config::Get<double>("Tracking.AssociateIoUThresold");
 
     associate_debug = Config::Get<int>("Tracking.AssociateDebug");
+
+    keyFrameFlagForPause = true;
 }
 
 void Tracking::SetLocalMapper(LocalMapping *pLocalMapper)
@@ -275,12 +277,18 @@ cv::Mat Tracking::GrabImageRGBD(const cv::Mat &imRGB,const cv::Mat &imD, const d
     #define CV_16F  7
 */
 
+    cout << "[ GrabImageRGBD , mvpFrames size = " << mvpFrames.size() << endl;
+    for (auto& pF: mvpFrames){
+        cout << pF->frame_seq_id << ",  " << pF->mnId << ","
+            << &pF << endl;
+    }
+
     mImGray = imRGB;
     mImDepth = imD;
     cv::Mat imDepth = imD;
 
-    cout << "After image = " << endl;
-    printMemoryUsage();
+    // cout << "After image = " << endl;
+    // printMemoryUsage();
 
     // std::cout << "imDepth.type() = " << imDepth.type() << std::endl;
 
@@ -302,18 +310,50 @@ cv::Mat Tracking::GrabImageRGBD(const cv::Mat &imRGB,const cv::Mat &imD, const d
     if((fabs(mDepthMapFactor-1.0f)>1e-5) || imDepth.type()!=CV_32F)
         imDepth.convertTo(imDepth, CV_32F, mDepthMapFactor);
 
-    cout << "Before frame creation = " << endl;
-    printMemoryUsage();
+    // cout << "Before frame creation = " << endl;
+    // printMemoryUsage();
 
+    cout << "[ Before Framecreate, mvpFrames size = " << mvpFrames.size() << endl;
+    for (auto& pF: mvpFrames){
+        cout << pF->frame_seq_id << ",  " << pF->mnId << ","
+            << &pF << endl;
+    }
+    cout << endl;
+
+    // FIXME： 这里 mCurrentFrame 在被赋值之后对 mvpFrames 产生了影响
     // clock_t time_0_start = clock();
+    // auto testmCurrentFrame = Frame(mImGray,imDepth,timestamp,mpORBextractorLeft,mpORBVocabulary,mK,mDistCoef,mbf,mThDepth,imRGB,imD);
+
+    // cout << "[ After FramecreateTest, mvpFrames size = " << mvpFrames.size() << endl;
+    // for (auto& pF: mvpFrames){
+    //     cout << pF->frame_seq_id << ",  " << pF->mnId << ", "
+    //         << &pF << endl;
+    // }
+
     mCurrentFrame = Frame(mImGray,imDepth,timestamp,mpORBextractorLeft,mpORBVocabulary,mK,mDistCoef,mbf,mThDepth,imRGB,imD);
+
+    cout << "[ After Framecreate, mvpFrames size = " << mvpFrames.size() << endl;
+    for (auto& pF: mvpFrames){
+        cout << pF->frame_seq_id << ",  " << pF->mnId << ", "
+            << &pF << endl;
+    }
+
+    cout << endl;
 
     // clock_t time_frame_creation = clock();
     // cout << " -- time_frame_creation: " <<(double)(time_frame_creation - time_0_start) / CLOCKS_PER_SEC << "s" << endl;
     Track();
 
-    cout << "After Track = " << endl;
-    printMemoryUsage();
+
+    cout << "[ After Track(), mvpFrames size = " << mvpFrames.size() << endl;
+    for (auto& pF: mvpFrames){
+        cout << pF->frame_seq_id << ",  " << pF->mnId << ","
+            << &pF << endl;
+    }
+    cout << endl;
+
+    // cout << "After Track = " << endl;
+    // printMemoryUsage();
 
     // clock_t time_track = clock();
     // cout << " -- time_track: " <<(double)(time_track - time_frame_creation) / CLOCKS_PER_SEC << "s" << endl;
@@ -330,15 +370,15 @@ cv::Mat Tracking::GrabImageRGBD(const cv::Mat &imRGB,const cv::Mat &imD, const d
             // cv::imshow("mCurrentFrame.rgb_img", mCurrentFrame.rgb_img);
             cv::waitKey(20);
             mpBuilder->processFrame(mCurrentFrame.rgb_img, mCurrentFrame.frame_img, pose, depth_range);
-            cout << "338 " << endl;
-            printMemoryUsage();
+            // cout << "338 " << endl;
+            // printMemoryUsage();
             mpBuilder->voxelFilter(0.01);   // Down sample threshold; smaller the finer; depend on the hardware.
-            cout << "341 " << endl;
-            printMemoryUsage();
+            // cout << "341 " << endl;
+            // printMemoryUsage();
             PointCloudPCL::Ptr pCloudPCL = mpBuilder->getMap();
             PointCloudPCL::Ptr pCurrentCloudPCL = mpBuilder->getCurrentMap();
-            cout << "345 " << endl;
-            printMemoryUsage();
+            // cout << "345 " << endl;
+            // printMemoryUsage();
             auto pCloud = pclToQuadricPointCloudPtr(pCloudPCL);
             auto pCloudLocal = pclToQuadricPointCloudPtr(pCurrentCloudPCL);
             mpMap->AddPointCloudList("Builder.Global Points", pCloud);
@@ -346,8 +386,8 @@ cv::Mat Tracking::GrabImageRGBD(const cv::Mat &imRGB,const cv::Mat &imD, const d
         }
     }
 
-    cout << "After builder = " << endl;
-    printMemoryUsage();
+    // cout << "After builder = " << endl;
+    // printMemoryUsage();
 
     return mCurrentFrame.mTcw.clone();
 }
@@ -576,6 +616,14 @@ void Tracking::Track()
             {
                 cout << "New Keyframe" << endl;
                 CreateNewKeyFrame();
+
+                cout << "[ After CreateNewKeyFrame, mvpFrames size = " << mvpFrames.size() << endl;
+                for (auto& pF: mvpFrames){
+                    cout << pF->frame_seq_id << ",  " << pF->mnId << ","
+                        << &pF << endl;
+                }
+                cout << endl;
+
             }
 
             // We allow points with high innovation (considererd outliers by the Huber Function)
@@ -604,6 +652,13 @@ void Tracking::Track()
             mCurrentFrame.mpReferenceKF = mpReferenceKF;
 
         mLastFrame = Frame(mCurrentFrame);
+
+        cout << "[ After mLastFrame set, mvpFrames size = " << mvpFrames.size() << endl;
+        for (auto& pF: mvpFrames){
+            cout << pF->frame_seq_id << ",  " << pF->mnId << ","
+                << &pF << endl;
+        }
+        cout << endl;
     }
 
     // Store frame pose information to retrieve the complete camera trajectory afterwards.
@@ -1185,23 +1240,8 @@ bool Tracking::NeedNewKeyFrame()
 
 void Tracking::CreateNewKeyFrame()
 {
-    
-    bool frame_by_frame_state = false;
-    {
-        unique_lock<mutex> (mMutexFrameByFrame);
-        frame_by_frame_state = frame_by_frame;
-    }
-
-    if (frame_by_frame_state) {
-        char key;
-        std::cout << "Creating new KeyFrame" << std::endl;
-        std::cout << "Press [ENTER] to continue ... , [y] to autonomous mode" << std::endl;
-        key = getchar();
-        if (key=='y' or key=='Y') {
-            unique_lock<mutex> (mMutexFrameByFrame);
-            frame_by_frame = false;
-        }
-    }
+    std::cout << "Creating new KeyFrame" << std::endl;
+    keyFrameFlagForPause = true;
 
     if(!mpLocalMapper->SetNotStop(true))
         return;
@@ -1242,13 +1282,26 @@ void Tracking::CreateNewKeyFrame()
     else if (mSensor == System::RGBD)
     {
         std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
-        mvpFrames.push_back(&mCurrentFrame);
+
+        cout << "[Tracking mvpFrames push_back frame] : " << mCurrentFrame.frame_seq_id << endl;
+        
+        AddFrameWithKeyframe(&mCurrentFrame);
+
+        // cout << "[Tracking mvpFrames push_back frame] : " << mCurrentFrame.frame_seq_id << endl;
 
         // printMemoryUsage();
 
         // Step1: 首先进行地面检测
         // [1] process MHPlanes estimation
         TaskGroundPlane();
+
+
+        cout << "[ After TaskGroundPlane, mvpFrames size = " << mvpFrames.size() << endl;
+        for (auto& pF: mvpFrames){
+            cout << pF->frame_seq_id << ",  " << pF->mnId << ","
+                << &pF << endl;
+        }
+        cout << endl;
 
         // printMemoryUsage();
 
@@ -1258,9 +1311,15 @@ void Tracking::CreateNewKeyFrame()
         else{
             // Step2: 如果有地面检测到
             // 首先进行物体检测，得到 label, bbox, mask, prob 等数据
-            std::cout << "\n [ GetObjectDetectionsRGBD ]" << std::endl;
             GetObjectDetectionsRGBD(pKF);
         }
+
+        cout << "[ After GetObjectDetectionsRGBD, mvpFrames size = " << mvpFrames.size() << endl;
+        for (auto& pF: mvpFrames){
+            cout << pF->frame_seq_id << ",  " << pF->mnId << ","
+                << &pF << endl;
+        }
+        cout << endl;
 
         // printMemoryUsage();
 
@@ -1278,6 +1337,13 @@ void Tracking::CreateNewKeyFrame()
         std::cout << " \n[ UpdateObjectObservation ] " << std::endl;
         UpdateObjectObservation(&mCurrentFrame, pKF, withAssociation);
 
+        cout << "[ After UpdateObjectObservation, mvpFrames size = " << mvpFrames.size() << endl;
+        for (auto& pF: mvpFrames){
+            cout << pF->frame_seq_id << ",  " << pF->mnId << ","
+                << &pF << endl;
+        }
+        cout << endl;
+
         // printMemoryUsage();
 
         // if(mbDynamicOpenOptimization){
@@ -1294,6 +1360,13 @@ void Tracking::CreateNewKeyFrame()
             // 关联上之后，在LocalMapping中进行 物体点云 从detection到object的传递
             AssociateObjectsByProjection(pKF);
         }
+
+        cout << "[ After AssociateObjectsByProjection, mvpFrames size = " << mvpFrames.size() << endl;
+        for (auto& pF: mvpFrames){
+            cout << pF->frame_seq_id << ",  " << pF->mnId << ","
+                << &pF << endl;
+        }
+        cout << endl;
 
         // printMemoryUsage();
 

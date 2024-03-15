@@ -18,7 +18,7 @@ Tracking.AssociateIoUThresold: 0.52
 
 Tracking.MinimumPtNumToJudgeGood: 5  # default 20
 
-LocalMapping.DistFiltParam: 0.4
+LocalMapping.DistFiltParam: 0.1
 
 #--------------------------------------------------------------------------------------------
 # yolo
@@ -144,7 +144,7 @@ Camera.scale: 5000
 #--------------------------------------------------------------------------------------------
 # Config path for Python detectors
 DetectorConfigPath: configs/config_self_allobject_ground.json
-Objects.maskErrosion: 5
+EllipObjects.maskErrosion: 5
 
 
 System.UseEllipsoldPoseForDSP.Open: 1

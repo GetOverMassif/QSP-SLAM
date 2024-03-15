@@ -23,7 +23,7 @@ Camera.RGB: 1
 
 # Config path for Python detectors
 DetectorConfigPath: configs/config_freiburg_002.json
-Objects.maskErrosion: 15
+EllipObjects.maskErrosion: 15
 
 #--------------------------------------------------------------------------------------------
 # ORB Parameters

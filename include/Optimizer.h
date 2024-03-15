@@ -72,7 +72,7 @@ public:
     std::vector<int> measurementIDs;  
     ellipsoid* pEllipsoid;
 };
-typedef std::vector<EllipObject> Objects;
+typedef std::vector<EllipObject> EllipObjects;
 
 class Relation;    // TOBECHECK: typedef出来的能否用class做声明?
 typedef std::vector<Relation> Relations;
@@ -113,7 +113,7 @@ public:
 
     void SetGroundPlane(Vector4d& normal);
 
-    void GetOptimizedResult(Objects& objs, Measurements& mms);
+    void GetOptimizedResult(EllipObjects& objs, Measurements& mms);
 
 public:
     // Optimize with probabilistic data association
@@ -121,11 +121,11 @@ public:
     // void GlobalObjectGraphOptimizationWithPDA(Map *pMap, const Matrix3d& calib, int iRows, int iCols);
 
 private:
-    void UpdateDataAssociation(Measurements& mms, Objects& objs, int model = 0);
+    void UpdateDataAssociation(Measurements& mms, EllipObjects& objs, int model = 0);
     
     // 基于切平面约束完成椭球体的全局优化
     void OptimizeWithDataAssociationUsingMultiplanes(std::vector<Frame *> &pFrames, 
-                    Measurements& mms, Objects& objs, Trajectory& camTraj, const Matrix3d& calib, int iRows, int iCols);
+                    Measurements& mms, EllipObjects& objs, Trajectory& camTraj, const Matrix3d& calib, int iRows, int iCols);
 
     void LoadRelations(Relations& rls, SupportingPlanes& spls);
 
@@ -140,7 +140,7 @@ private:
     SupportingPlanes mSupportingPlanes;
 
     // 保存优化结果
-    Objects mObjects;
+    EllipObjects mObjects;
     Measurements mMeasurements;
 };
 

@@ -82,7 +82,7 @@ g2o::EdgeSE3EllipsoidTextureDT* GenerateTextureEdgeDT(g2o::VertexSE3Expmap *vSE3
 
 // // 新: 该版本使用 RGB-D 平面约束，优化在“支撑平面”之上放着的物体
 // void TextureOptimizer::graphOptimizeWithPlanes(std::vector<Frame *> &pFrames,
-//                 Measurements& mms, Objects& objs, Trajectory& camTraj, const Matrix3d& calib, int iRows, int iCols,
+//                 Measurements& mms, EllipObjects& objs, Trajectory& camTraj, const Matrix3d& calib, int iRows, int iCols,
 //                 const Vector4d& ground_plane) {
 
 //     // 注意 ： 开启了3d 平面的局部过滤. 30 pixel
@@ -597,7 +597,7 @@ inline bool compare_valueMap(const std::pair<double, double>&p1, const std::pair
 }
 
 std::vector<g2o::ellipsoid*> TextureOptimizer::SampleRotationWithTexture(std::vector<Frame *> &pFrames, Measurements& mms, 
-    Objects& objs, Matrix3d& mCalib, int rows, int cols)
+    EllipObjects& objs, Matrix3d& mCalib, int rows, int cols)
 {
     std::vector<g2o::ellipsoid*> vpEs;
     if(objs.size() == 0) return vpEs;
@@ -668,7 +668,7 @@ std::vector<g2o::ellipsoid*> TextureOptimizer::SampleRotationWithTexture(std::ve
 //  OpenPri,    CLOSE
 //  OpenTexture,    CLOSE
 std::vector<g2o::ellipsoid*> TextureOptimizer::graphOptimize(std::vector<Frame *> &pFrames, Measurements& mms, 
-    Objects& objs, Matrix3d& mCalib, int rows, int cols)
+    EllipObjects& objs, Matrix3d& mCalib, int rows, int cols)
 {
     // ************************ LOAD CONFIGURATION ************************
     double config_odometry_weight = Config::ReadValue<double>("DEBUG.ODOM.WEIGHT");

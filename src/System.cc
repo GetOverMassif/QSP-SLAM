@@ -100,7 +100,7 @@ System::System(const string &strVocFile, const string &strSettingsFile, const st
     cout << "Vocabulary loaded!" << endl << endl;
 
     // Set Object-related variables
-    cout << "1/8 py::initialize_interpreter" << std::endl;
+    // cout << "1/8 py::initialize_interpreter" << std::endl;
     py::initialize_interpreter();
 
     py::module warn = py::module::import("warnings");
@@ -108,26 +108,26 @@ System::System(const string &strVocFile, const string &strSettingsFile, const st
 
     cv::FileStorage fSettings(strSettingsFile, cv::FileStorage::READ);
 
-    cout << "2/8 import sys" << std::endl;
+    // cout << "2/8 import sys" << std::endl;
     py::module sys = py::module::import("sys");
 
-    cout << "3/8 sys.path.append(\"./\")" << std::endl;
+    // cout << "3/8 sys.path.append(\"./\")" << std::endl;
     sys.attr("path").attr("append")("./");
     sys.attr("path").attr("append")("./reconstruct");
 
-    cout << "4/8 import reconstruct.utils as io_utils" << std::endl;
+    // cout << "4/8 import reconstruct.utils as io_utils" << std::endl;
     py::module io_utils = py::module::import("reconstruct.utils");
 
     string pyCfgPath = fSettings["DetectorConfigPath"].string();
 
-    cout << "5/8 pyCfg = io_utils.get_configs(pyCfgPath)" << std::endl;
+    // cout << "5/8 pyCfg = io_utils.get_configs(pyCfgPath)" << std::endl;
     pyCfg = io_utils.attr("get_configs")(pyCfgPath);
 
-    cout << "6/8 pyDecoder = get_decoder(pyCfg)" << std::endl;
+    // cout << "6/8 pyDecoder = get_decoder(pyCfg)" << std::endl;
 
     pyDecoder = io_utils.attr("get_decoder")(pyCfg);
 
-    cout << "7/8 pySequence = reconstruct.get_sequence(strSequencePath, pyCfg)" << std::endl;
+    // cout << "7/8 pySequence = reconstruct.get_sequence(strSequencePath, pyCfg)" << std::endl;
     pySequence = py::module::import("reconstruct").attr("get_sequence")(strSequencePath, pyCfg);
     
 
@@ -149,7 +149,7 @@ System::System(const string &strVocFile, const string &strSettingsFile, const st
         mmPyDecoders[class_id] = std::move(decoder);
     }
 
-    std::cout << "8/8 ";
+    // std::cout << "8/8 ";
     InitThread();
 
     //Create KeyFrame Database
@@ -324,20 +324,28 @@ cv::Mat System::TrackRGBD(const cv::Mat &im, const cv::Mat &depthmap, const doub
         }
     }
 
-    cout << "Before GrabImageRGBD" << endl;
-    printMemoryUsage();
+    // cout << "Before GrabImageRGBD" << endl;
+    // printMemoryUsage();
 
     // KEY： 加入图像、深度和时间戳
     cv::Mat Tcw = mpTracker->GrabImageRGBD(im,depthmap,timestamp);
 
-    cout << "After GrabImageRGBD" << endl;
-    printMemoryUsage();
+    // cout << "After GrabImageRGBD" << endl;
+    // printMemoryUsage();
     
     // 更新状态
     unique_lock<mutex> lock2(mMutexState);
     mTrackingState = mpTracker->mState;
     mTrackedMapPoints = mpTracker->mCurrentFrame.mvpMapPoints;
     mTrackedKeyPointsUn = mpTracker->mCurrentFrame.mvKeysUn;
+
+    auto mvpFrames = mpTracker->GetAllFramesWithKeyframe();
+    cout << "[ After state update, mvpFrames size = " << mvpFrames.size() << endl;
+    for (auto& pF: mvpFrames){
+        cout << pF->frame_seq_id << ",  " << pF->mnId << ","
+            << &pF << endl;
+    }
+    cout << endl;
 
     // 如果跟踪成功，则进行平面检测
     if (mTrackingState==Tracking::OK) {
@@ -347,6 +355,8 @@ cv::Mat System::TrackRGBD(const cv::Mat &im, const cv::Mat &depthmap, const doub
     if (mbMapInSameThread) {
         mpLocalMapper->RunOneTime();
     }
+
+    // mpTracker->LoadPause();
 
     return Tcw;
 }
@@ -643,6 +653,11 @@ void System::SetImageNames(vector<string>& vstrImageFilenamesRGB)
     mvstrImageFilenamesRGB.resize(vstrImageFilenamesRGB.size());
     mvstrImageFilenamesRGB = std::vector<string>(vstrImageFilenamesRGB.begin(), vstrImageFilenamesRGB.end());
     mpTracker->SetImageNames(vstrImageFilenamesRGB);
+}
+
+void System::LoadPause()
+{
+    mpTracker->LoadPause();
 }
 
 Map* System::getMap() {

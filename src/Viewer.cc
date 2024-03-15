@@ -84,8 +84,8 @@ void Viewer::Run()
 
     pangolin::Var<bool> menuShowMapObjects("menu.Show MapObjects",true,true);
     pangolin::Var<bool> menuShowGroundPlane("menu.Show GroundPlane",true,true);
-    pangolin::Var<bool> menuShowEllipsoids("menu.Show Ellipsoids", true, true);
-    pangolin::Var<bool> menuShowEllipsoidsObjects("menu.Show Ellipsoids Objects", true, true);
+    pangolin::Var<bool> menuShowEllipsoids("menu.Show Ellipsoids Visual", true, true);
+    pangolin::Var<bool> menuShowEllipsoidsObjects("menu.Show Ellipsoids EllipObjects", true, true);
     // pangolin::Var<bool> menuShowPointCloudLists("menu.Show PointCloudLists", true, true);
 
     pangolin::Var<bool> menuShowEllipsoidsObservation("menu.Ellipsoids-Ob", true, true);
@@ -208,7 +208,7 @@ void Viewer::Run()
         // draw ellipsoids
         // 这里绘制了
         if(menuShowEllipsoids)
-            mpMapDrawer->drawEllipsoids(ellipsoidProbThresh);
+            mpMapDrawer->drawEllipsoidsVisual(ellipsoidProbThresh);
 
         if(menuShowEllipsoidsObjects)
             mpMapDrawer->drawEllipsoidsObjects(ellipsoidProbThresh);

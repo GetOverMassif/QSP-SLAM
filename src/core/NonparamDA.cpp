@@ -64,8 +64,12 @@ bool deleteIndex(T& objs, int index)
     return true;
 }
 
-// 从 Tracking 当前的存储方式，组合一个 Measurements 出来. 
-// 最好是 Tracking 在计算过程中，直接组合出 Measurements. 这意味着对已有算法做重构了.
+/**
+ * 将 pFrames 中的 meas 都存放到 mms 中
+ * 从 Tracking 当前的存储方式，组合一个 Measurements 出来. 
+ * 最好是 Tracking 在计算过程中，直接组合出 Measurements. 这意味着对已有算法做重构了.
+*/
+
 void InitMeasurements(Measurements &mms, std::vector<Frame *> &pFrames)
 {
     // 将 frame 中存储的measure一一连接到 mms 中去.
@@ -78,6 +82,8 @@ void InitMeasurements(Measurements &mms, std::vector<Frame *> &pFrames)
     for(auto& pF : pFrames){
         Measurements& meas = pF->meas;
         int mea_num = meas.size();
+        
+        cout << "Frame " << pF->frame_seq_id << ", " << mea_num << " measurements." << endl;
 
         for( int i = 0; i < mea_num; i++){
             auto &m = meas[i];
@@ -91,12 +97,16 @@ void InitMeasurements(Measurements &mms, std::vector<Frame *> &pFrames)
     return;
 }
 
+/**
+ * 使用观测结果初始化物体
+ * 
+*/
 // 注意：本函数也会修改measurements
 // 1) 设定关联的物体id
 // 2) 更新measure_id 为全局索引 ( 原本是帧内的索引 )
-void InitObjectsWithMeasurements(Measurements &mms, Objects &objectObservations)
+void InitObjectsWithMeasurements(Measurements &mms, EllipObjects &objectObservations)
 {
-    Objects objs;
+    EllipObjects objs;
     for( int k = 0; k < mms.size(); k++)
     {
         Measurement& m = mms[k];
@@ -109,6 +119,7 @@ void InitObjectsWithMeasurements(Measurements &mms, Objects &objectObservations)
 
         // 无可关联物体, 初始化一个新物体
         int instance_id = g_instance_total_id++;
+
         EllipObject ob_new;
         ob_new.instance_id = instance_id;
         ob_new.classVoter[label] = 1;
@@ -129,7 +140,7 @@ void InitObjectsWithMeasurements(Measurements &mms, Objects &objectObservations)
     objectObservations = objs;
 }
 
-void OutputDataAssociation(Measurements& mms, Objects& objs)
+void OutputDataAssociation(Measurements& mms, EllipObjects& objs)
 {
     string file_name("data_association.txt");
     ofstream out_obj(file_name.c_str());
@@ -236,9 +247,12 @@ Vector3d GenerateColorFromLabel(int label)
     }
 }
 
-void UpdateObjectInMap(Measurements& mms, Objects& objs, Map *pMap)
+void UpdateObjectInMap(Measurements& mms, EllipObjects& objs, Map *pMap)
 {
-    pMap->ClearEllipsoidsVisual();
+    cout << "[NonParam, UpdateObjectInMap]" << endl;
+
+    // pMap->ClearEllipsoidsVisual();
+
     // pMap->ClearEllipsoidsObservation();
     // 按颜色光谱生成每个instance的颜色.
     // Vector3d color1(102,204,0);
@@ -248,7 +262,7 @@ void UpdateObjectInMap(Measurements& mms, Objects& objs, Map *pMap)
     int num_obj = objs.size();
     std::cout << "[ Debug : num_obj : " << num_obj << " ]" << std::endl;
     // 可视化最后优化得到的物体
-    for(int i=0;i<num_obj;i++)
+    for(int i = 0; i < num_obj; i++)
     {
         EllipObject& ob = objs[i]; 
 
@@ -262,7 +276,7 @@ void UpdateObjectInMap(Measurements& mms, Objects& objs, Map *pMap)
             // Vector3d color(r,g,b);
 
             Vector3d color;
-            color << 0,0,1.0; // 蓝色
+            color << 0,1.0,0; // 绿色
 
             // Vector3d color = GenerateColorFromLabel(ob.pEllipsoid->miLabel);
             ob.pEllipsoid->setColor(color, 1.0);
@@ -301,7 +315,7 @@ bool cmp_by_value(const PAIR& lhs, const PAIR& rhs) {
 }  
 
 // 更新 label, prob
-void UpdateObjectInformation(Objects& objs)
+void UpdateObjectInformation(EllipObjects& objs)
 {
     for(int i=0;i<objs.size();i++)
     {
@@ -483,7 +497,7 @@ void UpdateHeight(SupportingPlanes& spls, Vector4d& mGroundPlaneNormal)
 
 // 注意目前所有的 ConstrainPlane 都已经存储在了 obj 下的 ellipsoid 里面.
 // 这些平面在世界坐标系下. 直接计算即可 已经与 measurement 无关!
-void UpdateConstrainPlaneState(Measurements& mms, Objects& objs)
+void UpdateConstrainPlaneState(Measurements& mms, EllipObjects& objs)
 {
     int count_cross = 0;
     int count_not_cross =0;
@@ -525,7 +539,7 @@ void UpdateConstrainPlaneState(Measurements& mms, Objects& objs)
     std::cout << " ==> cross : " << count_cross << ", not cross " << count_not_cross << std::endl;
 }
 
-void UpdateWorldConstrainPlanesForObjects(Objects& objs, Measurements& mms)
+void UpdateWorldConstrainPlanesForObjects(EllipObjects& objs, Measurements& mms)
 {
     // ************************************************
     // [可视化专用] 基于优化后的新位姿更新世界 vwcPlanes
@@ -579,7 +593,7 @@ void UpdateWorldConstrainPlanesForObjects(Objects& objs, Measurements& mms)
 //     std::cout << "Run iterations : " << config_iter_num << std::endl;
 
 //     // 初始化 mms, objs
-//     Measurements mms; Objects objs; 
+//     Measurements mms; EllipObjects objs; 
     
 //     // 将Frames中满足条件的measurements全部提取出来组成一个大measurements
 //     // 1) 3d检测非NULL   2) 观测满足概率阈值 (当前为0)
@@ -677,9 +691,9 @@ Eigen::Matrix3d calibRotMatAccordingToGroundPlane(Matrix3d& rotMat, const Vector
 }
 
 
-void AlignObjectsToSupportingPlane(Measurements& mms, Objects& objs, Vector4d& groundplane, Map* pMap)
+void AlignObjectsToSupportingPlane(Measurements& mms, EllipObjects& objs, Vector4d& groundplane, Map* pMap)
 {
-    std::cout << "Align Objects to Supporting plane ... " << std::endl;
+    std::cout << "Align EllipObjects to Supporting plane ... " << std::endl;
     // 1) 全部初始化时的可视化
 
     // 根据 ClassVoters 更新物体的Label,概率
@@ -725,19 +739,33 @@ void Optimizer::GlobalObjectGraphOptimizationWithPDA(std::vector<Frame*> &pFrame
     int config_iter_num = Config::Get<double>("Optimizer.NonparametricDA.Num");
     std::cout << "================ Run iterations : " << config_iter_num << " ================" << std::endl;
 
+    int objects_num, measurements_num;
+
     // 初始化 mms, objs
-    Measurements mms; Objects objs;
+    Measurements mms; EllipObjects objs;
     
     InitMeasurements(mms, pFrames);  // 旧存储方式的转换
 
+    cout << "InitMeasurements" << endl;
+    cout << "objs.size = " << objs.size() << endl;
     InitObjectsWithMeasurements(mms, objs); // 给每个measurement 初始化一个 obj
 
+    cout << "InitObjectsWithMeasurements" << endl;
+    objects_num = int(objs.size());
+    measurements_num = int(mms.size());
+    cout << objects_num << " objects, " << measurements_num << " measurements."  << endl;
+
     // 考虑到局部初始化的椭球体，z轴不一定与世界平面对齐，该函数将其对齐.
-    if(mbGroundPlaneSet)
+    if(mbGroundPlaneSet){
         AlignObjectsToSupportingPlane(mms, objs, mGroundPlaneNormal, pMap);
+        cout << "AlignObjectsToSupportingPlane" << endl;
+        objects_num = int(objs.size());
+        measurements_num = int(mms.size());
+        cout << objects_num << " objects, " << measurements_num << " measurements."  << endl;
+    }
 
     // 对Relations完成数据关联
-    // 注意 Relations/SupportingPlanes 的关系与 Measurements/Objects 正是一样的.
+    // 注意 Relations/SupportingPlanes 的关系与 Measurements/EllipObjects 正是一样的.
     Relations rls; SupportingPlanes spls;
     InitRelations(rls, pFrames);
     InitSupportingPlanesWithRelations(rls, spls); 
@@ -756,9 +784,15 @@ void Optimizer::GlobalObjectGraphOptimizationWithPDA(std::vector<Frame*> &pFrame
 
         // Step 1: estimate data association
         // 基于当前轨迹数据，和所有观测数据，为各物体配置数据关联. (三维空间的聚类)
-        std::cout << " [Optimizer.cpp] Begin calculating the data association." << std::endl;
+        std::cout << "\n [Optimizer.cpp] Begin calculating the data association." << std::endl;
         clock_t da_begin = clock();
         UpdateDataAssociation(mms, objs);   // 直接以新关联方式覆盖旧的.
+
+        cout << "=> UpdateDataAssociation" << endl;
+        objects_num = int(objs.size());
+        measurements_num = int(mms.size());
+        cout << objects_num << " objects, " << measurements_num << " measurements."  << endl;
+
         clock_t da_end = clock();
         std::cout << " - DA Time : " << double(da_end-da_begin)/CLOCKS_PER_SEC << std::endl;
 
@@ -776,7 +810,6 @@ void Optimizer::GlobalObjectGraphOptimizationWithPDA(std::vector<Frame*> &pFrame
 
         // 新版本优化: 使用多平面相切约束
         OptimizeWithDataAssociationUsingMultiplanes(pFrames, mms, objs, camTraj, calib, iRows, iCols);
-
 
         // 包含平面关系的优化
         // OptimizeWithDataAssociationUsingMultiplanesWithRelations(pFrames, rows, cols, mCalib, mms, objs, camTraj, rls);
@@ -1107,7 +1140,7 @@ double dirichlet(std::map<int,int>& classVoter, int total_num, int label)
     return prob;
 }
 
-void OutputComplexDAResult(std::vector<DAResult>& daResults, Objects& objs)
+void OutputComplexDAResult(std::vector<DAResult>& daResults, EllipObjects& objs)
 {
     ofstream out_obj("./complex_daresult.txt");
 
@@ -1187,7 +1220,7 @@ void CheckValidBorder(EllipObject& ob, Measurement& m)
 // Input: objs              // 初始的时候，每个 mms 生成了一个objs.
 // Input: model, 0 Ellipsoid, 1 Point
 // Output: instanceObs
-void Optimizer::UpdateDataAssociation(Measurements& mms, Objects& objs, int model)
+void Optimizer::UpdateDataAssociation(Measurements& mms, EllipObjects& objs, int model)
 {
     double CONFIG_DP_alpha = Config::Get<double>("DataAssociation.DPAlpha");   // 默认值
     // ********************************
@@ -1217,8 +1250,8 @@ void Optimizer::UpdateDataAssociation(Measurements& mms, Objects& objs, int mode
         bool bPointModel = m.ob_3d.pObj->bPointModel;
 
         // 从对应物体列表取出该观测
-        int index = findInstanceIndex<Objects>(objs, instance); 
-        // assert( index >= 0 && "Can't find the instance in Objects.");
+        int index = findInstanceIndex<EllipObjects>(objs, instance); 
+        // assert( index >= 0 && "Can't find the instance in EllipObjects.");
 
         // 若与已有物体已经关联上，先取消该关联.
         if(index >= 0 ) {
@@ -1226,7 +1259,7 @@ void Optimizer::UpdateDataAssociation(Measurements& mms, Objects& objs, int mode
             ob.classVoter[label]--; // 该类别投票器减一
             if((ob.measurementIDs.size()-1)<=0)   // 若减去该观测后，没有有效观测了
             {
-                bool result = deleteIndex<Objects>(objs, index);    // 删除该 instance, 以 index 为索引
+                bool result = deleteIndex<EllipObjects>(objs, index);    // 删除该 instance, 以 index 为索引
                 assert( result && "Delete an unexisted index.");
             }
             else 
@@ -1413,7 +1446,7 @@ void Optimizer::LoadRelations(Relations& rls, SupportingPlanes& spls)
     return;
 }
 
-void Optimizer::GetOptimizedResult(Objects& objs, Measurements& mms)
+void Optimizer::GetOptimizedResult(EllipObjects& objs, Measurements& mms)
 {
     objs = mObjects;
     mms = mMeasurements;

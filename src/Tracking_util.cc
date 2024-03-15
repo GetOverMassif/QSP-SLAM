@@ -289,8 +289,9 @@ void Tracking::GetObjectDetectionsMono(KeyFrame *pKF)
 
 void Tracking::GetObjectDetectionsRGBD(KeyFrame *pKF)
 {
-    cout << "" << endl;
-    printMemoryUsage();
+    std::cout << "\n [Tracking::GetObjectDetectionsRGBD] " << std::endl;
+
+    // printMemoryUsage();
 
     PyThreadStateLock PyThreadLock;
 
@@ -304,17 +305,17 @@ void Tracking::GetObjectDetectionsRGBD(KeyFrame *pKF)
     // py::list detections = mpSystem->pySequence.attr("get_frame_by_id")(pKF->mnFrameId);
 
     // Get a series of object detections
-    printMemoryUsage();
+    // printMemoryUsage();
     py::list detections = mpSystem->pySequence.attr("get_frame_by_name")(pKF->mnFrameId, frame_name);
 
-    cout << "sizeof (detections) = " << sizeof(detections) << " bytes" << endl;
+    // cout << "sizeof (detections) = " << sizeof(detections) << " bytes" << endl;
 
-    cout << "Finish get_frame_by_name" << endl;
-    printMemoryUsage();
+    // cout << "Finish get_frame_by_name" << endl;
+    // printMemoryUsage();
 
     int num_dets = detections.size();
 
-    std::cout << "Detects " << num_dets << " objects Observations." << std::endl;
+    std::cout << "  - Detects " << num_dets << " objects Observations." << std::endl;
 
     // No detections, return immediately
     if (num_dets == 0)
@@ -366,8 +367,8 @@ void Tracking::GetObjectDetectionsRGBD(KeyFrame *pKF)
 
         pKF->mvpDetectedObjects.push_back(det);
 
-        cout << "Finish detection " << detected_idx << endl;
-        printMemoryUsage();
+        // cout << "Finish detection " << detected_idx << endl;
+        // printMemoryUsage();
     }
 
     // 将det结果保存到矩阵mmObservations中
@@ -393,6 +394,8 @@ void Tracking::AssociateObjectsByProjection(ORB_SLAM2::KeyFrame *pKF)
     auto mvpMapPoints = pKF->GetMapPointMatches();
     // Try to match and triangulate key-points with last key-frame
     auto detectionsKF1 = pKF->mvpDetectedObjects;
+
+    auto mapObjects = mpMap->GetAllMapObjects();
     
     // => Step 2: 遍历所有检测结果
     for (int d_i = 0; d_i < detectionsKF1.size(); d_i++)
@@ -412,7 +415,6 @@ void Tracking::AssociateObjectsByProjection(ORB_SLAM2::KeyFrame *pKF)
         // 如果使用椭球体投影的椭圆进行关联，则不进行后续的使用地图点的关联
         if (associate_object_with_ellipsold) {
             // cout << "Tracking::AssociateObjectsByProjection" << endl;
-            auto mapObjects = mpMap->GetAllMapObjects();
             for (auto pMO: mapObjects){
                 // FIXME：这里暂时对于 e 为 NULL 的情况跳过处理
                 cv::Mat img_show = mCurrentFrame.rgb_img.clone();
@@ -1103,7 +1105,7 @@ void Tracking::TaskRelationship(ORB_SLAM2::Frame *pFrame)
     // 可视化该关系
     VisualizeRelations(rls, mpMap, Twc, vPlanePoints); // 放到地图中去显示?
 
-    // std::cout << "Objects: " << vpEllipsoids.size() << std::endl;
+    // std::cout << "EllipObjects: " << vpEllipsoids.size() << std::endl;
     // std::cout << "Relation Planes : " << vpPlanes.size() << std::endl;
     // std::cout << "Relations : " << rls.size() << std::endl;
 }
@@ -1377,6 +1379,7 @@ void VisualizeRelations(Relations& rls, Map* pMap, g2o::SE3Quat &Twc, std::vecto
 
 void Tracking::ManageMemory()
 {
+
     cout << "ManageMemory" << endl;
     if(mvpFrames.size() > 1){
         Frame* pLastFrame = mvpFrames[mvpFrames.size()-2];
@@ -1456,7 +1459,52 @@ void Tracking::GenerateObservationStructure(ORB_SLAM2::Frame* pFrame)
 
 std::vector<Frame*> Tracking::GetAllFramesWithKeyframe()
 {
+    unique_lock<mutex> lock(mMutexTrack);
     return mvpFrames;
+}
+
+void Tracking::AddFrameWithKeyframe(Frame* pF)
+{
+    unique_lock<mutex> lock(mMutexTrack);
+
+    for (auto& pF: mvpFrames){
+        cout << pF->frame_seq_id << ",  " << pF->mnId << ","
+             << &pF << endl;
+    }
+
+    mvpFrames.push_back(pF);
+
+    cout << "[ Tracking mvpFrames size = " << mvpFrames.size() << endl;
+    for (auto& pF: mvpFrames){
+        cout << pF->frame_seq_id << ",  " << pF->mnId << ","
+             << &pF << endl;
+    }
+    cout << endl;
+}
+
+void Tracking::LoadPause()
+{
+    if (!keyFrameFlagForPause) {
+        return;
+    }
+    
+    bool frame_by_frame_state = false;
+    {
+        unique_lock<mutex> (mMutexFrameByFrame);
+        frame_by_frame_state = frame_by_frame;
+    }
+
+    if (frame_by_frame_state) {
+        char key;
+        std::cout << "\nPress [ENTER] to continue ... , [y] to autonomous mode" << std::endl;
+        key = getchar();
+        if (key=='y' or key=='Y') {
+            unique_lock<mutex> (mMutexFrameByFrame);
+            frame_by_frame = false;
+        }
+    }
+
+    keyFrameFlagForPause = false;
 }
 
 }

@@ -179,7 +179,7 @@ bool isBorder(Vector4d &measure , int rows, int cols, int config_boarder){
         SaveTrajectoryTUM(path, mvpFrames);
     }
 
-    void VisualizeEllipsoidsInObjects(Objects& objs, const Vector3d& color)
+    void VisualizeEllipsoidsInObjects(EllipObjects& objs, const Vector3d& color)
     {
         int obj_num = objs.size();
         for( int i=0;i<obj_num;i++)
@@ -266,7 +266,7 @@ bool isBorder(Vector4d &measure , int rows, int cols, int config_boarder){
 
         Load(); // 先恢复轨迹
         // 获得 measurements, objs.
-        Objects objs; Measurements mms;
+        EllipObjects objs; Measurements mms;
         mpOptimizer->GetOptimizedResult(objs, mms);
 
         // 调用 Initializer 获得初始化物体
@@ -355,7 +355,7 @@ bool isBorder(Vector4d &measure , int rows, int cols, int config_boarder){
         return;
     }
 
-    MatrixXd GetObjects(Objects& objs)
+    MatrixXd GetObjects(EllipObjects& objs)
     {
         MatrixXd objMat; objMat.resize(0, 11);
         for(auto& obj : objs)
@@ -371,7 +371,7 @@ bool isBorder(Vector4d &measure , int rows, int cols, int config_boarder){
         return objMat;
     }
 
-    void SaveObjects(const string& path, Objects& objs)
+    void SaveObjects(const string& path, EllipObjects& objs)
     {
         MatrixXd objMat = GetObjects(objs);
 

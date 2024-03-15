@@ -136,7 +136,7 @@ Camera.scale: 5000
 #--------------------------------------------------------------------------------------------
 # Config path for Python detectors
 DetectorConfigPath: configs/config_self_allobject_circle.json
-Objects.maskErrosion: 5
+EllipObjects.maskErrosion: 5
 
 
 System.UseEllipsoldPoseForDSP.Open: 1

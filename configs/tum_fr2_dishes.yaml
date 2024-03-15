@@ -34,7 +34,7 @@ DepthMapFactor: 5208.0 # same as Camera.scale
 
 
 DetectorConfigPath: configs/config_tum_fr2_dishes.json
-Objects.maskErrosion: 5
+EllipObjects.maskErrosion: 5
 
 
 System.UseEllipsoldPoseForDSP.Open: 1

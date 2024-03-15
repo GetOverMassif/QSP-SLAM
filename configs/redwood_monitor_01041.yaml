@@ -58,7 +58,7 @@ Camera.scale: 1250
 #--------------------------------------------------------------------------------------------
 # Config path for Python detectors
 DetectorConfigPath: configs/config_redwood_monitor_01041.json
-Objects.maskErrosion: 5
+EllipObjects.maskErrosion: 5
 
 # []
 

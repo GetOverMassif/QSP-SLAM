@@ -236,7 +236,7 @@ namespace ORB_SLAM2
         if(pFrameIn->mpLocalObjects.size() <= obj_id)
         {
             std::cout << "Wrong size of mpLocalObjects in pFrameIn." << std::endl;
-            std::cout << "Objects in frame : " << pFrameIn->mpLocalObjects.size() << std::endl;
+            std::cout << "EllipObjects in frame : " << pFrameIn->mpLocalObjects.size() << std::endl;
             std::cout << "obj_id : " << obj_id << std::endl;
             std::cout << "vec : " << vec.transpose() << std::endl;
             // std::cout << "timestamp of frame : " << std::to_string(pFrameIn->timestamp) << std::endl;

@@ -298,7 +298,7 @@ void LoopClosing::RunGlobalJointBundleAdjustment(unsigned long nLoopKF) {
     int idx = mnFullBAIdx;
     Optimizer::GlobalJointBundleAdjustemnt(mpMap, 10, &mbStopGBA, nLoopKF, false);
 
-    // Update all MapPoints, KeyFrames and Objects
+    // Update all MapPoints, KeyFrames and EllipObjects
     // Local Mapping was active during BA, that means that there might be new keyframes
     // not included in the Global BA and they are not consistent with the updated map.
     // We need to propagate the correction through the spanning tree

@@ -119,8 +119,8 @@ bool LocalMapping::RunWhileNewKeyFrame()
 
 bool LocalMapping::RunOneTime()
 {
-    cout << "[ LocalMapping::RunOneTime ]" << endl;
-    mpMap->ShowMapInfo();
+    // cout << "\n[ LocalMapping::RunOneTime ]" << endl;
+    // mpMap->ShowMapInfo();
     
     // Tracking will see that Local Mapping is busy
     SetAcceptKeyFrames(false);
@@ -188,7 +188,11 @@ bool LocalMapping::RunOneTime()
             {
                 mvpFrames.clear();
                 mvpFrames = mpTracker->GetAllFramesWithKeyframe();
-                
+                for (auto& pF: mvpFrames){
+                    cout << pF->frame_seq_id << ",  " << pF->mnId << ",";
+                }
+                cout << endl;
+
                 // todo: 这里人为规定了只创建一次物体, 
                 if (mpMap->GetAllMapObjects().empty() || !create_single_object) {
                     // cout << "\n[ CreateNewObjectsFromDetections ]" << std::endl;

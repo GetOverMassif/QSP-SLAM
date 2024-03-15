@@ -171,7 +171,7 @@ Measurements GenerateMeasurements(const std::vector<FrameData>& frameDatas, std:
     return mms;
 }
 
-Objects GenerateObjects(const g2o::ellipsoid& e, Measurements& mms)
+EllipObjects GenerateObjects(const g2o::ellipsoid& e, Measurements& mms)
 {
     ORB_SLAM2::Object obj;
     obj.instance_id = 0;
@@ -179,7 +179,7 @@ Objects GenerateObjects(const g2o::ellipsoid& e, Measurements& mms)
     for(auto &m:mms)
         obj.measurementIDs.push_back(m.measure_id);
     
-    ORB_SLAM2::Objects objs; objs.push_back(obj);
+    ORB_SLAM2::EllipObjects objs; objs.push_back(obj);
     return objs;
 }
 
@@ -200,7 +200,7 @@ void InitTextureMeasurements(Measurements& mms)
     }
 }
 
-void VisualizeTextureResults(Measurements& mms, Objects& objs, const Matrix3d& calib, int rows, int cols)
+void VisualizeTextureResults(Measurements& mms, EllipObjects& objs, const Matrix3d& calib, int rows, int cols)
 {
     // 将每个观测都输出出来。看看纹理点的对称情况，以及附近的 极值 点
     int obj_id = 0;
@@ -264,7 +264,7 @@ void VisualizeTextureResults(Measurements& mms, Objects& objs, const Matrix3d& c
     }
 }
 
-void DebugTestingRunningTime(Measurements& mms, Objects& objs, const Matrix3d& calib, int rows, int cols)
+void DebugTestingRunningTime(Measurements& mms, EllipObjects& objs, const Matrix3d& calib, int rows, int cols)
 {
     int run_num = 500;
     std::cout << "Running time : " << run_num << std::endl;
@@ -292,7 +292,7 @@ void DebugTestingRunningTime(Measurements& mms, Objects& objs, const Matrix3d& c
     return;
 }
 
-std::vector<g2o::ellipsoid*> graphOptimizeWithAllPossiblePriInit(TextureOptimizer& opt, std::vector<Frame *>& pFrames, Measurements& mms, Objects& objs,
+std::vector<g2o::ellipsoid*> graphOptimizeWithAllPossiblePriInit(TextureOptimizer& opt, std::vector<Frame *>& pFrames, Measurements& mms, EllipObjects& objs,
     Matrix3d& calib, int rows, int cols)
 {
     // 生成多种可能性
@@ -359,7 +359,7 @@ std::vector<g2o::ellipsoid*> graphOptimizeWithAllPossiblePriInit(TextureOptimize
     return pEs;
 }
 
-g2o::ellipsoid OptimizeFrameDatas(const g2o::ellipsoid& e, std::vector<Frame *>& pFrames, Measurements& mms, Objects& objs,
+g2o::ellipsoid OptimizeFrameDatas(const g2o::ellipsoid& e, std::vector<Frame *>& pFrames, Measurements& mms, EllipObjects& objs,
     Matrix3d& calib, int rows, int cols, int type)
 {
     std::cout << "Try to optimize quadrics with " << pFrames.size() << " datas." << std::endl;
@@ -447,7 +447,7 @@ g2o::ellipsoid OptimizeFrameDatas(const g2o::ellipsoid& e, std::vector<Frame *>&
 }
 
 
-g2o::ellipsoid OptimizeFrameDatasTexture(const g2o::ellipsoid& e, std::vector<Frame *>& pFrames, Measurements& mms, Objects& objs,
+g2o::ellipsoid OptimizeFrameDatasTexture(const g2o::ellipsoid& e, std::vector<Frame *>& pFrames, Measurements& mms, EllipObjects& objs,
     Matrix3d& calib, int rows, int cols)
 {
     std::cout << "Try to optimize quadrics with " << pFrames.size() << " datas using textures." << std::endl;

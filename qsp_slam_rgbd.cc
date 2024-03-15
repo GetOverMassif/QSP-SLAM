@@ -172,10 +172,22 @@ int main(int argc, char **argv)
     // Main loop
     cv::Mat imRGB, imD;
 
+    if(frame_by_frame) {
+        std::cout << "*****************************" << std::endl;
+        std::cout << "Press [ENTER] to continue ... , [y] to autonomous mode" << std::endl;
+        std::cout << "*****************************" << std::endl;
+        char key = getchar();
+        if (key=='y')
+        {
+            frame_by_frame = false;
+        }
+    }
+
     for(int ni = 0; ni < nImages; ni++)
     {
         std::cout << "\n========================================" << std::endl;
         std::cout << "=> Inputting Image " << ni << "/" << nImages << std::endl;
+        std::cout << "\n========================================" << std::endl;
 
         std::chrono::steady_clock::time_point t1_read = std::chrono::steady_clock::now();
 
@@ -186,7 +198,7 @@ int main(int argc, char **argv)
         std::chrono::steady_clock::time_point t2_read = std::chrono::steady_clock::now();
         double t_read = std::chrono::duration_cast<std::chrono::duration<double> >(t2_read - t1_read).count();
 
-        cout << " Reading Image costs: " << t_read << "s" << endl;
+        // cout << " Reading Image costs: " << t_read << "s" << endl;
 
         double tframe = vTimestamps[ni];
 
@@ -195,20 +207,6 @@ int main(int argc, char **argv)
             cerr << endl << "Failed to load image at: "
                  << string(argv[3]) << "/" << vstrImageFilenamesRGB[ni] << endl;
             return 1;/*  */
-        }
-
-        if(frame_by_frame) {
-            std::cout << "*****************************" << std::endl;
-            std::cout << "Press [ENTER] to continue ... , [y] to autonomous mode" << std::endl;
-            std::cout << "*****************************" << std::endl;
-            char key = getchar();
-            if (key=='y')
-            {
-                frame_by_frame = false;
-            }
-            else if (key=='e'){
-                break;
-            }
         }
 
         std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
@@ -233,7 +231,7 @@ int main(int argc, char **argv)
             memory_curr = rusage.ru_maxrss;
 
             double me_ratio = memory_curr / memory_init;
-            std::cout << "Memory curr/add/init = "
+            std::cout << "\nMemory curr/add/init = "
                       << (double)memory_curr / 1024. << " MB /"
                       << (double)(memory_curr - memory_last) / 1024. << "MB /"
                       << (double)memory_init / 1024. << " MB"
@@ -263,6 +261,22 @@ int main(int argc, char **argv)
             std::this_thread::sleep_for(std::chrono::microseconds(static_cast<size_t>((T- ttrack)*1e6)));
         }
 
+
+        SLAM.LoadPause();
+
+        if(frame_by_frame) {
+            std::cout << "*****************************" << std::endl;
+            std::cout << "Press [ENTER] to continue ... , [y] to autonomous mode" << std::endl;
+            std::cout << "*****************************" << std::endl;
+            char key = getchar();
+            if (key=='y')
+            {
+                frame_by_frame = false;
+            }
+            else if (key=='e'){
+                break;
+            }
+        }
 //        if (SLAM.GetTrackingState() == ORB_SLAM2::Tracking::OK)
 //            SLAM.SaveMapCurrentFrame(string(argv[4]), ni);
     }

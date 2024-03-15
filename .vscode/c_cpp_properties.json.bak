@@ -4,7 +4,8 @@
             "name": "Linux",
             "includePath": [
                 "${default}",
-                "/usr/local/include/eigen3"
+                "/usr/local/include/eigen3",
+                ""
             ],
             "defines": [],
             "compilerPath": "/usr/bin/clang-13",

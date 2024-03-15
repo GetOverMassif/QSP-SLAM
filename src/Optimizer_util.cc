@@ -288,7 +288,7 @@ void Optimizer::JointBundleAdjustment(const vector<KeyFrame *> &vpKFs, const vec
         }
     }
 
-    // Objects
+    // EllipObjects
     for (size_t i = 0; i < vpMO.size(); i++) {
         if (vbNotIncludedMO[i])
             continue;
@@ -763,7 +763,7 @@ void Optimizer::LocalJointBundleAdjustment(KeyFrame *pKF, bool *pbStopFlag, Map 
         pMP->UpdateNormalAndDepth();
     }
 
-    //Objects
+    //EllipObjects
     for (auto pMO : lLocalMapObjects)
     {
         if (!pMO->isDynamic() && !pMO->isBad())
@@ -890,7 +890,7 @@ bool IsSymmetry(int label)
 }
 
 // 输出函数
-void OutputOptimizationEdgeErrors(Objects& objs, std::map<int, std::vector<g2o::EdgeSE3EllipsoidPlane*>>& mapInsEdgePlanes, 
+void OutputOptimizationEdgeErrors(EllipObjects& objs, std::map<int, std::vector<g2o::EdgeSE3EllipsoidPlane*>>& mapInsEdgePlanes, 
     std::map<int, std::vector<g2o::EdgeSE3EllipsoidPlanePartial*>>& mapInsEdgePlanesPartial)
 {
     ofstream out_obj("./optimization_edges.txt");
@@ -948,7 +948,7 @@ void OutputInstanceObservationNum(std::map<int,int>& map)
 *   10-4 Ours 论文发表使用的版本。
 */
 void Optimizer::OptimizeWithDataAssociationUsingMultiplanes(std::vector<Frame *> &pFrames,
-                Measurements& mms, Objects& objs, Trajectory& camTraj, const Matrix3d& calib, int iRows, int iCols) {
+                Measurements& mms, EllipObjects& objs, Trajectory& camTraj, const Matrix3d& calib, int iRows, int iCols) {
     // ************* 系统调试 ***************
     // 是否使用平面作为3D约束、是否使用法向约束、3D约束？
     bool bUsePlanesAs3DConstrains = true;
@@ -1016,8 +1016,9 @@ void Optimizer::OptimizeWithDataAssociationUsingMultiplanes(std::vector<Frame *>
     // 总共帧数、物体数量
     int total_frame_number = int(pFrames.size());
     int objects_num = int(objs.size());
+    int measurements_num = int(mms.size());
 
-    cout << total_frame_number << " frames, " << objects_num << " objects." << endl;
+    cout << total_frame_number << " frames, " << objects_num << " objects, " << measurements_num << " measurements."  << endl;
 
     // initialize graph optimization.
     // 创建g2o稀疏优化器、线性求解器、块求解器、LB算法，设置优化过程不输出
@@ -1075,18 +1076,18 @@ void Optimizer::OptimizeWithDataAssociationUsingMultiplanes(std::vector<Frame *>
         
         vSE3Vertex.push_back(vSE3);
 
-        cout << "Add vSE3, frame_index = " << frame_index << endl;
-        cout << "vSE3Vertex.size() = " << vSE3Vertex.size() << endl;
+        // cout << "Add vSE3, frame_index = " << frame_index << endl;
+        // cout << "vSE3Vertex.size() = " << vSE3Vertex.size() << endl;
 
-        if (vSE3 == nullptr) {
-            cout << "vSE3 == nullptr" << endl;
-        }
-        else{
-            cout << "vSE3 != nullptr" << endl;
-        }
+        // if (vSE3 == nullptr) {
+        //     cout << "vSE3 == nullptr" << endl;
+        // }
+        // else{
+        //     cout << "vSE3 != nullptr" << endl;
+        // }
 
-        cout << "pFrames[frame_index]->cam_pose_Tcw = "
-             << pFrames[frame_index]->cam_pose_Tcw.toVector().transpose().matrix() << endl;
+        // cout << "pFrames[frame_index]->cam_pose_Tcw = "
+        //      << pFrames[frame_index]->cam_pose_Tcw.toVector().transpose().matrix() << endl;
 
 
         // Add odom edges if in SLAM Mode
@@ -1198,19 +1199,9 @@ void Optimizer::OptimizeWithDataAssociationUsingMultiplanes(std::vector<Frame *>
 
             int frame_id = measurement.ob_3d.pFrame->frame_seq_id;
             int frame_index = frameId2FrameIndex[frame_id];
-            
-            auto vEllipsoid = vEllipsoidVertexMaps[instance];
 
-            cout << "frame_index = " << frame_index << endl;
-            cout << "vSE3Vertex.size() = " << vSE3Vertex.size() << endl;
+            auto vEllipsoid = vEllipsoidVertexMaps[instance];
             auto vSE3 = vSE3Vertex[frame_index];
-            cout << "Get from vSE3Vertex" << endl;
-            if (vSE3 == nullptr) {
-                cout << "vSE3 == nullptr" << endl;
-            }
-            else{
-                cout << "vSE3 != nullptr" << endl;
-            }
 
             std::vector<g2o::ConstrainPlane*> vCPlanes = pObj_ob->mvCPlanes;
             // MatrixXd mPlanesParam = pObj_ob->cplanes;
@@ -1236,22 +1227,6 @@ void Optimizer::OptimizeWithDataAssociationUsingMultiplanes(std::vector<Frame *>
                         pEdge->setVertex(1, dynamic_cast<g2o::OptimizableGraph::Vertex *>( vEllipsoid ));
                         pEdge->setMeasurement(planeVec);
 
-                        cout << "planeVec = " << planeVec.transpose().matrix() << endl;
-
-                        if (vSE3 == nullptr) {
-                            cout << "vSE3 == nullptr" << endl;
-                        }
-                        else{
-                            cout << "vSE3 != nullptr" << endl;
-                        }
-
-                        if (vEllipsoid == nullptr) {
-                            cout << "vEllipsoid == nullptr" << endl;
-                        }
-                        else{
-                            cout << "vEllipsoid != nullptr" << endl;
-                        }
-
                         Matrix<double,1,1> inv_sigma;
                         inv_sigma << 1 * config_ellipsoid_2d_scale;
                         MatrixXd info = inv_sigma.cwiseProduct(inv_sigma).asDiagonal();
@@ -1260,17 +1235,7 @@ void Optimizer::OptimizeWithDataAssociationUsingMultiplanes(std::vector<Frame *>
                         // 设置鲁棒核函数，添加边到图中，记录边，
                         pEdge->setRobustKernel( new g2o::RobustKernelHuber() );
 
-                        if (pEdge == nullptr) {
-                            cout << "pEdge == nullptr" << endl;
-                        }
-                        else{
-                            cout << "pEdge != nullptr" << endl;
-                        }
-
-                        cout << "Ready to graph.addEdge(pEdge)" << endl;
                         graph.addEdge(pEdge);
-                        cout << "Done, graph.addEdge(pEdge)" << endl;
-
 
                         vEdgeEllipsoidPlane.push_back(pEdge);
                         mapInsEdgePlanes[instance].push_back(pEdge);
@@ -1604,7 +1569,7 @@ void Optimizer::OptimizeWithDataAssociationUsingMultiplanes(std::vector<Frame *>
 // Input: objs              // 初始的时候，每个 mms 生成了一个objs.
 // Input: model, 0 Ellipsoid, 1 Point
 // Output: instanceObs
-// void Optimizer::UpdateDataAssociation(Measurements& mms, Objects& objs, int model)
+// void Optimizer::UpdateDataAssociation(Measurements& mms, EllipObjects& objs, int model)
 // {
 //     double CONFIG_DP_alpha = Config::Get<double>("DataAssociation.DPAlpha");   // 默认值
 //     // ********************************
@@ -1634,8 +1599,8 @@ void Optimizer::OptimizeWithDataAssociationUsingMultiplanes(std::vector<Frame *>
 //         bool bPointModel = m.ob_3d.pObj->bPointModel;
 
 //         // 从对应物体列表取出该观测
-//         int index = findInstanceIndex<Objects>(objs, instance); 
-//         // assert( index >= 0 && "Can't find the instance in Objects.");
+//         int index = findInstanceIndex<EllipObjects>(objs, instance); 
+//         // assert( index >= 0 && "Can't find the instance in EllipObjects.");
 
 //         // 若与已有物体已经关联上，先取消该关联.
 //         if(index >= 0 ) {
@@ -1643,7 +1608,7 @@ void Optimizer::OptimizeWithDataAssociationUsingMultiplanes(std::vector<Frame *>
 //             ob.classVoter[label]--; // 该类别投票器减一
 //             if((ob.measurementIDs.size()-1)<=0)   // 若减去该观测后，没有有效观测了
 //             {
-//                 bool result = deleteIndex<Objects>(objs, index);    // 删除该 instance, 以 index 为索引
+//                 bool result = deleteIndex<EllipObjects>(objs, index);    // 删除该 instance, 以 index 为索引
 //                 assert( result && "Delete an unexisted index.");
 //             }
 //             else 

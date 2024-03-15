@@ -163,6 +163,7 @@ public:
     void OpenDepthEllipsoid();
 
     void SetImageNames(vector<string>& vstrImageFilenamesRGB);
+    void LoadPause();
 
 
     Map* getMap();

@@ -131,6 +131,10 @@ int MapObject::Observations()
     return nObs;
 }
 
+/**
+ * 在以下情况下设置物体 Bad:
+ *  - 3D关联过程中认为两个物体是同一物体，
+*/
 void MapObject::SetBadFlag()
 {
     map<KeyFrame*,size_t> obs;
@@ -180,6 +184,7 @@ bool MapObject::IsInKeyFrame(KeyFrame *pKF)
     return (mObservations.count(pKF));
 }
 
+// 地图物体替换
 void MapObject::Replace(MapObject *pMO)
 {
     if(pMO->mnId==this->mnId)
@@ -210,6 +215,8 @@ void MapObject::Replace(MapObject *pMO)
         }
     }
 
+    int id = mnId;
+    cout << "!! Set Object " << id << " bad at Replace" << endl;
     this->SetBadFlag();
 }
 
@@ -296,6 +303,9 @@ void MapObject::RemoveOutliersSimple()
     if (n_pts == 0)
     {
         this->SetBadFlag();
+
+        int id = mnId;
+        cout << "!! Set Object " << id << " bad at RemoveOutliersSimple" << endl;
         return;
     }
 
@@ -366,6 +376,8 @@ void MapObject::ComputeCuboidPCA(bool updatePose)
 
     if (N == 0)
     {
+        int id = mnId;
+        cout << "!! Set Object " << id << " bad at ComputeCuboidPCA" << endl;
         this->SetBadFlag();
         return;
     }
@@ -497,8 +509,6 @@ void MapObject::SetPoseByEllipsold(g2o::ellipsoid* e)
     Eigen::Matrix4f Two;
 
     {
-
-    
     // cout << "In SetPoseByEllipsold, e->prob = " << e->prob << endl;
     if(mpEllipsold == NULL) {
         {
@@ -561,7 +571,7 @@ bool MapObject::AddDepthPointCloudFromObjectDetection(ObjectDetection* det)
         // std::cout << "pcd_ptr = nullptr" << std::endl;
         pcd_ptr = pcl::PointCloud<PointType>::Ptr(new pcl::PointCloud<PointType>);
         *pcd_ptr = *(det->pcd_ptr);
-        mbValidPointCloudFlag = true;
+        // mbValidPointCloudFlag = true;
     }
     else{
         // std::cout << "Merging .. " << std::endl;
@@ -574,6 +584,11 @@ bool MapObject::AddDepthPointCloudFromObjectDetection(ObjectDetection* det)
     // 打印合并后的点云的大小
     std::cout << "Merged Cloud Size: " << pcd_ptr->size() << std::endl;
     // std::cout << "mnId = " << mnId << ", Merged Cloud Size: " << std::endl;
+
+    // TODO: 这里判定点云有效的参数有待写入参数文件
+    if (pcd_ptr->size() > 5) {
+        mbValidPointCloudFlag = true;
+    }
 
     mPoints = std::make_shared<PointCloud>(pclXYZToQuadricPointCloud(pcd_ptr));
 

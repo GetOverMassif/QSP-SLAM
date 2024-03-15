@@ -49,19 +49,19 @@ std::vector<Frame *> GenerateFrames(const std::vector<FrameData>& frameDatas);
 
 Measurements GenerateMeasurements(const std::vector<FrameData>& frameDatas, std::vector<Frame *>& pFrames);
 
-Objects GenerateObjects(const g2o::ellipsoid& e, Measurements& mms);
+EllipObjects GenerateObjects(const g2o::ellipsoid& e, Measurements& mms);
 
 void InitTextureMeasurements(Measurements& mms);
 
-void VisualizeTextureResults(Measurements& mms, Objects& objs, const Matrix3d& calib, int rows, int cols);
+void VisualizeTextureResults(Measurements& mms, EllipObjects& objs, const Matrix3d& calib, int rows, int cols);
 
-void DebugTestingRunningTime(Measurements& mms, Objects& objs, const Matrix3d& calib, int rows, int cols);
+void DebugTestingRunningTime(Measurements& mms, EllipObjects& objs, const Matrix3d& calib, int rows, int cols);
 
-g2o::ellipsoid OptimizeFrameDatas(const g2o::ellipsoid& e, std::vector<Frame *>& pFrames, Measurements& mms, Objects& objs,
+g2o::ellipsoid OptimizeFrameDatas(const g2o::ellipsoid& e, std::vector<Frame *>& pFrames, Measurements& mms, EllipObjects& objs,
     Matrix3d& calib, int rows, int cols, int type);
 
 
-g2o::ellipsoid OptimizeFrameDatasTexture(const g2o::ellipsoid& e, std::vector<Frame *>& pFrames, Measurements& mms, Objects& objs,
+g2o::ellipsoid OptimizeFrameDatasTexture(const g2o::ellipsoid& e, std::vector<Frame *>& pFrames, Measurements& mms, EllipObjects& objs,
     Matrix3d& calib, int rows, int cols);
 
 System* initSystem(int argc,char* argv[], TUMRGBD::Dataset& dataset);

@@ -158,6 +158,8 @@ public:
 public:
     void GenerateObservationStructure(ORB_SLAM2::Frame* pFrame);
     std::vector<Frame*> GetAllFramesWithKeyframe();
+    void AddFrameWithKeyframe(Frame* pF);
+    void LoadPause();
 
 public:
 
@@ -207,6 +209,9 @@ public:
     void Reset();
 
     void SetFrameByFrame();
+
+protected:
+    std::mutex mMutexTrack;
 
 protected:
 
@@ -358,6 +363,8 @@ protected:
     double associate_IoU_thresold;
 
     bool associate_debug;
+
+    bool keyFrameFlagForPause;
 
 };
 

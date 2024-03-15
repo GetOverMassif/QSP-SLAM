@@ -89,15 +89,19 @@ class Detector2D(object):
         n_det = 0
 
         print(f"object_classes = {object_classes}")
-
+        
+        any_detect = False
+        print(f"detect ")
         for object_class in object_classes:
             for object_id in object_class_table[object_class]:
                 o = object_id
                 n_det_bbox = len(self.predictions[0][o])
                 n_det_mask = len(self.predictions[1][o])
 
+                
                 if n_det_bbox:
-                    print(f"detect {n_det_bbox} {object_class}")
+                    any_detect = True
+                    print(f"{n_det_bbox} {object_class}, ", end='')
 
                 assert n_det_bbox == n_det_mask,  f"len(bbox[{o}]) != len(mask[{o}])"
                 bboxes_o = self.predictions[0][o]
@@ -106,6 +110,11 @@ class Detector2D(object):
                 labels.extend([o for i in range(n_det_bbox)])
                 n_det += n_det_bbox
 
+        if any_detect:
+            print("")
+        else:
+            print("nothing")
+        
         bboxes = np.concatenate(bboxes, axis=0)
         labels = np.array(labels)
         probs = bboxes[:,4]

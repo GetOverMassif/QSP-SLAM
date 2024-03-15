@@ -32,8 +32,8 @@ void Builder::processFrame(cv::Mat &rgb, cv::Mat &depth, Eigen::VectorXd &pose, 
     bool bGlobalMap = ORB_SLAM2::Config::Get<int>("Visualization.Builder.Global.Open") == 1;
     if(bGlobalMap)
         addPointCloudToMap(pGlobalPointCloud);
-    cout << "41 " << endl;
-    printMemoryUsage();
+    // cout << "41 " << endl;
+    // printMemoryUsage();
     return;
 }
 
@@ -120,21 +120,21 @@ PointCloudPCL::Ptr Builder::transformToWolrd( PointCloudPCL::Ptr& pPointCloud, V
 }
 
 void Builder::addPointCloudToMap(PointCloudPCL::Ptr pPointCloud){
-    printMemoryUsage();
-    // 输出指针指向的对象的大小
-    std::cout << "Size of mpMap pointed object: " << sizeof(pcl::PointXYZ) * mpMap->size() << " bytes" << std::endl;
-    std::cout << "Size of pPointCloud pointed object: " << sizeof(pcl::PointXYZ) * pPointCloud->size() << " bytes" << std::endl;
-    printMemoryUsage();
+    // printMemoryUsage();
+    // // 输出指针指向的对象的大小
+    // std::cout << "Size of mpMap pointed object: " << sizeof(pcl::PointXYZ) * mpMap->size() << " bytes" << std::endl;
+    // std::cout << "Size of pPointCloud pointed object: " << sizeof(pcl::PointXYZ) * pPointCloud->size() << " bytes" << std::endl;
+    // printMemoryUsage();
     *mpMap = *mpMap + *pPointCloud;
-    printMemoryUsage();
-    std::cout << "Size of mpMap pointed object: " << sizeof(pcl::PointXYZ) * mpMap->size() << " bytes" << std::endl;
-    std::cout << "Size of pPointCloud pointed object: " << sizeof(pcl::PointXYZ) * pPointCloud->size() << " bytes" << std::endl;
-    printMemoryUsage();
+    // printMemoryUsage();
+    // std::cout << "Size of mpMap pointed object: " << sizeof(pcl::PointXYZ) * mpMap->size() << " bytes" << std::endl;
+    // std::cout << "Size of pPointCloud pointed object: " << sizeof(pcl::PointXYZ) * pPointCloud->size() << " bytes" << std::endl;
+    // printMemoryUsage();
     // pPointCloud.reset();
     // delete pPointCloud;  // 这个语句会编译报错
     pPointCloud.reset(new pcl::PointCloud<pcl::PointXYZRGB>());
-    std::cout << "Size of mpMap pointed object: " << sizeof(pcl::PointXYZ) * mpMap->size() << " bytes" << std::endl;
-    printMemoryUsage();
+    // std::cout << "Size of mpMap pointed object: " << sizeof(pcl::PointXYZ) * mpMap->size() << " bytes" << std::endl;
+    // printMemoryUsage();
     // std::cout << "Size of pPointCloud pointed object: " << sizeof(pcl::PointXYZ) * pPointCloud->size() << " bytes" << std::endl;
 
 }
@@ -150,8 +150,8 @@ void Builder::saveMap(const string& path){
 
 void Builder::voxelFilter(double grid_size){
     // Voxel grid downsample
-    cout << "voxelFilter" << endl;
-    std::cout << "Size of mpMap pointed object: " << sizeof(pcl::PointXYZ) * mpMap->size() << " bytes" << std::endl;
+    // cout << "voxelFilter" << endl;
+    // std::cout << "Size of mpMap pointed object: " << sizeof(pcl::PointXYZ) * mpMap->size() << " bytes" << std::endl;
     static pcl::VoxelGrid<PointT> voxel;
 
     double gridsize = grid_size;
@@ -162,6 +162,6 @@ void Builder::voxelFilter(double grid_size){
     mpMap.reset(new PointCloudPCL());
     pcl::copyPointCloud(*tmp, *mpMap);
     tmp.reset();
-    std::cout << "mpMap->points.size() = " << mpMap->points.size() << std::endl;
-    std::cout << "Size of mpMap pointed object: " << sizeof(pcl::PointXYZ) * mpMap->size() << " bytes" << std::endl;
+    // std::cout << "mpMap->points.size() = " << mpMap->points.size() << std::endl;
+    // std::cout << "Size of mpMap pointed object: " << sizeof(pcl::PointXYZ) * mpMap->size() << " bytes" << std::endl;
 }

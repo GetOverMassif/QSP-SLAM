@@ -60,7 +60,7 @@ Camera.scale: 1250
 #--------------------------------------------------------------------------------------------
 # Config path for Python detectors
 DetectorConfigPath: configs/config_redwood_chair_01053.json
-Objects.maskErrosion: 5
+EllipObjects.maskErrosion: 5
 
 
 System.UseEllipsoldPoseForDSP.Open: 1

@@ -484,8 +484,8 @@ int main(int argc, char* argv[]) {
     excel.analyze(ExcelTool::VALUE_TYPE_IoU);   // 单独测试IoU的效果
 
     std::cout << "COUNT: " << std::endl;
-    std::cout << " - Detection Objects: " << count_det_objects << std::endl;
-    std::cout << " - Success Objects: " << count_success_objects << std::endl;
+    std::cout << " - Detection EllipObjects: " << count_det_objects << std::endl;
+    std::cout << " - Success EllipObjects: " << count_success_objects << std::endl;
     std::cout << " - Success Percent: " << count_success_objects/double(count_det_objects) << std::endl;
 
     return 0;

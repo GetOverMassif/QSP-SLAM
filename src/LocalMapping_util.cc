@@ -306,7 +306,7 @@ void LocalMapping::CreateNewObjectsFromDetections()
     // Create new objects first, otherwise data association might fail
     for (int det_i = 0; det_i < mvpObjectDetections.size(); det_i++)
     {
-        std::cout << "\n=> det_i : " << det_i << std::endl;
+        // std::cout << "\n=> det_i : " << det_i << std::endl;
         // Step 2.1: 如果该检测如果已经与物体关联/关键点过少，则continue
         auto det = mvpObjectDetections[det_i];
         int class_id = det->label;
@@ -357,7 +357,7 @@ void LocalMapping::CreateNewObjectsFromDetections()
     }
 }
 
-
+// FIXME: 有待将隐式形状优化与椭球体优化过程解耦合开
 void LocalMapping::ProcessDetectedObjects()
 {
     std::cout << "\n[ LocalMapping - ProcessDetectedObjects ]" << std::endl;
@@ -377,22 +377,25 @@ void LocalMapping::ProcessDetectedObjects()
     auto mvpGlobalEllipsolds = mpCurrentKeyFrame->GetEllipsoldsGlobal();
 
     std::cout << " => " << "KF" << mpCurrentKeyFrame->mnId << ", mvpObjectDetections.size() = " << mvpObjectDetections.size() << std::endl;
+    
+    // 需要记录一下啊这个detect对应的
+    vector<bool> toSetObjectBad(mvpObjectDetections.size(), true);
 
     // 处理当前关键帧的所有detection
     for (int det_i = 0; det_i < mvpObjectDetections.size(); det_i++)
     {
         std::cout << "\n=> det_i " << det_i+1 << "/" << mvpObjectDetections.size() << std::endl;
+        
         // std::cout << "Press [ENTER] to continue ... " << std::endl;
         // key = getchar();
 
         auto det = mvpObjectDetections[det_i];
         MapObject *pMO = mvpAssociatedObjects[det_i];
-        
 
         // If the detection is associated with an existing map object, we consider 2 different situations:
         // 1. 物体已经被重建： 更新观测
         // 2. 物体尚未被重建： 检查是否准备好重建，如果有足够多点则进行重建
-        
+    
         /**
          * 如果:
          *   (1) 该检测尚未与地图物体关联 
@@ -409,7 +412,6 @@ void LocalMapping::ProcessDetectedObjects()
             else
                 cout << "Object " << pMO_last->mnId << ": \n" << pMO_last->Sim3Two.matrix() << endl;
 
-
             auto det_vec = mvpObjectDetections[det_i-1]->bbox;
             int x1 = (int)det_vec(0), y1 = (int)det_vec(1), x2 = (int)det_vec(2), y2 = (int)det_vec(3);
             // cv::Mat img_show = pFrame->rgb_img.clone();
@@ -421,6 +423,7 @@ void LocalMapping::ProcessDetectedObjects()
             cout << "Press any key to continue" << endl;
             char key = getchar();
         }
+
 
         if (det->isNew) {
             std::cout << "  Conitinue because det->isNew" << std::endl;
@@ -454,11 +457,7 @@ void LocalMapping::ProcessDetectedObjects()
         // 把深度点云加到地图物体中
         if (add_depth_pcd_to_map_object) {
             pMO->AddDepthPointCloudFromObjectDetection(det);
-            // cout << "AddDepthPointCloudFromObjectDetection" << endl;
         }
-
-        // std::cout << "use_ellipsold_pose_for_shape_optimization = " << \
-        //     use_ellipsold_pose_for_shape_optimization << std::endl;
 
         int numKFsPassedSinceInit = int(mpCurrentKeyFrame->mnId - pMO->mpRefKF->mnId);
 
@@ -484,7 +483,6 @@ void LocalMapping::ProcessDetectedObjects()
          * （2）在非首次的处理过程中，如何使用椭球体位姿？
          *       
          */
-        
 
         // FIXME: 这里可以选择，在使用椭球体模式下，如果没有成功估计椭球体，就跳过物体优化
         if (numKFsPassedSinceInit < 50 && !pMO->reconstructed) {
@@ -495,7 +493,8 @@ void LocalMapping::ProcessDetectedObjects()
             else{
                 if (mvpGlobalEllipsolds[det_i] == NULL) {
                     cout << "mvpGlobalEllipsolds[" << det_i << "] == NULL" << endl;
-                    pMO->SetBadFlag();
+                    // pMO->SetBadFlag();
+                    // continue;
                 }
                 else{
                     // Method 2: 使用来自椭球体的位姿信息
@@ -520,6 +519,14 @@ void LocalMapping::ProcessDetectedObjects()
         /**
          * 为了减少优化次数，只在 passedKF 为5的倍数时处理
         */
+        // FIXME：这里有待替换为一个判断是否进行隐式形状优化的判定条件
+        /**
+         * 是否为第一次观测：
+         * - 是：[优化]
+         * - 否：比较与上次优化时的参数变化
+         *   -- 位姿发生显著变化、物体点云数量显著变化： [优化]
+         *   -- 否则： [不优化]
+        */
         if ((numKFsPassedSinceInit - 15) % 5 != 0) {
             std::cout << "  Conitinue because (numKFsPassedSinceInit - 15) % 5 != 0" << std::endl;
             continue;
@@ -533,8 +540,6 @@ void LocalMapping::ProcessDetectedObjects()
 
             std::shared_ptr<PointCloud> mPointsPtr = pMO->GetPointCloud();
             PointCloud* pPoints = mPointsPtr.get();
-
-            // auto points = pMO->GetPointCloud();
             n_valid_points = pPoints->size();
         }
         else{
@@ -700,7 +705,7 @@ void LocalMapping::ProcessDetectedObjects()
                 optimizer_ptr = optimizer_ptr_local;
             }
 
-            cout << "Before reconstruct_object" << std::endl;
+            // cout << "Before reconstruct_object" << std::endl;
 
             auto pyMapObject = optimizer_ptr->attr("reconstruct_object")
                     (SE3Tcw * Sim3Two_pMO, surface_points_cam, rays, depth_obs, pMO->vShapeCode);
@@ -713,7 +718,7 @@ void LocalMapping::ProcessDetectedObjects()
             if (!pMO->findGoodOrientation)
             {
                 // 绕y轴进行采样，可以直接附加到Two上
-                std::cout << "Has not found good orientation yet." << std::endl;
+                std::cout << " - Has not found good orientation yet." << std::endl;
                 std::vector<float> losses(flip_sample_num);
                 losses[0] = pyMapObject.attr("loss").cast<float>();
                 
@@ -849,6 +854,16 @@ void LocalMapping::ProcessDetectedObjects()
         }
     }
 
+
+    for(auto &pMO: mvpAssociatedObjects) {
+        if (!pMO) {
+            continue;
+        }
+        if (!pMO->mbValidEllipsoldFlag || !pMO->mbValidPointCloudFlag){
+            mpMap->EraseMapObject(pMO);
+        }
+    }
+
     if (show_ellipsold_process && mvpObjectDetections.size())
     {
         auto det_vec = mvpObjectDetections.back()->bbox;
@@ -872,25 +887,41 @@ void LocalMapping::ProcessDetectedObjects()
 
 void LocalMapping::UpdateObjectsToMap()
 {
-    cout << "[UpdateObjectsToMap]" << endl;
+    cout << "\n[LocalMapping::UpdateObjectsToMap]" << endl;
     auto mapObjects = mpMap->GetAllMapObjects();
-    cout << "Get " << mapObjects.size() << " map objects in total" << endl;
+    mpMap->ShowMapInfo();
+
     // 每次都会重新更新一遍地图中的物体椭球体
     mpMap->ClearEllipsoidsObjects();
-    cout << "ClearEllipsoidsObjects Finished" << endl;
     mpMap->DeletePointCloudList("MapObject PointCloud", 0);
+    int ellip_num_valid = 0;
+    int pc_num_valid = 0;
 
     for (auto &pMO: mapObjects){
-
         // if (pMO->isBad()) {
         //     continue;
         // }
-
         // // Default type = 0: replace when exist , 1: add when exist
         // bool Map::AddPointCloudList(const string &name, PointCloud *pCloud, int type) {
         
+        if (pMO->isBad()) {
+            continue;
+        }
+
+        // FIXME：这里添加了一个没有初始化的ellipsold导致显示错误，暂时通过判断e的概率小于0.001
+        auto e = pMO->GetEllipsold();
+        if (e != NULL) {
+            mpMap->addEllipsoidObjects(e);
+            ellip_num_valid++;
+        }
+        else{
+            continue;
+        }
+
         // TODO: 下一步考虑如何将所有物体的点云都添加到地图中，并且可以在每个新帧进行更新
         if (pMO->hasValidPointCloud()){
+
+            pc_num_valid++;
             // std::shared_ptr<PointCloud> mPointsPtr = pMO->GetPointCloud();
             // PointCloud* pPoints = mPointsPtr.get();
             auto pcl_ptr= pMO->GetPointCloudPCL();
@@ -900,22 +931,12 @@ void LocalMapping::UpdateObjectsToMap()
             mpMap->AddPointCloudList("MapObject PointCloud", pPoints, 1);
 
             // int n_valid_points = pPoints->size();
-            cout << "MapObject PointCloud size = " << pPoints->size() << endl;
+            // cout << "MapObject PointCloud size = " << pPoints->size() << endl;
         }
 
-
-        if (pMO->isBad()) {
-            continue;
-        }
-
-
-
-        // FIXME：这里添加了一个没有初始化的ellipsold导致显示错误，暂时通过判断e的概率小于0.001
-        auto e = pMO->GetEllipsold();
-        if (e != NULL) {
-            mpMap->addEllipsoidObjects(e);
-        }
     }
+    cout << " - pc_num_valid = " << pc_num_valid << endl;
+    cout << " - ellip_num_valid = " << ellip_num_valid << endl;
 }
 
 void LocalMapping::SetOptimizer(Optimizer* optimizer)
@@ -925,17 +946,21 @@ void LocalMapping::SetOptimizer(Optimizer* optimizer)
 
 void LocalMapping::AssociateObjects3D()
 {
-    cout << "AssociateObjects3D" << endl;
+    cout << "\n [LocalMapping_utils.cc] AssociateObjects3D" << endl;
     auto allMapObjects = mpMap->GetAllMapObjects();
     int obj_num = allMapObjects.size();
 
     for (int i = 0; i < obj_num-1; i++) {
+        auto pMO_i = allMapObjects[i];
+        if (!pMO_i->hasValidEllipsold() || pMO_i->isBad()) {
+            continue;
+        }
         for (int j = obj_num - 1; j > i; j--) {
             // FIXME: 这里只能暂且不考虑同一个物体被检测出不同类别的情况了，根据情况考虑是否只对上次新添加的物体进行处理
             // if (same_class && close && others), 
             //  merge obj_j into obj_i, set obj_j bad
-            auto pMO_i = allMapObjects[i], pMO_j = allMapObjects[j];
-            if (!pMO_i->hasValidEllipsold() || !pMO_j->hasValidEllipsold()) {
+            auto pMO_j = allMapObjects[j];
+            if (!pMO_j->hasValidEllipsold() || pMO_j->isBad()) {
                 continue;
             }
             bool c0 = (pMO_i->label == pMO_j->label);
@@ -956,7 +981,7 @@ void LocalMapping::AssociateObjects3D()
             // if (c0 && c1) {
             if (c1) {
                 // 这里应该把 pMO_j 合并到 pMO_i 中
-                cout << "MergeMapObject " << endl;
+                // cout << "MergeMapObject " << endl;
                 MergeMapObject(pMO_i, pMO_j);
             }
         }
@@ -966,8 +991,14 @@ void LocalMapping::AssociateObjects3D()
 void LocalMapping::GlobalOptimization()
 {
     // mpOptimizer->OptimizeWithDataAssociationUsingMultiplanes(pFrames, mms, objs, camTraj, calib, iRows, iCols);
-    // auto mvpFrames = 
-    mpOptimizer->GlobalObjectGraphOptimizationWithPDA(mvpFrames, mpMap, mpTracker->mCalib, mpTracker->mRows, mpTracker->mCols);
+    // cout << "\n[ LocalMapping::GlobalOptimization ]" << endl;
+    // for(auto& pF : mvpFrames){
+    //     Measurements& meas = pF->meas;
+    //     int mea_num = meas.size();
+        
+    //     cout << "Frame " << pF->frame_seq_id << ", " << mea_num << " measurements." << endl;
+    // }
+    // mpOptimizer->GlobalObjectGraphOptimizationWithPDA(mvpFrames, mpMap, mpTracker->mCalib, mpTracker->mRows, mpTracker->mCols);
 }
 
 void LocalMapping::MergeMapObject(MapObject* pMO_i, MapObject* pMO_j)
@@ -989,6 +1020,11 @@ void LocalMapping::MergeMapObject(MapObject* pMO_i, MapObject* pMO_j)
     // 合并完之后的隐式编码应该如何处理
 
     // 设置 pMO_j 为 bad
+    // cout << 
+    int id_i = pMO_i->mnId;
+    int id_j = pMO_j->mnId;
+    cout << "Merge obj " << id_j << "into obj " << id_i << endl;
+    cout << "!! Set Object " << id_j << " bad at Merge" << endl;
     pMO_j->SetBadFlag();
 }
 

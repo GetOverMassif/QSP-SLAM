@@ -26,7 +26,7 @@ Camera.RGB: 1
 #--------------------------------------------------------------------------------------------
 # Config path for Python detectors
 DetectorConfigPath: configs/config_redwood_02484.json
-Objects.maskErrosion: 9
+EllipObjects.maskErrosion: 9
 
 
 #--------------------------------------------------------------------------------------------
