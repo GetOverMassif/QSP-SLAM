@@ -188,10 +188,11 @@ bool LocalMapping::RunOneTime()
             {
                 mvpFrames.clear();
                 mvpFrames = mpTracker->GetAllFramesWithKeyframe();
-                for (auto& pF: mvpFrames){
-                    cout << pF->frame_seq_id << ",  " << pF->mnId << ",";
-                }
-                cout << endl;
+
+                // for (auto& pF: mvpFrames){
+                //     cout << pF->frame_seq_id << "," << pF->mnId << "; ";
+                // }
+                // cout << endl;
 
                 // todo: 这里人为规定了只创建一次物体, 
                 if (mpMap->GetAllMapObjects().empty() || !create_single_object) {
@@ -296,6 +297,7 @@ void LocalMapping::InsertKeyFrame(KeyFrame *pKF)
     unique_lock<mutex> lock(mMutexNewKFs);
     std::cout << " mpLocalMapper->InsertKeyFrame: " << pKF->mnId << std::endl;
     mlNewKeyFrames.push_back(pKF);
+    cout << "Insert success" << endl;
     mbAbortBA=true;
 }
 

@@ -114,7 +114,7 @@ void Tracking::ObjectDataAssociation(KeyFrame *pKF)
      *  - 如果为静态物体： 通过计算3D距离、2D距离，保存到dist中
      * 找到dist中最近距离的物体
     */
-    Eigen::Matrix4f Tcw = Converter::toMatrix4f(mCurrentFrame.mTcw);
+    Eigen::Matrix4f Tcw = Converter::toMatrix4f(mCurrentFrame->mTcw);
     Eigen::Matrix3f Rcw = Tcw.topLeftCorner<3, 3>();
     Eigen::Vector3f tcw = Tcw.topRightCorner<3, 1>();
     auto vDetections = pKF->mvpDetectedObjects;
@@ -144,7 +144,7 @@ void Tracking::ObjectDataAssociation(KeyFrame *pKF)
             }
             else
             {
-                float deltaT = (float) (mCurrentFrame.mnId - mpLastKeyFrame->mnFrameId);
+                float deltaT = (float) (mCurrentFrame->mnId - mpLastKeyFrame->mnFrameId);
                 auto twoPredicted = pObj->two + pObj->velocity * deltaT;
                 Eigen::Vector3f dist3D = Rcw * twoPredicted + tcw - transDet;
                 Eigen::Vector2f dist2D;
@@ -417,7 +417,7 @@ void Tracking::AssociateObjectsByProjection(ORB_SLAM2::KeyFrame *pKF)
             // cout << "Tracking::AssociateObjectsByProjection" << endl;
             for (auto pMO: mapObjects){
                 // FIXME：这里暂时对于 e 为 NULL 的情况跳过处理
-                cv::Mat img_show = mCurrentFrame.rgb_img.clone();
+                cv::Mat img_show = mCurrentFrame->rgb_img.clone();
                 auto e = pMO->GetEllipsold();
 
                 if (e==NULL){
@@ -425,7 +425,7 @@ void Tracking::AssociateObjectsByProjection(ORB_SLAM2::KeyFrame *pKF)
                 }
 
                 auto label_obj = pMO->label;
-                auto campose_cw = mCurrentFrame.cam_pose_Tcw;
+                auto campose_cw = mCurrentFrame->cam_pose_Tcw;
                 auto ellipse = e->projectOntoImageEllipse(campose_cw, mCalib);
                 e->drawEllipseOnImage(ellipse, img_show);
                 
@@ -715,18 +715,18 @@ void Tracking::SetGroundPlaneMannually(const Eigen::Vector4d &param)
 
 void Tracking::ProcessGroundPlaneEstimation()
 {
-    // cv::Mat depth = mCurrentFrame.mImDepth;
+    // cv::Mat depth = mCurrentFrame->mImDepth;
     cv::Mat depth = mImDepth;
     g2o::plane groundPlane;
     bool result = pPlaneExtractor->extractGroundPlane(depth, groundPlane);
-    g2o::SE3Quat& Twc = mCurrentFrame.cam_pose_Twc;
+    g2o::SE3Quat& Twc = mCurrentFrame->cam_pose_Twc;
 
     // // Camera pose.
-    // // cv::Mat Tcw_mat = mCurrentFrame.mTcw;
+    // // cv::Mat Tcw_mat = mCurrentFrame->mTcw;
     
-    // // g2o::SE3Quat& Twc = mCurrentFrame.cam_pose_Twc;
+    // // g2o::SE3Quat& Twc = mCurrentFrame->cam_pose_Twc;
     // cv::Mat Twc_mat;
-    // cv::invert(mCurrentFrame.mTcw, Twc_mat);
+    // cv::invert(mCurrentFrame->mTcw, Twc_mat);
     // // g2o::SE3Quat& Twc = Converter::toSE3Quat(Twc_mat);
     // g2o::SE3Quat Twc = Converter::toSE3Quat(Twc_mat);
 

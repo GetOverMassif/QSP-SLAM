@@ -94,7 +94,7 @@ void System::SaveMapCurrentFrame(const string &dir, int frameId) {
     ofstream f_camera;
     f_camera.open(fname_frame.c_str());
     f_camera << fixed;
-    cv::Mat Tcw = mpTracker->mCurrentFrame.mTcw;
+    cv::Mat Tcw = mpTracker->mCurrentFrame->mTcw;
     cv::Mat Rwc = Tcw.rowRange(0, 3).colRange(0, 3).t();
     cv::Mat twc = -Rwc * Tcw.rowRange(0, 3).col(3);
     f_camera << setprecision(9) << Rwc.at<float>(0, 0) << " " << Rwc.at<float>(0, 1) << " " << Rwc.at<float>(0, 2)

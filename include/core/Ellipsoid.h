@@ -115,6 +115,7 @@ public:
     Vector2d projectCenterIntoImagePoint(const SE3Quat& campose_cw, const Matrix3d& Kalib) const;
 
     // The ellipsoid is projected onto the image plane to get an ellipse
+    // 将椭球体投影到成像平面上
     Vector5d projectOntoImageEllipse(const SE3Quat& campose_cw, const Matrix3d& Kalib) const;
 
 

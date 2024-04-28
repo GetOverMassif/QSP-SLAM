@@ -277,8 +277,8 @@ cv::Mat System::TrackStereo(const cv::Mat &imLeft, const cv::Mat &imRight, const
 
     unique_lock<mutex> lock2(mMutexState);
     mTrackingState = mpTracker->mState;
-    mTrackedMapPoints = mpTracker->mCurrentFrame.mvpMapPoints;
-    mTrackedKeyPointsUn = mpTracker->mCurrentFrame.mvKeysUn;
+    mTrackedMapPoints = mpTracker->mCurrentFrame->mvpMapPoints;
+    mTrackedKeyPointsUn = mpTracker->mCurrentFrame->mvKeysUn;
     return Tcw;
 }
 
@@ -336,16 +336,16 @@ cv::Mat System::TrackRGBD(const cv::Mat &im, const cv::Mat &depthmap, const doub
     // 更新状态
     unique_lock<mutex> lock2(mMutexState);
     mTrackingState = mpTracker->mState;
-    mTrackedMapPoints = mpTracker->mCurrentFrame.mvpMapPoints;
-    mTrackedKeyPointsUn = mpTracker->mCurrentFrame.mvKeysUn;
+    mTrackedMapPoints = mpTracker->mCurrentFrame->mvpMapPoints;
+    mTrackedKeyPointsUn = mpTracker->mCurrentFrame->mvKeysUn;
 
     auto mvpFrames = mpTracker->GetAllFramesWithKeyframe();
-    cout << "[ After state update, mvpFrames size = " << mvpFrames.size() << endl;
-    for (auto& pF: mvpFrames){
-        cout << pF->frame_seq_id << ",  " << pF->mnId << ","
-            << &pF << endl;
-    }
-    cout << endl;
+    // cout << "[ After state update, mvpFrames size = " << mvpFrames.size() << endl;
+    // for (auto& pF: mvpFrames){
+    //     cout << pF->frame_seq_id << ",  " << pF->mnId << ","
+    //         << &pF << endl;
+    // }
+    // cout << endl;
 
     // 如果跟踪成功，则进行平面检测
     if (mTrackingState==Tracking::OK) {
@@ -407,8 +407,8 @@ cv::Mat System::TrackMonocular(const cv::Mat &im, const double &timestamp)
 
     unique_lock<mutex> lock2(mMutexState);
     mTrackingState = mpTracker->mState;
-    mTrackedMapPoints = mpTracker->mCurrentFrame.mvpMapPoints;
-    mTrackedKeyPointsUn = mpTracker->mCurrentFrame.mvKeysUn;
+    mTrackedMapPoints = mpTracker->mCurrentFrame->mvpMapPoints;
+    mTrackedKeyPointsUn = mpTracker->mCurrentFrame->mvKeysUn;
 
     if (mbMapInSameThread) {
         // while (mpLocalMapper->)
