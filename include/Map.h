@@ -162,6 +162,9 @@ protected:
 
     std::vector<MapPoint*> mvpReferenceMapPoints;
 
+
+    std::map<string, Trajectory> mmNameToTrajectory;
+
     long unsigned int mnMaxKFid;
 
     // Index related to a big change in the map (loop closure, global BA)
@@ -175,7 +178,6 @@ protected:
 
     g2o::SE3Quat* mCameraState;   // Twc
     std::vector<g2o::SE3Quat*> mvCameraStates;      // Twc  camera in world
-    std::map<string, Trajectory> mmNameToTrajectory;
 
     std::set<PointXYZRGB*> mspPoints;  
     std::map<string, PointCloud*> mmPointCloudLists; // name-> pClouds

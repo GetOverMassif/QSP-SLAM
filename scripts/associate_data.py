@@ -3,6 +3,7 @@ import os
 import os.path as osp
 import subprocess
 from associate import readAndAssociate
+import sys
 
 class Associater:
     def __init__(self, data_type) -> None:
@@ -22,12 +23,20 @@ class Associater:
             f.write(f"# color images\n")
             f.write(f"# file: '{self.data_type}'\n")
             f.write(f"# timestamp filename")
-            for img_filename in img_list:
-                if self.data_type == 'redwood':
-                    timestamp = float(img_filename.split('.')[0].split('-')[1]) / 1000000
-                elif self.data_type == 'normal':
-                    timestamp = float(img_filename.split('.')[0]) / 30
-                f.write(f"\n{'%.6f'%timestamp} {prefix}/{img_filename}")
+
+            if self.data_type == 'tum':
+                init_time = float(img_list[0].split('.png')[0])
+                for img_filename in img_list:
+                    timestamp = float(img_filename.split('.png')[0]) - init_time
+                    f.write(f"\n{'%.6f'%timestamp} {prefix}/{img_filename}")
+
+            else:
+                for img_filename in img_list:
+                    if self.data_type == 'redwood':
+                        timestamp = float(img_filename.split('.')[0].split('-')[1]) / 1000000
+                    elif self.data_type == 'normal':
+                        timestamp = float(img_filename.split('.')[0]) / 30
+                    f.write(f"\n{'%.6f'%timestamp} {prefix}/{img_filename}")
     
     def associate_rgb_and_depth(self):
         readAndAssociate(self.rgb_txt_path, self.depth_txt_path)
@@ -40,15 +49,22 @@ if __name__ == "__main__":
     parser.add_argument('-r','--data_dir', help='first text file (format: timestamp data)')
     parser.add_argument('-t','--data_type', required=str, default='normal')
 
-    valid_types = ['redwood', 'normal']
+    valid_types = ['redwood', 'normal', 'tum']
 
     arg = parser.parse_args()
 
     assert arg.data_type in valid_types, f"type {arg.data_type} is not valid"
 
-    associator = Associater(arg.data_type)
-    associator.generate_rgb_and_depth_txt()
-    associator.associate_rgb_and_depth()
+    if arg.data_type=='tum':
+        assciate_file_path = "/home/lj/Documents/codes/QSP-SLAM/scripts/associate_raw.py"
+        cmd = f"python {assciate_file_path} {arg.data_dir}/rgb.txt {arg.data_dir}/depth.txt > {arg.data_dir}/associations.txt"
+        # print(f"cmd = {cmd}")
+        # subprocess.check_call(cmd, shell=False)
+        os.system(cmd)
+    else:
+        associator = Associater(arg.data_type)
+        associator.generate_rgb_and_depth_txt()
+        associator.associate_rgb_and_depth()
 
 
     

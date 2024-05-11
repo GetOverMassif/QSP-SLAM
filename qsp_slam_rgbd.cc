@@ -28,15 +28,15 @@
 
 #include "src/config/Config.h"
 
+#include "include/core/Ellipsoid.h"
+#include "src/tum_rgbd/io.h"
+
 #include "include/utils/file_operate.h"
 
 #include <pangolin/pangolin.h>
 
-
 #include <sys/resource.h>
 #include <iostream>
-
-
 
 using namespace std;
 
@@ -111,19 +111,21 @@ int main(int argc, char **argv)
     // Config::CheckParams("configs/standard_param.yaml");
 
     //  path_to_dataset [path_to_map]
-    string dataset_path = Config::Get<string>("Dataset.Path.Root");
+
+    std::string dataset_path = std::string(argv[3]);
+    std::string save_map_dir = std::string(argv[5]);
+
     string dataset_path_map = Config::Get<string>("Dataset.Path.Map");
-    if(dataset_path_map.size()>0)
-    {
-        if(dataset_path_map[0]=='.')    // 相对路径
-            dataset_path_map = dataset_path + "/" + dataset_path_map.substr(2);
-    }
-    string dataset_path_savedir = dataset_path + "/result/";
+
+    // if(dataset_path_map.size()>0)
+    // {
+    //     if(dataset_path_map[0]=='.')    // 相对路径
+    //         dataset_path_map = dataset_path + "/" + dataset_path_map.substr(2);
+    // }
+
+    // string dataset_path_savedir = dataset_path + "/result/";
 
     string strDetectionDir = dataset_path + "/bbox/";
-
-    std::string save_map_dir = std::string(argv[5]);
-    std::string data_source_dir = std::string(argv[3]);
 
     assert(CreateDirIfNotExist(save_map_dir));
 
@@ -132,6 +134,17 @@ int main(int argc, char **argv)
     std::cout << "- strDetectionDir: " << strDetectionDir << std::endl;
     string dataset_type = Config::Get<string>("Dataset.Type");
     std::cout << "- dataset_type : " << dataset_type << std::endl;
+
+    // set groundplane mannually
+    cv::Mat paramMat = Config::GetMat("Plane.Groundplane.param");
+    if(!paramMat.empty())
+    {
+        Eigen::Vector4d plane_param = Converter::toVector4d(paramMat);
+        cout << "paramMat = " << paramMat << endl;
+        cout << "plane_param = " << plane_param.matrix() << endl;
+        // cv::cv2eigen(paramMat, plane_param);
+        SLAM.getTracker()->SetGroundPlaneMannually(plane_param);
+    }
 
     // 这里的跳步对后续的图像物体检测造成了影响
     int skip_num = Config::Get<int>("Running.skip_num");
@@ -144,13 +157,19 @@ int main(int argc, char **argv)
 
     std::cout << "total_num = " << total_num << ", skip_num = " << skip_num << std::endl;
 
-    // jumpResize(vstrImageFilenamesRGB, );
     int new_index = 0, raw_index = 0;
+
+    int index_num = total_num / skip_num + 1;
+    vector<int> indexes(index_num);
+    
     for(; raw_index < total_num; new_index+=1, raw_index+=skip_num) {
         vstrImageFilenamesRGB[new_index] = vstrImageFilenamesRGB[raw_index];
         vstrImageFilenamesD[new_index] = vstrImageFilenamesD[raw_index];
         vTimestamps[new_index] = vTimestamps[raw_index];
+
+        indexes[new_index] = raw_index;
     }
+
     nImages = new_index;
     vstrImageFilenamesRGB.resize(nImages);
     vstrImageFilenamesD.resize(nImages);
@@ -158,6 +177,55 @@ int main(int argc, char **argv)
 
 
     SLAM.SetImageNames(vstrImageFilenamesRGB);
+
+    
+    TUMRGBD::Dataset loader;
+
+    loader.loadDataset(dataset_path);
+    // loader.loadDetectionDir(strDetectionDir);
+
+    if(!(Config::Get<int>("Dataset.UseGroundtruth") > 0))
+    {
+        string odom_path = dataset_path+"/CameraTrajectoryVO.txt";
+        string asso_path = dataset_path+"/associateOdom.txt";
+        std::cout << "Load odometry from : " << odom_path << std::endl;
+        std::cout << "Associate file : " << asso_path << std::endl;
+
+        if(!loader.SetOdometryAndLoadAssociate(odom_path, asso_path, false)){
+            std::cout << "Load odometry failed, please check." << std::endl;
+            return 0;
+        }
+    }
+    else
+        std::cout << "Load [Groundtruth] as Odometry." << std::endl;
+
+    if(loader.empty())
+    {
+        std::cout << "Fail to load the dataset. Please check the path." << std::endl;
+        abort();
+    }
+    
+
+    auto p_gtMat = loader.GetGroundtruthTrajectory_ptr(); // 该方法读取的似乎是 Odometry???
+
+    Trajectory gtTrajVO;
+    gtTrajVO.resize(p_gtMat->rows());
+
+    for (int i = 0; i < p_gtMat->rows(); i++) {
+        SE3QuatWithStamp* pGtSE3T = new SE3QuatWithStamp();
+        VectorXd gtPose = p_gtMat->row(i);
+        pGtSE3T->pose.fromVector(gtPose.tail(7));
+        pGtSE3T->timestamp = gtPose[0];
+
+        gtTrajVO[i] = pGtSE3T;
+    }
+
+    std::cout << "p_gtMat = " << p_gtMat->matrix() << std::endl;
+
+    // gtTrajInEst
+
+    SLAM.getMap()->addOneTrajectory(gtTrajVO, "Groundtruth");
+    // SLAM.getMap()->addOneTrajectory(gtTrajInEst, "AlignedGroundtruth");
 
     // Vector for tracking time statistics
     vector<float> vTimesTrack;
@@ -185,6 +253,10 @@ int main(int argc, char **argv)
 
     for(int ni = 0; ni < nImages; ni++)
     {
+        int goal_id = indexes[ni];
+        loader.SetCurrentID(goal_id);
+        std::cout << "Set current ID to : " << goal_id << std::endl;
+        
         std::cout << "\n========================================" << std::endl;
         std::cout << "=> Inputting Image " << ni << "/" << nImages << std::endl;
         std::cout << "\n========================================" << std::endl;
@@ -283,25 +355,28 @@ int main(int argc, char **argv)
 
     SLAM.SaveEntireMap(save_map_dir);
 
-    string traj_path = data_source_dir  + "KeyFrameTrajectory.txt";
+    // string traj_path = dataset_path  + "KeyFrameTrajectory.txt";
 
-    if(fSettings["System.output"].isNamed()) {
-        if(fSettings["System.output_path"].isNamed()) {
-            traj_path = std::string(fSettings["System.output_path"]) + std::string("/") + std::string(fSettings["System.output"]);
-        }
-        else{
-            traj_path = std::string(argv[3]) + std::string("/") + fSettings["System.output"];
-        }
-    }
+    // if(fSettings["System.output"].isNamed()) {
+    //     if(fSettings["System.output_path"].isNamed()) {
+    //         traj_path = std::string(fSettings["System.output_path"]) + std::string("/") + std::string(fSettings["System.output"]);
+    //     }
+    //     else{
+    //         traj_path = std::string(argv[3]) + std::string("/") + fSettings["System.output"];
+    //     }
+    // }
     
-    SLAM.SaveKeyFrameTrajectoryTUM(traj_path);
+    SLAM.SaveTrajectoryTUM(dataset_path + "/CameraTrajectory_QSP.txt");
+
+    SLAM.SaveKeyFrameTrajectoryTUM(dataset_path + "/KeyFrameTrajectory_QSP.txt");
 
     // Save pointcloud
     bool mbOpenBuilder = Config::Get<int>("Visualization.Builder.Open") == 1;
 
-    assert(CreateDirIfNotExist(dataset_path_savedir));
+    // assert(CreateDirIfNotExist(dataset_path_savedir));
+
     if(mbOpenBuilder)
-        SLAM.getTracker()->SavePointCloudMap(dataset_path_savedir+"map.pcd");
+        SLAM.getTracker()->SavePointCloudMap(save_map_dir + "/map.pcd");
 
 
     // cv::waitKey(0);

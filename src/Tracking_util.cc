@@ -702,12 +702,22 @@ void Tracking::TaskGroundPlane()
     if(miGroundPlaneState == 1) // State 1: Groundplane estimation opened, and not done yet.
         ProcessGroundPlaneEstimation();
     else if(miGroundPlaneState == 3) // State : Set by mannual
+    {
+        g2o::SE3Quat& Twc = mCurrentFrame->cam_pose_Twc;
+        // 可视化该平面 : 为了 Mannual Check.
+        mGroundPlane.color = Eigen::Vector3d(0.0,0.8,0.0); 
+        mGroundPlane.InitFinitePlane(Twc.translation(), 10);
+        mpMap->addPlane(&mGroundPlane);
+
         ActivateGroundPlane(mGroundPlane);
+    }       
 }
 
 void Tracking::SetGroundPlaneMannually(const Eigen::Vector4d &param)
 {
     std::cout << "[GroundPlane] Set groundplane mannually: " << param.transpose() << std::endl;
+     cout << "Ground Plane param = " << param.matrix() << endl;
+
     miGroundPlaneState = 3;
     mGroundPlane.param = param;
     mGroundPlane.color = Vector3d(0,1,0);
@@ -799,6 +809,8 @@ void Tracking::ActivateGroundPlane(g2o::plane &groundplane)
 
     std::cout << " * Add supporting plane to Manhattan Plane Extractor. " << std::endl;
     pPlaneExtractorManhattan->SetGroundPlane(&groundplane);
+
+    cout << "groundplane.param = " << groundplane.param.matrix() << endl;
 
     // Change state
     miGroundPlaneState = 2;
@@ -1467,19 +1479,19 @@ void Tracking::AddFrameWithKeyframe(Frame* pF)
 {
     unique_lock<mutex> lock(mMutexTrack);
 
-    for (auto& pF: mvpFrames){
-        cout << pF->frame_seq_id << ",  " << pF->mnId << ","
-             << &pF << endl;
-    }
+    // for (auto& pF: mvpFrames){
+    //     cout << pF->frame_seq_id << ",  " << pF->mnId << ","
+    //          << &pF << endl;
+    // }
 
     mvpFrames.push_back(pF);
 
-    cout << "[ Tracking mvpFrames size = " << mvpFrames.size() << endl;
-    for (auto& pF: mvpFrames){
-        cout << pF->frame_seq_id << ",  " << pF->mnId << ","
-             << &pF << endl;
-    }
-    cout << endl;
+    // cout << "[ Tracking mvpFrames size = " << mvpFrames.size() << endl;
+    // for (auto& pF: mvpFrames){
+    //     cout << pF->frame_seq_id << ",  " << pF->mnId << ","
+    //          << &pF << endl;
+    // }
+    // cout << endl;
 }
 
 void Tracking::LoadPause()

@@ -4,6 +4,6 @@ add_library(tum_rgbd SHARED
 )
 
 target_link_libraries(tum_rgbd
-        ${OpenCV_LIBS}
-        utils
-        )
+    ${OpenCV_LIBS}
+    utils
+)

@@ -107,11 +107,15 @@ class Frame:
     def get_detections(self):
         # Get 2D Detection and background rays
         t1 = get_time()
-    
+
+        label_path2d = os.path.join(self.lbl2d_dir, "%06d.lbl" % self.frame_id)
+
         if self.online:
             det_2d = self.detector_2d.make_prediction(self.img_bgr, object_classes=self.object_class)
+            # torch.save(det_2d, label_path2d)
+
         else:
-            label_path2d = os.path.join(self.lbl2d_dir, "%06d.lbl" % self.frame_id)
+            # label_path2d = os.path.join(self.lbl2d_dir, "%06d.lbl" % self.frame_id)
             det_2d = torch.load(label_path2d)
         t2 = get_time()
         print("2D detctor takes %f seconds" % (t2 - t1))

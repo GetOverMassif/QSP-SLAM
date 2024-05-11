@@ -360,7 +360,7 @@ void LocalMapping::CreateNewObjectsFromDetections()
 // FIXME: 有待将隐式形状优化与椭球体优化过程解耦合开
 void LocalMapping::ProcessDetectedObjects()
 {
-    std::cout << "\n[ LocalMapping - ProcessDetectedObjects ]" << std::endl;
+    std::cout << "\n[ **** LocalMapping - ProcessDetectedObjects **** ]" << std::endl;
     char key;
     // std::cout << "Ready to reconstruct_object" << std::endl;
     // std::cout << "Press [ENTER] to continue ... " << std::endl;
@@ -527,6 +527,7 @@ void LocalMapping::ProcessDetectedObjects()
          *   -- 位姿发生显著变化、物体点云数量显著变化： [优化]
          *   -- 否则： [不优化]
         */
+        
         if ((numKFsPassedSinceInit - 15) % 5 != 0) {
             std::cout << "  Conitinue because (numKFsPassedSinceInit - 15) % 5 != 0" << std::endl;
             continue;
@@ -949,20 +950,25 @@ void LocalMapping::AssociateObjects3D()
     cout << "\n [LocalMapping_utils.cc] AssociateObjects3D" << endl;
     auto allMapObjects = mpMap->GetAllMapObjects();
     int obj_num = allMapObjects.size();
-
+    
+    // i: 0 -> n-1
     for (int i = 0; i < obj_num-1; i++) {
         auto pMO_i = allMapObjects[i];
         if (!pMO_i->hasValidEllipsold() || pMO_i->isBad()) {
             continue;
         }
+        // j: n-1 -> i+1
         for (int j = obj_num - 1; j > i; j--) {
             // FIXME: 这里只能暂且不考虑同一个物体被检测出不同类别的情况了，根据情况考虑是否只对上次新添加的物体进行处理
             // if (same_class && close && others), 
             //  merge obj_j into obj_i, set obj_j bad
+
             auto pMO_j = allMapObjects[j];
             if (!pMO_j->hasValidEllipsold() || pMO_j->isBad()) {
                 continue;
             }
+
+
             bool c0 = (pMO_i->label == pMO_j->label);
             auto SE3Two_i = pMO_i->GetPoseSE3();
             auto SE3Two_j = pMO_j->GetPoseSE3();
@@ -978,8 +984,16 @@ void LocalMapping::AssociateObjects3D()
 
             // FIXME: 这里的0.5有待改成配置文件中进行设置
             bool c1 = (dist3D_norm < dist_filt_param * dist_limit);
+
+            // cout << "Check " << i << "," << j << ": ";
+            // cout << "   -> Label: " << pMO_i->label << "," << pMO_j->label << "; ";
+            // cout << "   -> Dist: " << dist3D_norm << ";";
+            // cout << "   -> Scale_limit: " << dist_limit << ";";
+            // cout << endl;
+
             // if (c0 && c1) {
             if (c1) {
+                cout << "Merge " << endl;
                 // 这里应该把 pMO_j 合并到 pMO_i 中
                 // cout << "MergeMapObject " << endl;
                 MergeMapObject(pMO_i, pMO_j);

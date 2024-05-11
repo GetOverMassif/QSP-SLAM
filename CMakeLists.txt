@@ -170,6 +170,7 @@ target_link_libraries(${PROJECT_NAME}
         dense_builder
         Polygon
         Relationship
+        tum_rgbd
         # tools
         )
 

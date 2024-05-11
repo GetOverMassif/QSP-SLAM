@@ -204,6 +204,8 @@ Tracking::Tracking(System *pSys, ORBVocabulary* pVoc, FrameDrawer *pFrameDrawer,
     associate_debug = Config::Get<int>("Tracking.AssociateDebug");
 
     keyFrameFlagForPause = true;
+
+    ignoreObjFlag = Config::Get<int>("Tracking.IgnoreObject");
 }
 
 void Tracking::SetLocalMapper(LocalMapping *pLocalMapper)
@@ -277,18 +279,9 @@ cv::Mat Tracking::GrabImageRGBD(const cv::Mat &imRGB,const cv::Mat &imD, const d
     #define CV_16F  7
 */
 
-    cout << "[ GrabImageRGBD , mvpFrames size = " << mvpFrames.size() << endl;
-    // for (auto& pF: mvpFrames){
-    //     cout << pF->frame_seq_id << ",  " << pF->mnId << ","
-    //         << &pF << endl;
-    // }
-
     mImGray = imRGB;
     mImDepth = imD;
     cv::Mat imDepth = imD;
-
-    // cout << "After image = " << endl;
-    // printMemoryUsage();
 
     // std::cout << "imDepth.type() = " << imDepth.type() << std::endl;
 
@@ -310,56 +303,27 @@ cv::Mat Tracking::GrabImageRGBD(const cv::Mat &imRGB,const cv::Mat &imD, const d
     if((fabs(mDepthMapFactor-1.0f)>1e-5) || imDepth.type()!=CV_32F)
         imDepth.convertTo(imDepth, CV_32F, mDepthMapFactor);
 
-    // cout << "Before frame creation = " << endl;
-    // printMemoryUsage();
-
-    // cout << "[ Before Framecreate, mvpFrames size = " << mvpFrames.size() << endl;
-    // for (auto& pF: mvpFrames){
-    //     cout << pF->frame_seq_id << ",  " << pF->mnId << ","
-    //         << &pF << endl;
-    // }
-    // cout << endl;
-
     // FIXME： 这里 mCurrentFrame 在被赋值之后对 mvpFrames 产生了影响
     // clock_t time_0_start = clock();
     // auto testmCurrentFrame = Frame(mImGray,imDepth,timestamp,mpORBextractorLeft,mpORBVocabulary,mK,mDistCoef,mbf,mThDepth,imRGB,imD);
 
-    // cout << "[ After FramecreateTest, mvpFrames size = " << mvpFrames.size() << endl;
-    // for (auto& pF: mvpFrames){
-    //     cout << pF->frame_seq_id << ",  " << pF->mnId << ", "
-    //         << &pF << endl;
-    // }
-
     mCurrentFrame = new Frame(mImGray,imDepth,timestamp,mpORBextractorLeft,mpORBVocabulary,mK,mDistCoef,mbf,mThDepth,imRGB,imD);
-
-    // cout << "[ After Framecreate, mvpFrames size = " << mvpFrames.size() << endl;
-    // for (auto& pF: mvpFrames){
-    //     cout << pF->frame_seq_id << ",  " << pF->mnId << ", "
-    //         << &pF << endl;
-    // }
-
-    // cout << endl;
 
     // clock_t time_frame_creation = clock();
     // cout << " -- time_frame_creation: " <<(double)(time_frame_creation - time_0_start) / CLOCKS_PER_SEC << "s" << endl;
     Track();
 
-
-    // cout << "[ After Track(), mvpFrames size = " << mvpFrames.size() << endl;
-    // for (auto& pF: mvpFrames){
-    //     cout << pF->frame_seq_id << ",  " << pF->mnId << ","
-    //         << &pF << endl;
-    // }
-    // cout << endl;
-
-    // cout << "After Track = " << endl;
-    // printMemoryUsage();
-
     // clock_t time_track = clock();
     // cout << " -- time_track: " <<(double)(time_track - time_frame_creation) / CLOCKS_PER_SEC << "s" << endl;
 
     // [A visualization tool] When Builder is opened, it generates local pointcloud from depth and rgb images of current frame,
-    // and global pointcloud by simply adding local pointcloud in world coordinate and then downsampling them for visualization. 
+    // and global pointcloud by simply adding local pointcloud in world coordinate and then downsampling them for visualization.
+
+    return mCurrentFrame->mTcw.clone();
+}
+
+void Tracking::DenseBuild()
+{
     bool mbOpenBuilder = Config::Get<int>("Visualization.Builder.Open") > 0;
     if(mbOpenBuilder)
     {
@@ -385,11 +349,6 @@ cv::Mat Tracking::GrabImageRGBD(const cv::Mat &imRGB,const cv::Mat &imD, const d
             mpMap->AddPointCloudList("Builder.Local Points", pCloudLocal);
         }
     }
-
-    // cout << "After builder = " << endl;
-    // printMemoryUsage();
-
-    return mCurrentFrame->mTcw.clone();
 }
 
 cv::Mat Tracking::GrabImageMonocular(const cv::Mat &im, const double &timestamp)
@@ -684,6 +643,7 @@ void Tracking::Track()
 
 void Tracking::StereoInitialization()
 {
+    cout << "Tracking::StereoInitialization" << endl;
     if(mCurrentFrame->N > 500)
     {
         // Set Frame pose to the origin
@@ -726,6 +686,9 @@ void Tracking::StereoInitialization()
         mnLastKeyFrameId = mCurrentFrame->mnId;
         mpLastKeyFrame = pKFini;
 
+        mInitialFrame = mCurrentFrame;
+
+
         mvpLocalKeyFrames.push_back(pKFini);
         mvpLocalMapPoints=mpMap->GetAllMapPoints();
         mpReferenceKF = pKFini;
@@ -747,10 +710,17 @@ void Tracking::MonocularInitialization()
     if(!mpInitializer)
     {
         // Set Reference Frame
+        cout << "!mpInitializer" << endl;
         if(mCurrentFrame->mvKeys.size()>100)
         {
-            mInitialFrame = new Frame(*mCurrentFrame);
-            mLastFrame = new Frame(*mCurrentFrame);
+            // mInitialFrame = new Frame(*mCurrentFrame);
+            // mLastFrame = new Frame(*mCurrentFrame);
+
+            mInitialFrame = mCurrentFrame;
+            mLastFrame = mCurrentFrame;
+
+            cout << "place1: size of mInitialFrame->mvKeys = " << mInitialFrame->mvKeys.size() << endl;
+
             mvbPrevMatched.resize(mCurrentFrame->mvKeysUn.size());
             for(size_t i=0; i<mCurrentFrame->mvKeysUn.size(); i++)
                 mvbPrevMatched[i]=mCurrentFrame->mvKeysUn[i].pt;
@@ -768,6 +738,7 @@ void Tracking::MonocularInitialization()
     else
     {
         // Try to initialize
+        cout << "Try to initialize" << endl;
         if((int)mCurrentFrame->mvKeys.size()<=100)
         {
             delete mpInitializer;
@@ -812,6 +783,8 @@ void Tracking::MonocularInitialization()
 
             CreateInitialMapMonocular();
         }
+
+        cout << "place3: size of mInitialFrame->mvKeys = " << mInitialFrame->mvKeys.size() << endl;
     }
 }
 
@@ -1281,12 +1254,16 @@ void Tracking::CreateNewKeyFrame()
         cout << "Object detection takes " << ttrack << endl;
     }
     // KEY: [Tracking] 此处进地面提取、物体检测、前端处理、投影数据关联和内存清理
-    else if (mSensor == System::RGBD)
+    else if (mSensor == System::RGBD && !ignoreObjFlag)
     {
         std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
 
         // cout << "[Tracking mvpFrames push_back frame] : " << mCurrentFrame->frame_seq_id << endl;
-        
+
+        // if (ignore_object) {
+
+        // }
+
         AddFrameWithKeyframe(mCurrentFrame);
 
         // cout << "[Tracking mvpFrames push_back frame] : " << mCurrentFrame->frame_seq_id << endl;
@@ -1296,15 +1273,6 @@ void Tracking::CreateNewKeyFrame()
         // Step1: 首先进行地面检测
         // [1] process MHPlanes estimation
         TaskGroundPlane();
-
-
-        // cout << "[ After TaskGroundPlane, mvpFrames size = " << mvpFrames.size() << endl;
-        // cout << "Keyframe Judge" << endl;
-        // for (auto& pF: mvpFrames){
-        //     cout << pF->frame_seq_id << ",  " << pF->mnId << ","
-        //         << &pF << endl;
-        // }
-        // cout << endl;
 
         // printMemoryUsage();
 
@@ -1316,13 +1284,6 @@ void Tracking::CreateNewKeyFrame()
             // 首先进行物体检测，得到 label, bbox, mask, prob 等数据
             GetObjectDetectionsRGBD(pKF);
         }
-
-        cout << "[ After GetObjectDetectionsRGBD, mvpFrames size = " << mvpFrames.size() << endl;
-        for (auto& pF: mvpFrames){
-            cout << pF->frame_seq_id << ",  " << pF->mnId << ","
-                << &pF << endl;
-        }
-        cout << endl;
 
         // printMemoryUsage();
 
@@ -1340,13 +1301,6 @@ void Tracking::CreateNewKeyFrame()
         std::cout << " \n[ UpdateObjectObservation ] " << std::endl;
         UpdateObjectObservation(mCurrentFrame, pKF, withAssociation);
 
-        cout << "[ After UpdateObjectObservation, mvpFrames size = " << mvpFrames.size() << endl;
-        for (auto& pF: mvpFrames){
-            cout << pF->frame_seq_id << ",  " << pF->mnId << ","
-                << &pF << endl;
-        }
-        cout << endl;
-
         // printMemoryUsage();
 
         // if(mbDynamicOpenOptimization){
@@ -1363,13 +1317,6 @@ void Tracking::CreateNewKeyFrame()
             // 关联上之后，在LocalMapping中进行 物体点云 从detection到object的传递
             AssociateObjectsByProjection(pKF);
         }
-
-        cout << "[ After AssociateObjectsByProjection, mvpFrames size = " << mvpFrames.size() << endl;
-        for (auto& pF: mvpFrames){
-            cout << pF->frame_seq_id << ",  " << pF->mnId << ","
-                << &pF << endl;
-        }
-        cout << endl;
 
         // printMemoryUsage();
 

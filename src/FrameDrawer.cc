@@ -221,6 +221,7 @@ void FrameDrawer::Update(Tracking *pTracker)
 
     if(pTracker->mLastProcessedState==Tracking::NOT_INITIALIZED)
     {
+        cout << "size of pTracker->mInitialFrame->mvKeys = " << pTracker->mInitialFrame->mvKeys.size() << endl;
         mvIniKeys=pTracker->mInitialFrame->mvKeys;
         mvIniMatches=pTracker->mvIniMatches;
     }

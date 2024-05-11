@@ -51,7 +51,7 @@ namespace TUMRGBD
         }
         else 
         {
-            std::cout << "Please check associateGroundtruth.txt!" << std::endl;
+            std::cout << "Please check associateGroundtruth.txt: \n" << msAssociateGroundtruthPath << std::endl;
             abort();
 
             // 不存在则默认一样的方法感觉不可行，会导致大量帧不满足条件被跳过。
@@ -660,6 +660,34 @@ namespace TUMRGBD
         }
 
         return gtMat;
+    }
+
+    MatrixXd* Dataset::GetGroundtruthTrajectory_ptr()
+    {
+        MatrixXd gtMat;
+        gtMat.resize(mvIdToGroundtruthTimeStamp.size(), 8); // timestamp xyz qx-w
+        
+        // 默认并非按时间戳顺序，而是字符串顺序.
+        // map<string, VectorXd> mmTimeStampToPose
+
+        for( int i = 0; i < mvIdToGroundtruthTimeStamp.size(); i++)
+        {
+            string gtTimeStamp = mvIdToGroundtruthTimeStamp[i];
+
+            VectorXd pose;
+            if(!getPoseFromTimeStamp(gtTimeStamp, pose))
+                continue;
+            double timestamp = stod(gtTimeStamp);
+            VectorXd pose_withtime; pose_withtime.resize(8);
+            pose_withtime << timestamp, pose;
+
+            gtMat.row(i) = pose_withtime.head<8>();
+
+        }
+
+        MatrixXd* gtMat_ptr = new MatrixXd(gtMat);
+
+        return gtMat_ptr;
     }
 
     bool Dataset::readImageFrame(cv::Mat &rgb, cv::Mat &depth)

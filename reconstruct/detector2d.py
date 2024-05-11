@@ -131,12 +131,20 @@ class Detector2D(object):
         # cv2.imshow("labeled img", img)
         # cv2.waitKey(2)
 
+        # self.visualize_result(image, "labeled_img.jpg")
+
         return self.get_valid_detections(bboxes, masks, labels, probs)
 
     def visualize_result(self, image, filename):
         self.model.show_result(image, self.predictions, out_file=filename)
 
+    # TODO: 这里的有效判断条件会影响实验
     def get_valid_detections(self, boxes, masks, labels, probs):
+        """
+        valid条件: 1) 边框内, 2) 检测框太小, 3) 检测评分太小
+        """
+        # show detect result
+
 
         # Remove those on the margin
         cond1 = (boxes[:, 0] >= self.mEdge) \
@@ -145,20 +153,25 @@ class Detector2D(object):
                 & (boxes[:, 3] < self.mRow - self.mEdge)
         
         boxes_area = (boxes[:, 2] - boxes[:, 0]) * (boxes[:, 3] - boxes[:, 1])
-        # Remove those with too small bounding boxes
 
+        # Remove those with too small bounding boxes
         cond2 = (boxes_area > self.min_bb_area)
         scores = boxes[:, -1]
         cond3 = (scores >= 0.60)
 
+        print(f"scores = {scores}")
+
         # valid_mask = (cond2 & cond3)
         valid_mask = (cond1 & cond2 & cond3)
+        # valid_mask = cond3
 
         valid_instances = {"pred_boxes": boxes[valid_mask, :4],
                            "pred_masks": masks[valid_mask, ...],
                            "pred_labels": labels[valid_mask],
                            "pred_probs": probs[valid_mask],
                            }
+        
+        print(f"vaild prediction: n_det = {len(valid_mask[valid_mask])}")
         
         return valid_instances
 

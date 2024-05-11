@@ -73,7 +73,10 @@ void Viewer::Run()
 
     pangolin::CreatePanel("menu").SetBounds(0.0,1.0,0.0,pangolin::Attach::Pix(175));
     pangolin::Var<bool> menuFollowCamera("menu.Follow Camera",false,true);
-    pangolin::Var<bool> menuShowPoints("menu.Show Points",true,true);
+    pangolin::Var<bool> menuShowPoints("menu.Show Points",false,true);
+    pangolin::Var<bool> menuShowRawObjPoints("menu.Show Raw Obj Points",true,true);
+
+
     pangolin::Var<bool> menuShowKeyFrames("menu.Show KeyFrames",true,true);
     pangolin::Var<bool> menuShowGraph("menu.Show Graph",true,true);
     pangolin::Var<bool> menuLocalizationMode("menu.Localization Mode",false,true);
@@ -83,6 +86,12 @@ void Viewer::Run()
     pangolin::Var<bool> menuPause("menu.Pause",false,false);
 
     pangolin::Var<bool> menuShowMapObjects("menu.Show MapObjects",true,true);
+
+    pangolin::Var<bool> menuShowObjMesh("menu. - Show Mesh",true,true);
+    pangolin::Var<bool> menuShowObjCube("menu. - Show Cuboid",true,true);
+
+    pangolin::Var<bool> menuShowEllipsoidsDetails("menu. - Show Details", true, true);
+
     pangolin::Var<bool> menuShowGroundPlane("menu.Show GroundPlane",true,true);
     pangolin::Var<bool> menuShowEllipsoids("menu.Show Ellipsoids Visual", true, true);
     pangolin::Var<bool> menuShowEllipsoidsObjects("menu.Show Ellipsoids EllipObjects", true, true);
@@ -90,7 +99,6 @@ void Viewer::Run()
 
     pangolin::Var<bool> menuShowEllipsoidsObservation("menu.Ellipsoids-Ob", true, true);
     // pangolin::Var<bool> menuShowCuboids("menu. - Show Cuboids", false, true);
-    // pangolin::Var<bool> menuShowEllipsoidsDetails("menu. - Show Details", true, true);
     // pangolin::Var<bool> menuShowPlanes("menu.Show Planes", true, true);
     // pangolin::Var<bool> menuShowBoundingboxes("menu.Show Bboxes", false, true);
     // pangolin::Var<bool> menuShowConstrainPlanesBbox("menu.ConstrainPlanes-bbox", false, true);
@@ -104,7 +112,9 @@ void Viewer::Run()
     // pangolin::Var<bool> menuAMeaningLessBar("menu.----------", false, false);
 
     // pangolin::Var<bool> menuShowOptimizedTraj("menu.Optimized Traj", true, true);
-    // pangolin::Var<bool> menuShowGtTraj("menu.Gt Traj", true, true);
+    
+    pangolin::Var<bool> menuShowGtTraj("menu.Gt Traj", true, true);
+
     // pangolin::Var<bool> menuShowRelationArrow("menu.Relation Arrow", false, true);
     // pangolin::Var<int> SliderOdometryWeight("menu.Odometry Weight", 40, 0, 40);
     // pangolin::Var<double> SliderPlaneWeight("menu.Plane Weight", 1, 0, 100);
@@ -195,8 +205,10 @@ void Viewer::Run()
         /** From ORB-SLAM*/
         if(menuShowKeyFrames || menuShowGraph)
             mpMapDrawer->DrawKeyFrames(menuShowKeyFrames,menuShowGraph);
+
+        // bool drawRawObjPoint = 
         if(menuShowPoints)
-            mpMapDrawer->DrawMapPoints(mappointSize);
+            mpMapDrawer->DrawMapPoints(mappointSize, menuShowRawObjPoints);
 
         
         if(menuShowGroundPlane)
@@ -238,17 +250,24 @@ void Viewer::Run()
         //     mpMap->AddPointCloudList("Builder.Global Points", pCloud);
         // mpMap->AddPointCloudList("Builder.Local Points", pCloudLocal);
 
+        if(menuShowGtTraj)
+            mpMapDrawer->drawTrajectoryWithName("Groundtruth");
 
         mpObjectDrawer->ProcessNewObjects();
 
-        if(menuShowMapObjects)
-            mpObjectDrawer->DrawObjects(bFollow, Tec, ellipsoidProbThresh, pointcloudSize);
+        // menuShowObjMesh,menuShowObjCube
+
+        if(menuShowMapObjects){
+            mpObjectDrawer->DrawObjects(bFollow, Tec, menuShowObjMesh,menuShowObjCube, ellipsoidProbThresh, pointcloudSize);
+        }
 
         // // 如果是RGBD模式，则绘制深度图对应的点云
         // if (mpTracker->mSensor == System::RGBD) {
         //     mpMapDrawer->DrawDepthPointCloud();
             
         // }
+
+        // std::cout << "After mpObjectDrawer->DrawObjects" << std::endl;
 
         pangolin::FinishFrame();
 

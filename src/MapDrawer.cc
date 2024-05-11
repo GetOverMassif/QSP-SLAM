@@ -64,12 +64,9 @@ MapDrawer::MapDrawer(Map* pMap, const string &strSettingPath):mpMap(pMap)
 
 }
 
-void MapDrawer::DrawMapPoints(float mappointSize)
+void MapDrawer::DrawMapPoints(float mappointSize, bool drawRawObjPoint)
 {
     const vector<MapPoint*> &vpMPs = mpMap->GetAllMapPoints();
-    // const vector<MapPoint*> &vpRefMPs = mpMap->GetReferenceMapPoints();
-
-    // set<MapPoint*> spRefMPs(vpRefMPs.begin(), vpRefMPs.end());
 
     if(vpMPs.empty())
         return;
@@ -88,28 +85,51 @@ void MapDrawer::DrawMapPoints(float mappointSize)
     }
     glEnd();
 
-    // Draw object points (only for mono)
-    int n_objects = mpMap->GetAllMapObjects().size();
-    for (int o_i = 0 ; o_i < n_objects; o_i++)
-    {
-        // glPointSize(2 * mPointSize);
-        glPointSize(2 * mappointSize);
-        glBegin(GL_POINTS);
-        float r, g, b;
-        r = get<0>(mvObjectColors[o_i % 10]);
-        g = get<1>(mvObjectColors[o_i % 10]);
-        b = get<2>(mvObjectColors[o_i % 10]);
-        glColor3f(r, g, b);
-
-        for(size_t i=0, iend=vpMPs.size(); i<iend; i++)
+    if (drawRawObjPoint) {
+        // Draw object points (only for mono)
+        int n_objects = mpMap->GetAllMapObjects().size();
+        for (int o_i = 0 ; o_i < n_objects; o_i++)
         {
-            if(!vpMPs[i] || vpMPs[i]->isBad() || !vpMPs[i]->in_any_object || vpMPs[i]->object_id != o_i || vpMPs[i]->isOutlier())
-                continue;
-            cv::Mat pos = vpMPs[i]->GetWorldPos();
-            glVertex3f(pos.at<float>(0),pos.at<float>(1),pos.at<float>(2));
+            // glPointSize(2 * mPointSize);
+            glPointSize(2 * mappointSize);
+            glBegin(GL_POINTS);
+            float r, g, b;
+            r = get<0>(mvObjectColors[o_i % 10]);
+            g = get<1>(mvObjectColors[o_i % 10]);
+            b = get<2>(mvObjectColors[o_i % 10]);
+            glColor3f(r, g, b);
+
+            for(size_t i=0, iend=vpMPs.size(); i<iend; i++)
+            {
+                if(!vpMPs[i] || vpMPs[i]->isBad() || !vpMPs[i]->in_any_object || vpMPs[i]->object_id != o_i || vpMPs[i]->isOutlier())
+                    continue;
+                cv::Mat pos = vpMPs[i]->GetWorldPos();
+                glVertex3f(pos.at<float>(0),pos.at<float>(1),pos.at<float>(2));
+            }
+            glEnd();
         }
-        glEnd();
     }
+
+    const vector<MapPoint*> &vpRefMPs = mpMap->GetReferenceMapPoints();
+    // 将vpRefMPs从vector容器类型转化为set容器类型，便于使用set::count快速统计 - 我觉得称之为"重新构造"可能更加合适一些
+    // 补充, set::count用于返回集合中为某个值的元素的个数
+    set<MapPoint*> spRefMPs(vpRefMPs.begin(), vpRefMPs.end());
+
+    // for ReferenceMapPoints
+    //显示局部地图点，大小为2个像素，红色
+    glPointSize(mPointSize);
+    glBegin(GL_POINTS);
+    glColor3f(1.0,0.0,0.0);
+
+    for(set<MapPoint*>::iterator sit=spRefMPs.begin(), send=spRefMPs.end(); sit!=send; sit++)
+    {
+        if((*sit)->isBad())
+            continue;
+        cv::Mat pos = (*sit)->GetWorldPos();
+        glVertex3f(pos.at<float>(0),pos.at<float>(1),pos.at<float>(2));
+
+    }
+    glEnd();
 }
 
 void MapDrawer::DrawDepthPointCloud()

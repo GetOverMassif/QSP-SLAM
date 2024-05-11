@@ -131,6 +131,29 @@ Eigen::Matrix<double,3,1> Converter::toVector3d(const cv::Mat &cvVector)
     return v;
 }
 
+Eigen::Vector4d Converter::toVector4d(const cv::Mat &cvVector)
+{
+    Eigen::Vector4d v;
+    if (cvVector.type() == 6 ){
+        v << cvVector.at<double>(0), cvVector.at<double>(1), cvVector.at<double>(2), cvVector.at<double>(3);
+    }
+    else{
+        v << cvVector.at<float>(0), cvVector.at<float>(1), cvVector.at<float>(2), cvVector.at<float>(3);
+    }    
+
+    // std::cout << "cvVector.type() = " << cvVector.type() << std::endl;
+
+    // std::cout << "v = " << v.matrix() << std::endl;
+    // std::cout << "cvVector = " << cvVector << std::endl;
+
+    // std::cout << "cvVector.at<float>(0) = " << cvVector.at<float>(0) << std::endl;
+    // std::cout << "cvVector.at<double>(0) = " << cvVector.at<double>(0) << std::endl;
+    // std::cout << "cvVector.at<float>(0,0) = " << cvVector.at<float>(0,0) << std::endl;
+    // std::cout << "cvVector.at<double>(0,0) = " << cvVector.at<double>(0,0) << std::endl;
+
+    return v;
+}
+
 Eigen::Matrix<float,3,1> Converter::toVector3f(const cv::Mat &cvVector)
 {
     Eigen::Matrix<float,3,1> v;

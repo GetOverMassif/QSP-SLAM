@@ -41,7 +41,7 @@ public:
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
     MapDrawer(Map* pMap, const string &strSettingPath);
 
-    void DrawMapPoints(float mappointSize);
+    void DrawMapPoints(float mappointSize, bool drawRawObjPoint=true);
     void DrawKeyFrames(const bool bDrawKF, const bool bDrawGraph);
     void DrawCurrentCamera(pangolin::OpenGlMatrix &Twc);
     void SetCurrentCameraPose(const cv::Mat &Tcw);
@@ -75,7 +75,8 @@ public:
     // bool drawTrajectory();
     // bool drawTrajectoryDetail();
     // bool drawGivenTrajDetail(std::vector<g2o::SE3Quat*>& traj, const Vector3d& color);
-    // bool drawTrajectoryWithName(const string& name);
+
+    bool drawTrajectoryWithName(const string& name);
 
     void SE3ToOpenGLCameraMatrix(g2o::SE3Quat &matIn, pangolin::OpenGlMatrix &M); // inverse matIn
     // void SE3ToOpenGLCameraMatrixOrigin(g2o::SE3Quat &matIn, pangolin::OpenGlMatrix &M); // don't inverse matIn
@@ -117,7 +118,9 @@ private:
     // void drawOneBoundingbox(Matrix3Xd& corners, Vector3d& color, double alpha = 1.0);
 
     // bool drawGivenTrajWithColor(std::vector<g2o::SE3Quat*>& traj, const Vector3d& color);
+
     // bool drawGivenTrajWithColorLines(std::vector<g2o::SE3Quat*>& traj, const Vector3d& color);
+    void drawGivenTrajWithColorLines(std::vector<g2o::SE3Quat*>& traj, const Vector3d& color);
 
     // void eigenMatToOpenGLMat(const Eigen::Matrix4d& matEigen, pangolin::OpenGlMatrix &M);
 

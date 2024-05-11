@@ -24,21 +24,34 @@ Eigen::Matrix<T,3,3> euler_zyx_to_rot(const T& roll,const T& pitch,const T& yaw)
 // input is 3*n (or 2*n)  output is 4*n (or 3*n)
 template <class T>
 Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic> real_to_homo_coord(const Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic>& pts_in);
+
+template <class T>
+Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic>* real_to_homo_coord_ptr(const Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic>& pts_in);
+
 template <class T>
 void real_to_homo_coord(const Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic>& pts_in, Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic>& pts_homo_out);
+
 template <class T>  // though vector can be casted into matrix, to make output clear to be vector, it is better to define a new function.
 Eigen::Matrix<T, Eigen::Dynamic, 1> real_to_homo_coord_vec(const Eigen::Matrix<T, Eigen::Dynamic, 1>& pts_in);
 
+template <class T>  // though vector can be casted into matrix, to make output clear to be vector, it is better to define a new function.
+Eigen::Matrix<T, Eigen::Dynamic, 1>* real_to_homo_coord_vec_ptr(const Eigen::Matrix<T, Eigen::Dynamic, 1>& pts_in);
 
 // input is 3*n (or 4*n)  output is 2*n(or 3*n)
 template <class T>
 Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic> homo_to_real_coord(const Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic>& pts_homo_in);
+
+template <class T>
+Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic>* homo_to_real_coord_ptr(const Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic>& pts_homo_in);
+
 template <class T>
 void homo_to_real_coord(const Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic>& pts_homo_in, Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic>& pts_out);
 
 template <class T>  // though vector can be casted into matrix, to make output clear to be vector, it is better to define a new function.
 Eigen::Matrix<T, Eigen::Dynamic, 1> homo_to_real_coord_vec(const Eigen::Matrix<T, Eigen::Dynamic, 1>& pts_homo_in);
 
+template <class T>  // though vector can be casted into matrix, to make output clear to be vector, it is better to define a new function.
+Eigen::Matrix<T, Eigen::Dynamic, 1>* homo_to_real_coord_vec_ptr(const Eigen::Matrix<T, Eigen::Dynamic, 1>& pts_homo_in);
 
 //vertically stack a matrix to a matrix, increase rows, keep columns
 void vert_stack_m(const Eigen::MatrixXd &a_in, const Eigen::MatrixXd &b_in, Eigen::MatrixXd &combined_out);

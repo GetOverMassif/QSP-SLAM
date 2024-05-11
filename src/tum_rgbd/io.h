@@ -80,6 +80,8 @@ public:
 
     MatrixXd GetGroundtruthTrajectory();
 
+    MatrixXd* GetGroundtruthTrajectory_ptr();
+
     bool findFrameUsingTimestamp(double timestamp, cv::Mat &rgb, cv::Mat &depth, Eigen::VectorXd &pose);
     int findFrameUsingTimestampGetId(double timestamp, cv::Mat &rgb, cv::Mat &depth, Eigen::VectorXd &pose);
 

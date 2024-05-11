@@ -237,6 +237,36 @@ bool MapDrawer::drawObservationEllipsoids(double prob_thresh)
     return true;
 }
 
+// 添加 transform 的矫正
+// bool MapDrawer::drawGivenTrajWithColorLines(std::vector<g2o::SE3Quat*>& traj, const Vector3d& color)
+void MapDrawer::drawGivenTrajWithColorLines(std::vector<g2o::SE3Quat*>& traj, const Vector3d& color)
+{
+    glPushMatrix();
+    glLineWidth(mCameraLineWidth);
+    glColor3d(color[0],color[1],color[2]);
+    glBegin(GL_LINES);
+
+    for(int i=0; i<traj.size(); i++)
+    {
+        g2o::SE3Quat* cameraState = traj[i];        // Twc
+        if(!cameraState) continue;
+        Vector3d center = cameraState->translation();    
+
+        if(mbOpenTransform){
+            center = (mTge * (*cameraState)).translation();
+        }
+    
+        glVertex3f(center[0],center[1],center[2]);
+
+        if(i==0) continue;
+        glVertex3f(center[0],center[1],center[2]);
+
+    }
+
+    glEnd();
+    glPopMatrix();
+}
+
     // draw all the planes
 bool MapDrawer::drawPlanes(int visual_group) {
     std::vector<plane*> planes = mpMap->GetAllPlanes();
@@ -513,7 +543,5 @@ void MapDrawer::drawPointCloud(PointCloud *pPoints, float pointSize)
     }
     glPopMatrix();
 }
-
-
 
 } //namespace ORB_SLAM

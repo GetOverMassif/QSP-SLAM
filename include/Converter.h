@@ -58,6 +58,9 @@ public:
     static Eigen::Matrix4d toMatrix4d(const cv::Mat &cvMat);
     static pangolin::OpenGlMatrix toMatrixPango(const Eigen::Matrix4f &T);
     static std::vector<float> toQuaternion(const cv::Mat &M);
+
+
+    static Eigen::Vector4d toVector4d(const cv::Mat &cvMat);
 };
 
 }// namespace ORB_SLAM

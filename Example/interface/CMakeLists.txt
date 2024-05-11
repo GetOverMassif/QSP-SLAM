@@ -30,7 +30,7 @@ target_link_libraries(test_planeExtraction
         boost_system
         EllipsoidSLAM
         ${PCL_LIBRARIES}
-)      
+)
 
 # 测试语义先验
 add_executable(test_semanticprior

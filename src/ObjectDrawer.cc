@@ -109,7 +109,7 @@ void ObjectDrawer::ProcessNewObjects()
     }
 }
 
-void ObjectDrawer::DrawObjects(bool bFollow, const Eigen::Matrix4f &Tec, double prob_thresh, float pointcloudSize)
+void ObjectDrawer::DrawObjects(bool bFollow, const Eigen::Matrix4f &Tec, bool showMesh, bool showCube, double prob_thresh, float pointcloudSize)
 {
     unique_lock<mutex> lock(mMutexObjects);
 
@@ -135,79 +135,287 @@ void ObjectDrawer::DrawObjects(bool bFollow, const Eigen::Matrix4f &Tec, double 
         if (bFollow) {
             SE3TcwFollow = SE3Tcw;
         }
-        if (pMO->GetRenderId() >= 0)
+
+        
+        if (showMesh && pMO->GetRenderId() >= 0)
         {
             mpRenderer->Render(idx, Tec * SE3TcwFollow * Sim3Two, mvObjectColors[pMO->GetRenderId() % mvObjectColors.size()]);
         }
 
-        DrawCuboid(pMO);
+        if (showCube){
+            DrawCuboid(pMO);
+        }
 
+        drawLabelTextOfObject(pMO);
+
+        // std::cout << "After drawLabelTextOfObject" << std::endl;
+
+        
         // 程序的停滞与这里的椭球体获取有关
         // auto obj_ellipsold = pMO->GetEllipsold();
-
         // if(obj_ellipsold) {
         //     // cout << "obj_ellipsold->prob = " << obj_ellipsold->prob << endl;
         //     if(obj_ellipsold->prob > prob_thresh){
         //         mpMapDrawer->drawEllipsoidInVector(obj_ellipsold);
         //     }
         // }
-
         // std::shared_ptr<PointCloud> mPointsPtr = pMO->GetPointCloud();
         // PointCloud* rawPtr = mPointsPtr.get();
         // mpMapDrawer->drawPointCloud(rawPtr, pointcloudSize);
 
     }
+    // std::cout << "After drawLabelTextOfObject xunhuan " << std::endl;
 }
 
-// // In : Tcw
-// // Out: Twc
-// void ObjectDrawer::SE3ToOpenGLCameraMatrix(g2o::SE3Quat &matInSe3, pangolin::OpenGlMatrix &M)
-// {
-//     // eigen to cv
-//     Eigen::Matrix4d matEigen = matInSe3.to_homogeneous_matrix();
-//     cv::Mat matIn;
+std::vector<g2o::SE3Quat*> GetRidOfTimestamp(Trajectory& mapNameTraj)
+{
+    int num = mapNameTraj.size();
+    std::vector<g2o::SE3Quat*> trajNoStamp; trajNoStamp.resize(num);
+    for(int i=0;i<num;i++)
+    {
+        trajNoStamp[i] = &mapNameTraj[i]->pose;
+    }
+    return trajNoStamp;
+}
 
-//     matIn = Converter::toCvMat(matEigen);
+bool MapDrawer::drawTrajectoryWithName(const string& name)
+{
+    Trajectory mapNameTraj = mpMap->getTrajectoryWithName(name);
 
-//     // std::cout << "matIn = " << matIn << std::endl;
-//     // cv::eigen2cv(matEigen, matIn);
+    // 根据字符计算一组随机颜色
+    Vector3d rgb;
+    if(name == "OptimizedTrajectory")
+        rgb << 0,1.0,0;
+    else if(name == "AlignedGroundtruth")
+        rgb << 1.0,0,0;
+    else{
+        int randNum = 0;
+        for(int i=0;i<name.size();i++)
+            randNum += int(name[i]);
+        srand(randNum);
+        double r,g,b;
+        r = rand()%155 / 255.0;
+        g = rand()%155 / 255.0;
+        b = rand()%155 / 255.0;
+        rgb << r,g,b;
+    }
 
-//     if(!matIn.empty())
-//     {
-//         cv::Mat Rwc(3,3,CV_64F);
-//         cv::Mat twc(3,1,CV_64F);
+    std::vector<g2o::SE3Quat*> trajForShow = GetRidOfTimestamp(mapNameTraj);
 
-//         {
-//             // unique_lock<mutex> lock(mMutexCamera);
-//             Rwc = matIn.rowRange(0,3).colRange(0,3).t();
-//             twc = -Rwc*matIn.rowRange(0,3).col(3);
-//         }
+    drawGivenTrajWithColorLines(trajForShow, rgb);
+    return true;
+}
 
-//         // 原来是 double, 发现有问题
+// In : Tcw
+// Out: Twc
+void SE3ToOpenGLCameraMatrix(g2o::SE3Quat &matInSe3, pangolin::OpenGlMatrix &M)
+{
+    // eigen to cv
+    Eigen::Matrix4d matEigen = matInSe3.to_homogeneous_matrix();
+    cv::Mat matIn;
 
-//         M.m[0] = Rwc.at<float>(0,0);
-//         M.m[1] = Rwc.at<float>(1,0);
-//         M.m[2] = Rwc.at<float>(2,0);
-//         M.m[3]  = 0.0;
+    matIn = Converter::toCvMat(matEigen);
 
-//         M.m[4] = Rwc.at<float>(0,1);
-//         M.m[5] = Rwc.at<float>(1,1);
-//         M.m[6] = Rwc.at<float>(2,1);
-//         M.m[7]  = 0.0;
+    // std::cout << "matIn = " << matIn << std::endl;
+    // cv::eigen2cv(matEigen, matIn);
 
-//         M.m[8] = Rwc.at<float>(0,2);
-//         M.m[9] = Rwc.at<float>(1,2);
-//         M.m[10] = Rwc.at<float>(2,2);
-//         M.m[11]  = 0.0;
+    if(!matIn.empty())
+    {
+        cv::Mat Rwc(3,3,CV_64F);
+        cv::Mat twc(3,1,CV_64F);
 
-//         M.m[12] = twc.at<float>(0);
-//         M.m[13] = twc.at<float>(1);
-//         M.m[14] = twc.at<float>(2);
-//         M.m[15]  = 1.0;
-//     }
-//     else
-//         M.SetIdentity();
-// }
+        {
+            // unique_lock<mutex> lock(mMutexCamera);
+            Rwc = matIn.rowRange(0,3).colRange(0,3).t();
+            twc = -Rwc*matIn.rowRange(0,3).col(3);
+        }
+
+        // 原来是 double, 发现有问题
+
+        M.m[0] = Rwc.at<float>(0,0);
+        M.m[1] = Rwc.at<float>(1,0);
+        M.m[2] = Rwc.at<float>(2,0);
+        M.m[3]  = 0.0;
+
+        M.m[4] = Rwc.at<float>(0,1);
+        M.m[5] = Rwc.at<float>(1,1);
+        M.m[6] = Rwc.at<float>(2,1);
+        M.m[7]  = 0.0;
+
+        M.m[8] = Rwc.at<float>(0,2);
+        M.m[9] = Rwc.at<float>(1,2);
+        M.m[10] = Rwc.at<float>(2,2);
+        M.m[11]  = 0.0;
+
+        M.m[12] = twc.at<float>(0);
+        M.m[13] = twc.at<float>(1);
+        M.m[14] = twc.at<float>(2);
+        M.m[15]  = 1.0;
+    }
+    else
+        M.SetIdentity();
+}
+
+const char* GetLabelText_MapDrawer(int id)
+{
+    static const char *coco_classes[] = {"person","bicycle","car","motorcycle","airplane","bus","train",
+    "truck","boat","traffic light","fire hydrant","stop sign","parking meter","bench","bird",
+    "cat","dog","horse","sheep","cow","elephant","bear","zebra","giraffe","backpack","umbrella",
+    "handbag","tie","suitcase","frisbee","skis","snowboard","sports ball","kite","baseball bat",
+    "baseball glove","skateboard","surfboard","tennis racket","bottle","wine glass","cup","fork",
+    "knife","spoon","bowl","banana","apple","sandwich","orange","broccoli","carrot","hot dog",
+    "pizza","donut","cake","chair","couch","potted plant","bed","dining table","toilet","monitor",
+    "laptop","mouse","remote","keyboard","cell phone","microwave","oven","toaster","sink",
+    "refrigerator","book","clock","vase","scissors","teddy bear","hair drier","toothbrush"};
+    if(id>=0 && id < 80)
+        return coco_classes[id];
+    else return "Unknown";
+}
+
+void ObjectDrawer::drawLabelTextOfObject(MapObject *pMO)
+{
+    // std::cout << "ObjectDrawer::drawLabelTextOfObject 238" << std::endl;
+    // SE3Quat TmwSE3 = ellipsoids[i]->pose.inverse();
+
+    // if(mbOpenTransform)
+    //     TmwSE3 = (mTge * ellipsoids[i]->pose).inverse(); // Tem
+
+    // Vector3d scale = ellipsoids[i]->scale;
+
+
+    Vector3d scale(0.5,0.5,0.5);
+
+    // Eigen::Matrix4f Tmw = pMO->GetPoseSE3().inverse();
+
+    Eigen::Matrix4f Tmw = pMO->GetPoseSE3();
+
+    SE3Quat TmwSE3 = Converter::toSE3Quat(Tmw);
+
+    glPushMatrix();
+
+    glLineWidth(mCameraLineWidth/3.0);
+
+    glColor3f(0.0f,0.0f,1.0f);
+
+    // if(ellipsoids[i]->isColorSet()){
+    //     Vector4d color = ellipsoids[i]->getColorWithAlpha();
+    //     glColor4d(color(0),color(1),color(2),color(3));
+    // }
+    // else
+    //     glColor3f(0.0f,0.0f,1.0f);
+
+    pangolin::OpenGlMatrix Twm;   // model to world
+
+    SE3ToOpenGLCameraMatrix(TmwSE3, Twm);
+
+    glMultMatrixd(Twm.m);  
+    glScaled(scale[0],scale[1],scale[2]);
+
+    // bool bSizeCheck = scale[0] > 0.15 || scale[1] > 0.15 || scale[2] > 0.15;
+    double size_point = 0.1;
+    // bool bPointModel = scale[0] == size_point && scale[1] == size_point && scale[2] == size_point;
+    // if(!ellipsoids[i]->bPointModel && !bPointModel)
+    //     drawAxisNormal();
+
+
+    glPopMatrix();
+
+    // // draw text for ellipsoids in the map
+    // int label = ellipsoids[i]->miLabel;
+    int label = pMO->label;
+
+    // std::cout << " **** [ Debug label : ] " << label << std::endl;
+    const char* labelText = GetLabelText_MapDrawer(label);
+    string strLabel(labelText);
+
+    // // 3d prob
+    // double prob_3d = ellipsoids[i]->prob_3d;
+    // std::stringstream ss2;
+    // ss2 << std::setprecision(2) << prob_3d;
+    // string str_prob_3d = ss2.str();  
+
+    string strInstance = " ";
+
+    // if(ellipsoids[i]->miInstanceID >= 0)
+    // {
+    //     strInstance = to_string(ellipsoids[i]->miInstanceID) + " ";
+    // }
+
+    string txt = strInstance + strLabel;
+    
+    // // add probability
+    // bool bAddProb = false;
+    // if(bAddProb){
+    //     double prob = ellipsoids[i]->prob;
+    //     std::stringstream ss;
+    //     ss << std::setprecision(2) << prob;
+    //     string str_prob = ss.str();  
+
+    //     txt += "[" + str_prob +"]";
+    //     if( prob_3d > 0 ) txt += "[" + str_prob_3d + "]";
+    // }
+
+    // string txt = strLabel;
+
+    // Eigen::Matrix3Xd* corners = pMO->mpEllipsold->compute3D_BoxCorner_ptr();
+    // std::cout << "Eigen::Matrix3Xd corners = \n" << corners->matrix() << std::endl;
+
+
+    Matrix3Xd corners_body;corners_body.resize(3,8);
+    corners_body<< 1, 1, -1, -1, 1, 1, -1, -1,
+            1, -1, -1, 1, 1, -1, -1, 1,
+            -1, -1, -1, -1, 1, 1, 1, 1;
+
+    auto corners_body_homo = real_to_homo_coord_ptr<double>(corners_body);
+
+    g2o::SE3Quat pose = Converter::toSE3Quat(Tmw);
+    Matrix4d res_simTrans = pose.to_homogeneous_matrix();    // 4x4 transform matrix
+    Vector3d e_scale(0.5,0.5,0.5);
+    Matrix3d scale_mat = e_scale.asDiagonal();
+    res_simTrans.topLeftCorner<3,3>() = res_simTrans.topLeftCorner<3,3>()*scale_mat;
+
+    auto corners_body_homo_transfered = res_simTrans*(*corners_body_homo);
+
+    MatrixXd* corners_world = homo_to_real_coord_ptr<double>(corners_body_homo_transfered);
+
+    // // std::cout << "corners_world = " << corners_world->matrix() << std::endl;
+
+    Eigen::Matrix3Xd* corners \
+    = new Eigen::Matrix3Xd(corners_world->topRows(3));
+
+    // std::cout << "corners_world_out_ptr = " << corners_world_out_ptr->matrix() << std::endl;
+
+    glPushMatrix(); //  under world coordinate
+
+    // std::cout << "ObjectDrawer::drawLabelTextOfObject 316" << std::endl;
+
+    int rec_id = 4;  // Draw at one of the points of its external rectangle. 4 : 1,1,1
+    pangolin::GlFont::I().Text( txt ).Draw((*corners)(0,rec_id), (*corners)(1,rec_id), (*corners)(2,rec_id)); 
+
+    // std::cout << "ObjectDrawer::drawLabelTextOfObject 322" << std::endl;
+    
+    // // pangolin::GlFont::I().Text( txt ).Draw(corners(0,rec_id), corners(1,rec_id), corners(2,rec_id)); 
+    // pangolin::GlFont::I().Text( txt ).Draw(0, 0, 0); 
+
+    // // // draw text of object scale
+    // // bool bDrawScale = false;
+
+    // // if(bDrawScale){
+    // //     char text_scale[50];
+    // //     g2o::ellipsoid* pE = ellipsoids[i];
+    // //     sprintf(text_scale, "%.2fx%.2fx%.2f", pE->scale[0], pE->scale[1], pE->scale[2]);
+    // //     string txt_scale_str(text_scale);
+    // //     glColor3f(1.0f, 0.0f,0.0f);
+    // //     pangolin::GlFont::I().Text( txt_scale_str ).Draw((*corners)(0,rec_id), (*corners)(1,rec_id), (*corners)(2,rec_id)+0.05); 
+    // // }
+
+    glPopMatrix();
+
+    // std::cout << "ObjectDrawer::drawLabelTextOfObject 339" << std::endl;
+
+    // return;        
+}
+
 
 // void ObjectDrawer::drawEllipsoidsInVector(ellipsoid* e)
 // {

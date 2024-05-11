@@ -581,6 +581,7 @@ bool MapObject::AddDepthPointCloudFromObjectDetection(ObjectDetection* det)
         det->pcd_ptr->clear();
         *pcd_ptr = *mergedCloud;
     }
+    
     // 打印合并后的点云的大小
     std::cout << "Merged Cloud Size: " << pcd_ptr->size() << std::endl;
     // std::cout << "mnId = " << mnId << ", Merged Cloud Size: " << std::endl;

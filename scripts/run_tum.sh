@@ -15,13 +15,54 @@
 
 # configs/redwood_chair_01053.yaml \
 
-# dishes # configs/tum_fr2_dishes.yaml \
-./qsp_slam_rgbd \
-Vocabulary/ORBvoc.bin \
-configs/tum_fr2_dishes.yaml \
-/home/lj/Documents/dataset/TUM/rgbd_dataset_freiburg2_dishes \
-/home/lj/Documents/dataset/TUM/rgbd_dataset_freiburg2_dishes/associate.txt \
-map/tum/fr2_dishes
+# # dishes # configs/tum_fr2_dishes.yaml \
+# ./qsp_slam_rgbd \
+# Vocabulary/ORBvoc.bin \
+# configs/tum_fr2_dishes.yaml \
+# /home/lj/Documents/dataset/TUM/rgbd_dataset_freiburg2_dishes \
+# /home/lj/Documents/dataset/TUM/rgbd_dataset_freiburg2_dishes/associate.txt \
+# map/tum/fr2_dishes
+
+# SCENE_TYPE=fr1_desk
+# SCENE_TYPE=fr2_desk
+SCENE_TYPE=fr2_dishes
+# SCENE_TYPE=home
+# DATA_NUM=0
+
+if [ "$SCENE_TYPE" = "fr1_desk" ]; then
+    ./qsp_slam_rgbd \
+    Vocabulary/ORBvoc.bin \
+    configs/ICL_NUIM_home.yaml \
+    /media/lj/TOSHIBA/dataset/TUM/dataset_as_SOSLAM/rgbd_dataset_freiburg1_desk \
+    /media/lj/TOSHIBA/dataset/TUM/dataset_as_SOSLAM/rgbd_dataset_freiburg1_desk/associations.txt \
+    map/tum/fr1_desk
+fi
+
+if [ "$SCENE_TYPE" = "fr2_desk" ]; then
+    ./qsp_slam_rgbd \
+    Vocabulary/ORBvoc.bin \
+    configs/ICL_NUIM_home.yaml \
+    /media/lj/TOSHIBA/dataset/TUM/dataset_as_SOSLAM/rgbd_dataset_freiburg2_desk \
+    /media/lj/TOSHIBA/dataset/TUM/dataset_as_SOSLAM/rgbd_dataset_freiburg2_desk/associations.txt \
+    map/tum/fr2_desk
+fi
+
+if [ "$SCENE_TYPE" = "fr2_dishes" ]; then
+    ./qsp_slam_rgbd \
+    Vocabulary/ORBvoc.bin \
+    configs/TUM_fr2_dishes.yaml \
+    /media/lj/TOSHIBA/dataset/TUM/dataset_as_SOSLAM/rgbd_dataset_freiburg2_dishes \
+    /media/lj/TOSHIBA/dataset/TUM/dataset_as_SOSLAM/rgbd_dataset_freiburg2_dishes/associations.txt \
+    map/tum/fr2_dishes
+fi
+
+# # desk # configs/tum_fr2_dishes.yaml \
+# ./qsp_slam_rgbd \
+# Vocabulary/ORBvoc.bin \
+# configs/self_allobject_ground.yaml \
+# /media/lj/TOSHIBA/dataset/TUM/dataset_as_SOSLAM/rgbd_dataset_freiburg1_desk \
+# /media/lj/TOSHIBA/dataset/TUM/dataset_as_SOSLAM/rgbd_dataset_freiburg1_desk/associate.txt \
+# map/tum/fr1_desk
 
 
 # REDWOOD_SCAN_ID=01053

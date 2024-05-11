@@ -138,6 +138,8 @@ public:
     // 3x8 matrix storing 8 corners; each row is x y z
     Matrix3Xd compute3D_BoxCorner() const;
 
+    Matrix3Xd* compute3D_BoxCorner_ptr() const;
+
     Matrix2Xd projectOntoImageBoxCorner(const SE3Quat& campose_cw, const Matrix3d& Kalib) const;
 
     // get rectangles after projection  [topleft, bottomright]

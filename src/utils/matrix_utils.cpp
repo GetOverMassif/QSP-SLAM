@@ -133,6 +133,21 @@ Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic> real_to_homo_coord(const Eigen:
 }
 template MatrixXd real_to_homo_coord<double>(const MatrixXd&);template MatrixXf real_to_homo_coord<float>(const MatrixXf&);
 
+template <class T>
+Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic>* real_to_homo_coord_ptr(const Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic>& pts_in)
+{
+    Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic> pts_homo_out;
+    int raw_rows=pts_in.rows();  int raw_cols=pts_in.cols();
+    pts_homo_out.resize(raw_rows+1,raw_cols);
+    pts_homo_out << pts_in, Matrix<T,1,Dynamic>::Ones(raw_cols);
+
+    Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic>* pts_homo_out_ptr \
+        = new Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic>(pts_homo_out);
+
+    return pts_homo_out_ptr;
+}
+template MatrixXd* real_to_homo_coord_ptr<double>(const MatrixXd&);template MatrixXf* real_to_homo_coord_ptr<float>(const MatrixXf&);
+
 
 template <class T>
 void real_to_homo_coord(const Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic>& pts_in, Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic>& pts_homo_out)
@@ -159,6 +174,22 @@ Eigen::Matrix<T, Eigen::Dynamic, 1> real_to_homo_coord_vec(const Eigen::Matrix<T
 }
 template VectorXd real_to_homo_coord_vec<double>(const VectorXd&); template VectorXf real_to_homo_coord_vec<float>(const VectorXf&);
 
+template <class T>  // though vector can be casted into matrix, to make output clear to be vector, it is better to define a new function.
+Eigen::Matrix<T, Eigen::Dynamic, 1>* real_to_homo_coord_vec_ptr(const Eigen::Matrix<T, Eigen::Dynamic, 1>& pts_in)
+{
+    Eigen::Matrix<T, Eigen::Dynamic, 1> pts_homo_out;
+    int raw_rows = pts_in.rows();;
+
+    pts_homo_out.resize(raw_rows+1);
+    pts_homo_out<<pts_in,
+            1;
+
+    Eigen::Matrix<T, Eigen::Dynamic, 1>* pts_homo_out_ptr \
+         = new Eigen::Matrix<T, Eigen::Dynamic, 1>(pts_homo_out);
+
+    return pts_homo_out_ptr;
+}
+template VectorXd* real_to_homo_coord_vec_ptr<double>(const VectorXd&); template VectorXf* real_to_homo_coord_vec_ptr<float>(const VectorXf&);
 
 template <class T>
 Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic> homo_to_real_coord(const Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic>& pts_homo_in)
@@ -170,6 +201,21 @@ Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic> homo_to_real_coord(const Eigen:
     return pts_out;
 }
 template MatrixXd homo_to_real_coord<double>(const MatrixXd&);template MatrixXf homo_to_real_coord<float>(const MatrixXf&);
+
+template <class T>
+Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic>* homo_to_real_coord_ptr(const Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic>& pts_homo_in)
+{
+    Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic> pts_out(pts_homo_in.rows()-1,pts_homo_in.cols());
+    for (int i=0;i<pts_homo_in.rows()-1;i++)
+        pts_out.row(i) = pts_homo_in.row(i).array()/pts_homo_in.bottomRows(1).array();   //replicate needs actual number, cannot be M or N
+
+    Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic>* pts_out_ptr \
+        = new Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic>(pts_out);
+
+    return pts_out_ptr;
+
+}
+template MatrixXd* homo_to_real_coord_ptr<double>(const MatrixXd&);template MatrixXf* homo_to_real_coord_ptr<float>(const MatrixXf&);
 
 
 template <class T>
@@ -194,6 +240,21 @@ Eigen::Matrix<T, Eigen::Dynamic, 1> homo_to_real_coord_vec(const Eigen::Matrix<T
     return pt_out;
 }
 template VectorXd homo_to_real_coord_vec<double>(const VectorXd&); template VectorXf homo_to_real_coord_vec<float>(const VectorXf&);
+
+template <class T>  // though vector can be casted into matrix, to make output clear to be vector, it is better to define a new function.
+Eigen::Matrix<T, Eigen::Dynamic, 1>* homo_to_real_coord_vec_ptr(const Eigen::Matrix<T, Eigen::Dynamic, 1>& pts_homo_in)
+{
+    Eigen::Matrix<T, Eigen::Dynamic, 1> pt_out;
+    if (pts_homo_in.rows()==4)
+        pt_out=pts_homo_in.head(3)/pts_homo_in(3);
+    else if (pts_homo_in.rows()==3)
+        pt_out=pts_homo_in.head(2)/pts_homo_in(2);
+    
+    Eigen::Matrix<T, Eigen::Dynamic, 1>* pt_out_ptr = new Eigen::Matrix<T, Eigen::Dynamic, 1>(pt_out);
+
+    return pt_out_ptr;
+}
+template VectorXd* homo_to_real_coord_vec_ptr<double>(const VectorXd&); template VectorXf* homo_to_real_coord_vec_ptr<float>(const VectorXf&);
 
 
 void fast_RemoveRow(MatrixXd& matrix,int rowToRemove, int& total_line_number)

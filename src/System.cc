@@ -324,14 +324,22 @@ cv::Mat System::TrackRGBD(const cv::Mat &im, const cv::Mat &depthmap, const doub
         }
     }
 
-    // cout << "Before GrabImageRGBD" << endl;
-    // printMemoryUsage();
-
     // KEY： 加入图像、深度和时间戳
+
+    // TODO: 设置可以使用标准轨迹
     cv::Mat Tcw = mpTracker->GrabImageRGBD(im,depthmap,timestamp);
 
-    // cout << "After GrabImageRGBD" << endl;
-    // printMemoryUsage();
+    auto traj_gt = mpMap->getTrajectoryWithName("Groundtruth");
+    int i_gt = 0;
+    for(; i_gt < traj_gt.size() && traj_gt[i_gt]->timestamp < timestamp; i_gt++){    }
+    i_gt = min(i_gt, int(traj_gt.size())-1);
+    Tcw = Converter::toCvMat(traj_gt[i_gt]->pose.to_homogeneous_matrix());
+    mpTracker->mCurrentFrame->SetPose(Tcw);
+
+    mpTracker->DenseBuild();
+
+
+
     
     // 更新状态
     unique_lock<mutex> lock2(mMutexState);
@@ -340,12 +348,6 @@ cv::Mat System::TrackRGBD(const cv::Mat &im, const cv::Mat &depthmap, const doub
     mTrackedKeyPointsUn = mpTracker->mCurrentFrame->mvKeysUn;
 
     auto mvpFrames = mpTracker->GetAllFramesWithKeyframe();
-    // cout << "[ After state update, mvpFrames size = " << mvpFrames.size() << endl;
-    // for (auto& pF: mvpFrames){
-    //     cout << pF->frame_seq_id << ",  " << pF->mnId << ","
-    //         << &pF << endl;
-    // }
-    // cout << endl;
 
     // 如果跟踪成功，则进行平面检测
     if (mTrackingState==Tracking::OK) {

@@ -610,6 +610,29 @@ namespace g2o
         return corners_world;
     }
 
+    Matrix3Xd* ellipsoid::compute3D_BoxCorner_ptr() const
+    {
+        Matrix3Xd corners_body;corners_body.resize(3,8);
+        corners_body<< 1, 1, -1, -1, 1, 1, -1, -1,
+                1, -1, -1, 1, 1, -1, -1, 1,
+                -1, -1, -1, -1, 1, 1, 1, 1;
+
+        auto corners_body_homo = real_to_homo_coord_ptr<double>(corners_body);
+
+        auto corners_body_homo_transfered = similarityTransform()*(*corners_body_homo);
+
+        MatrixXd* corners_world = homo_to_real_coord_ptr<double>(corners_body_homo_transfered);
+
+        // std::cout << "corners_world = " << corners_world->matrix() << std::endl;
+
+        Eigen::Matrix3Xd* corners_world_out_ptr \
+        = new Eigen::Matrix3Xd(corners_world->topRows(3));
+
+        // std::cout << "corners_world_out_ptr = " << corners_world_out_ptr->matrix() << std::endl;
+
+        return corners_world_out_ptr;
+    }
+
     Matrix2Xd ellipsoid::projectOntoImageBoxCorner(const SE3Quat& campose_cw, const Matrix3d& Kalib) const
     {
         Matrix3Xd corners_3d_world = compute3D_BoxCorner();
