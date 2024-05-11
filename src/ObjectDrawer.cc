@@ -471,7 +471,6 @@ void ObjectDrawer::DrawCuboid(MapObject *pMO)
     glPushMatrix();
 
 
-
     pangolin::OpenGlMatrix Two = Converter::toMatrixPango(pMO->SE3Two);
 #ifdef HAVE_GLES
     glMultMatrixf(Two.m);

@@ -19,7 +19,7 @@
 
 // Update : 2020-1-4 完善椭球体评估功能
 // 评估物体重建和真实位置之间的差值
-#include "evo.h"
+#include "src/evo/evo.h"
 
 namespace evo
 {
@@ -767,7 +767,7 @@ namespace evo
             vec_trans.head(10).tail(9) = e_miniVec;     // TOBE CHECK: 该类替换是否生效. 是否是该部分的引用.
 
             // 变换到世界系
-            addVecToMatirx(objMatTrans, vec_trans);
+            addVecToMatrix(objMatTrans, vec_trans);
         }
         return objMatTrans;
     }

@@ -35,7 +35,7 @@ MatrixXd GeneratePoseMat(const std::vector<FrameData>& frameDatas)
     for(auto&dd:frameDatas)
     {
         VectorXd vec = dd.cam_pose_Twc.toVector();
-        addVecToMatirx(poseMat, vec);
+        addVecToMatrix(poseMat, vec);
     }
     return poseMat;
 }
@@ -46,7 +46,7 @@ MatrixXd GenerateDetectionMat(const std::vector<FrameData>& frameDatas)
     for(auto&dd:frameDatas)
     {
         VectorXd vec = dd.bbox;
-        addVecToMatirx(detectionMat, vec);
+        addVecToMatrix(detectionMat, vec);
     }
     return detectionMat;
 }

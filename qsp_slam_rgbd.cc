@@ -40,6 +40,9 @@
 
 using namespace std;
 
+typedef pcl::PointXYZRGB PointT;
+typedef pcl::PointCloud<PointT> PointCloudPCL;
+
 /**
  * @brief 加载图像
  * 
@@ -220,11 +223,36 @@ int main(int argc, char **argv)
         gtTrajVO[i] = pGtSE3T;
     }
 
-    std::cout << "p_gtMat = " << p_gtMat->matrix() << std::endl;
+    // std::cout << "p_gtMat = " << p_gtMat->matrix() << std::endl;
 
     // gtTrajInEst
 
     SLAM.getMap()->addOneTrajectory(gtTrajVO, "Groundtruth");
+
+    // 处理可能的点云输入
+
+    string pcd_filepath = dataset_path + "/dataset.pcd";
+
+    PointCloudPCL::Ptr pCloudPCL(new PointCloudPCL);
+    bool valid_pcd = true;
+
+    // 读取.pcd文件到 PointCloudPCL 中
+    if (pcl::io::loadPCDFile<PointT>(pcd_filepath, *pCloudPCL) == -1) {
+
+        cout << "Couldn't read file.\n";
+        valid_pcd = false;
+
+        // PCL_ERROR("Couldn't read file.\n");
+        // return -1;
+    }
+
+    if (valid_pcd) {
+        // 输出点云中点的数量
+        std::cout << "Loaded " << pCloudPCL->size() << " points." << std::endl;
+        auto pCloud = pclToQuadricPointCloudPtr(pCloudPCL);
+        SLAM.getMap()->AddPointCloudList("Dataset PointCloud", pCloud);
+    }
+
     // SLAM.getMap()->addOneTrajectory(gtTrajInEst, "AlignedGroundtruth");
 
     // Vector for tracking time statistics

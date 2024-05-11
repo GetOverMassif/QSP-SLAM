@@ -865,7 +865,7 @@ MatrixXd TransformPlanes(MatrixXd& planeMat, g2o::SE3Quat& T)
         g2o::plane pl(planeMat.row(i).head(4));
         pl.transform(T);
         VectorXd plvt = pl.param;
-        addVecToMatirx(pMT, plvt);
+        addVecToMatrix(pMT, plvt);
     }
     return pMT;
 }

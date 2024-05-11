@@ -20,7 +20,7 @@ Tracking.MinimumPtNumToJudgeGood: 5  # default 20
 
 LocalMapping.DistFiltParam: 0.1
 
-Tracking.IgnoreObject: 1
+Tracking.IgnoreObject: 0
 
 
 # Tracking.UseGroundTruthTraj: 1

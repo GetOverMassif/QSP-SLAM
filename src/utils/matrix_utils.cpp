@@ -29,7 +29,7 @@ Matrix4d getTransformFromVector(VectorXd& pose)
     }
 }
 
-void addVecToMatirx(Eigen::MatrixXd &mat, Eigen::VectorXd &vec)
+void addVecToMatrix(Eigen::MatrixXd &mat, Eigen::VectorXd &vec)
 {
     if(mat.rows()==0 && mat.cols()==0)
         mat.resize(0, vec.rows());

@@ -61,7 +61,7 @@ MatrixXd GenerateObjMat(std::vector<ellipsoid*>& vec_objs)
         VectorXd vec_instance; vec_instance.resize(11);
         vec_instance << e->miInstanceID, vec, e->miLabel;
 
-        addVecToMatirx(objMat, vec_instance);
+        addVecToMatrix(objMat, vec_instance);
     }
 
     std::cout << " num_partial_ob : " << num_partial_ob << std::endl;

@@ -436,7 +436,7 @@ MatrixXd TransformPlanes(MatrixXd &planeMat, g2o::SE3Quat &T) {
         g2o::plane pl(planeMat.row(i).head(4));
         pl.transform(T);
         VectorXd plvt = pl.param;
-        addVecToMatirx(pMT, plvt);
+        addVecToMatrix(pMT, plvt);
     }
     return pMT;
 }
@@ -628,7 +628,7 @@ MatrixXd VecPlanesToMat(const std::vector<g2o::plane *> &vecPlanes) {
     for (auto ppl : vecPlanes) {
         VectorXd param(4);
         param << ppl->param;
-        addVecToMatirx(outputMat, param);
+        addVecToMatrix(outputMat, param);
     }
     return outputMat;
 }
@@ -648,8 +648,8 @@ std::vector<g2o::ConstrainPlane *> GenerateConstrainPlanesOfCuboids(g2o::ellipso
     // VectorXd fdPlaneParam(4); fdPlaneParam << pfdPlane->param;    // 转换到了世界坐标系内.
     // VectorXd bkPlaneParam(4); bkPlaneParam << pbkPlane->param;
 
-    // addVecToMatirx(mPlanesParamLocal, fdPlaneParam);
-    // addVecToMatirx(mPlanesParamLocal, bkPlaneParam);
+    // addVecToMatrix(mPlanesParamLocal, fdPlaneParam);
+    // addVecToMatrix(mPlanesParamLocal, bkPlaneParam);
 
     // 版本2、 获得 Cuboids 的所有有效平面
     std::vector<g2o::plane *> vecPlanes = e_local_normalized.GetCubePlanesInImages(g2o::SE3Quat(), calib, rows, cols, 30);

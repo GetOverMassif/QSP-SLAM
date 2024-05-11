@@ -41,11 +41,17 @@
             // "/media/lj/TOSHIBA/dataset/FromZHJD/circle/associate.txt",
             // "map/self/circle"
 
+            // "Vocabulary/ORBvoc.bin",
+            // "configs/self_allobject_ground.yaml",
+            // "/media/lj/TOSHIBA/dataset/MySimDataset/GroundObjects",
+            // "/media/lj/TOSHIBA/dataset/MySimDataset/GroundObjects/associate.txt",
+            // "map/self/GroundObjects"
+
             "Vocabulary/ORBvoc.bin",
-            "configs/self_allobject_ground.yaml",
-            "/media/lj/TOSHIBA/dataset/MySimDataset/GroundObjects",
-            "/media/lj/TOSHIBA/dataset/MySimDataset/GroundObjects/associate.txt",
-            "map/self/GroundObjects"
+            "configs/ICL_NUIM_home.yaml",
+            "/media/lj/TOSHIBA/dataset/ICL-NUIM/home/living_room_traj2_frei_png",
+            "/media/lj/TOSHIBA/dataset/ICL-NUIM/home/living_room_traj2_frei_png/associations_adjusted.txt",
+            "map/icl_nuim/home/2"
 
         ],
         "stopAtEntry": false,

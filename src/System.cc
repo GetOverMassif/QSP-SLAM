@@ -334,12 +334,15 @@ cv::Mat System::TrackRGBD(const cv::Mat &im, const cv::Mat &depthmap, const doub
     for(; i_gt < traj_gt.size() && traj_gt[i_gt]->timestamp < timestamp; i_gt++){    }
     i_gt = min(i_gt, int(traj_gt.size())-1);
     Tcw = Converter::toCvMat(traj_gt[i_gt]->pose.to_homogeneous_matrix());
-    mpTracker->mCurrentFrame->SetPose(Tcw);
+    // Tcw = Tcw.inv();
+
+    // mpTracker->mCurrentFrame->SetPose(Tcw);
+    
 
     mpTracker->DenseBuild();
 
-
-
+    // 处理可时候内容
+    mpMap->addCameraStateToTrajectory(&(mpTracker->mCurrentFrame->cam_pose_Twc));
     
     // 更新状态
     unique_lock<mutex> lock2(mMutexState);
@@ -349,10 +352,10 @@ cv::Mat System::TrackRGBD(const cv::Mat &im, const cv::Mat &depthmap, const doub
 
     auto mvpFrames = mpTracker->GetAllFramesWithKeyframe();
 
-    // 如果跟踪成功，则进行平面检测
-    if (mTrackingState==Tracking::OK) {
+    // // 如果跟踪成功，则进行平面检测
+    // if (mTrackingState==Tracking::OK) {
         
-    }
+    // }
 
     if (mbMapInSameThread) {
         mpLocalMapper->RunOneTime();

@@ -10,7 +10,7 @@ MatrixXd TrajetoryToMat(Trajectory& estTraj)
     {
         VectorXd poseTime; poseTime.resize(8);
         poseTime << estTraj[i]->timestamp, estTraj[i]->pose.toVector();
-        addVecToMatirx(mat, poseTime);
+        addVecToMatrix(mat, poseTime);
     }
 
     return mat;
@@ -65,8 +65,8 @@ void GenerateSelectedGtMatAndEstMat(MatrixXd &estMat, MatrixXd &gtMat, MatrixXd 
         if(diff_min < 0.01) // 10ms 内间隔认为有效.
         {
             VectorXd pose_gt = gtMat.row(minRow); // id 
-            addVecToMatirx(gtMatSelected, pose_gt);
-            addVecToMatirx(estMatSelected, estPose);
+            addVecToMatrix(gtMatSelected, pose_gt);
+            addVecToMatrix(estMatSelected, estPose);
         }
     }
 

@@ -72,6 +72,22 @@ void Viewer::Run()
     glBlendFunc (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
     pangolin::CreatePanel("menu").SetBounds(0.0,1.0,0.0,pangolin::Attach::Pix(175));
+
+    mvMenuStruct.resize(9); mvDoubleMenus.resize(9);
+    mvMenuStruct[0] = new MenuStruct(" - X", 0, -10, 10);
+    mvMenuStruct[1] = new MenuStruct(" - Y", 0, -10, 10);
+    mvMenuStruct[2] = new MenuStruct(" - Z", 0, -10, 10);
+
+    double PI = 3.1415926;
+    double h_PI = PI / 2.;
+    mvMenuStruct[3] = new MenuStruct(" - Roll", 0,-h_PI,h_PI);
+    mvMenuStruct[4] = new MenuStruct(" - Pitch", 0,-h_PI,h_PI);
+    mvMenuStruct[5] = new MenuStruct(" - Yaw", 0,-h_PI,h_PI);
+
+    mvMenuStruct[6] = new MenuStruct(" - Length", 0.5,0.001,3);
+    mvMenuStruct[7] = new MenuStruct(" - Width", 0.5,0.001,3);
+    mvMenuStruct[8] = new MenuStruct(" - Height", 0.5,0.001,3);
+
     pangolin::Var<bool> menuFollowCamera("menu.Follow Camera",false,true);
     pangolin::Var<bool> menuShowPoints("menu.Show Points",false,true);
     pangolin::Var<bool> menuShowRawObjPoints("menu.Show Raw Obj Points",true,true);
@@ -114,6 +130,11 @@ void Viewer::Run()
     // pangolin::Var<bool> menuShowOptimizedTraj("menu.Optimized Traj", true, true);
     
     pangolin::Var<bool> menuShowGtTraj("menu.Gt Traj", true, true);
+    pangolin::Var<bool> menuShowCamTraj("menu.Cam Traj", true, true);
+
+    pangolin::Var<bool> menuAnnoObj("menu.Show AnnoObj",true,true);
+    pangolin::Var<bool> menuAddAnnoObj("menu.AddAnnoObj",false,false);
+    pangolin::Var<bool> menuSaveAnnoObj("menu.SaveAnnoObj",false,false);
 
     // pangolin::Var<bool> menuShowRelationArrow("menu.Relation Arrow", false, true);
     // pangolin::Var<int> SliderOdometryWeight("menu.Odometry Weight", 40, 0, 40);
@@ -158,7 +179,38 @@ void Viewer::Run()
 
     while(1)
     {
+        // pangolin::Var<int> menuAnnoIndex("menu.AnnoIndex",cur_AnnoIndex,-1,AnnoNum);
+        pangolin::Var<int> menuAnnoIndex("menu.AnnoIndex",cur_AnnoIndex,-1,10);
+
+        cur_AnnoIndex = menuAnnoIndex;
+
         RefreshMenu();  // Deal with dynamic menu bars
+
+        if (menuSaveAnnoObj) {
+            menuSaveAnnoObj = false;
+            std::string dataset_path = "/media/lj/TOSHIBA/dataset/ICL-NUIM/home/living_room_traj2_frei_png";
+            std::string obj_gt_txt = dataset_path + "/objects_gt.txt";
+            ofstream f;
+            f.open(obj_gt_txt.c_str());
+            f << fixed;
+            // index, x,y,z, roll, pitch, yaw, half length of axis x,y,z, label
+            for (int i_anno = 0; i_anno < AnnoObjs.size(); i_anno++)
+            {
+                AnnoObj* p_obj = AnnoObjs[i_anno];
+                int index = p_obj->index, label = p_obj->label;
+                double x = p_obj->x, y = p_obj->y, z = p_obj->z;
+                double roll = p_obj->roll, pitch = p_obj->pitch, yaw = p_obj->yaw;
+                double length = p_obj->length, width = p_obj->width, height = p_obj->height;
+
+                f << index << " " << setprecision(6)
+                  << x << " " << y << " " << z << " "
+                  << roll << " " << pitch << " " << yaw << " "
+                  << length << " " << width << " " << height << " "
+                  << label << endl;
+            }
+            f.close();
+        }
+        
 
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -200,7 +252,42 @@ void Viewer::Run()
         glClearColor(1.0f,1.0f,1.0f,1.0f);
         mpMapDrawer->DrawCurrentCamera(Twc);
 
+        if (menuAnnoObj)
+        {
+            // Anno objects
+            for (int i_anno = 0; i_anno < AnnoObjs.size(); i_anno++)
+            {
+                AnnoObj* p_obj = AnnoObjs[i_anno];
+                double x = p_obj->x, y = p_obj->y, z = p_obj->z;
+                double roll = p_obj->roll, pitch = p_obj->pitch, yaw = p_obj->yaw;
+                double length = p_obj->length, width = p_obj->width, height = p_obj->height;
+                Eigen::Matrix3f rotation;
+                rotation = Eigen::AngleAxisf(float(roll), Eigen::Vector3f::UnitX())
+                        * Eigen::AngleAxisf(float(pitch), Eigen::Vector3f::UnitY())
+                        * Eigen::AngleAxisf(float(yaw), Eigen::Vector3f::UnitZ());
+
+                Eigen::Matrix4f transformationMatrix = Eigen::Matrix4f::Identity();
+                transformationMatrix.block<3,3>(0,0) = rotation;
+                transformationMatrix(0,3) = float(x);
+                transformationMatrix(1,3) = float(y);
+                transformationMatrix(2,3) = float(z);
+
+                Eigen::Matrix4f Two = transformationMatrix;
+                Eigen::Vector3f Scale;
+                Scale << float(length),float(width),float(height);
+                bool with_mesh = true;
+                mpMapDrawer->drawCuboid9Dof(Two, Scale, with_mesh);
+                
+            }
+        }
+
+
+
+        // 
         float mappointSize = SliderMapPointSize;
+
+        if(menuShowCamTraj)
+            mpMapDrawer->drawTrajectory();
 
         /** From ORB-SLAM*/
         if(menuShowKeyFrames || menuShowGraph)
@@ -233,7 +320,9 @@ void Viewer::Run()
 
         // draw pointclouds with names
         float pointcloudSize = SliderPointCloudListSize;
+
         RefreshPointCloudOptions();
+
         mpMapDrawer->drawPointCloudWithOptions(mmPointCloudOptionMap, pointcloudSize);
 
         // float pointcloudSize = SliderPointCloudListSize;
@@ -249,6 +338,8 @@ void Viewer::Run()
         
         //     mpMap->AddPointCloudList("Builder.Global Points", pCloud);
         // mpMap->AddPointCloudList("Builder.Local Points", pCloudLocal);
+
+        
 
         if(menuShowGtTraj)
             mpMapDrawer->drawTrajectoryWithName("Groundtruth");
@@ -270,6 +361,8 @@ void Viewer::Run()
         // std::cout << "After mpObjectDrawer->DrawObjects" << std::endl;
 
         pangolin::FinishFrame();
+
+
 
         cv::Mat im = GetFrame();
 //        double scale = float(w) / im.size().width;
@@ -296,6 +389,7 @@ void Viewer::Run()
             menuFollowCamera = true;
             mpSystem->Reset();
             menuReset = false;
+
         }
 
         if(Stop())
@@ -313,6 +407,48 @@ void Viewer::Run()
 
         if(CheckFinish())
             break;
+
+        if(menuAddAnnoObj){
+            AnnoNum++;
+            // p_menuAddAnnoObj = new pangolin::Var<bool>("menu.AddAnnoObj",false,false);
+            menuAddAnnoObj = false;
+
+            // std::cout << "p_menuAddAnnoObj = " << p_menuAddAnnoObj->Get() << std::endl;
+            cout << " AnnoNum = " << AnnoNum << std::endl;
+            AnnoObjs.resize(AnnoNum);
+            AnnoObjs[AnnoNum - 1] = new AnnoObj();
+            AnnoObjs[AnnoNum - 1]->index = AnnoNum - 1;
+        }
+
+        if (AnnoNum > 0 && cur_AnnoIndex >= 0 && cur_AnnoIndex < AnnoNum) {
+            cur_AnnoObj = AnnoObjs[cur_AnnoIndex];
+            if(prev_AnnoIndex >= 0) {
+
+                prev_AnnoObj = AnnoObjs[prev_AnnoIndex];
+                prev_AnnoObj->x = mvDoubleMenus[0]->Get();
+                prev_AnnoObj->y = mvDoubleMenus[1]->Get();;
+                prev_AnnoObj->z = mvDoubleMenus[2]->Get();
+                prev_AnnoObj->roll = mvDoubleMenus[3]->Get();
+                prev_AnnoObj->pitch = mvDoubleMenus[4]->Get();
+                prev_AnnoObj->yaw = mvDoubleMenus[5]->Get();
+                prev_AnnoObj->length = mvDoubleMenus[6]->Get();
+                prev_AnnoObj->width = mvDoubleMenus[7]->Get();
+                prev_AnnoObj->height = mvDoubleMenus[8]->Get();
+            }
+            mvMenuStruct[0]->def = cur_AnnoObj->x;
+            mvMenuStruct[1]->def = cur_AnnoObj->y;
+            mvMenuStruct[2]->def = cur_AnnoObj->z;
+            mvMenuStruct[3]->def = cur_AnnoObj->roll;
+            mvMenuStruct[4]->def = cur_AnnoObj->pitch;
+            mvMenuStruct[5]->def = cur_AnnoObj->yaw;
+            mvMenuStruct[6]->def = cur_AnnoObj->length;
+            mvMenuStruct[7]->def = cur_AnnoObj->width;
+            mvMenuStruct[8]->def = cur_AnnoObj->height;
+
+            prev_AnnoIndex = cur_AnnoIndex;
+        }
+
+        RefreshAnnoOptions();
     }
 
     SetFinish();
@@ -390,6 +526,18 @@ void Viewer::RefreshPointCloudOptions()
     mmPointCloudOptionMap = options;
 }
 
+void Viewer::RefreshAnnoOptions()
+{
+    // std::map<std::string, double> options;
+
+    // for (auto pair : mmAnnoOptionMenus) {
+    //     options.insert(make_pair(pair.first, pair.second->Get()));
+    // }
+
+    // mmAnnoOptionMap.clear();
+    // mmAnnoOptionMap = options;
+}
+
 void Viewer::RefreshMenu(){
     unique_lock<mutex> lock(mMutexFinish);
 
@@ -423,17 +571,39 @@ void Viewer::RefreshMenu(){
         }
     }
 
-    // // refresh double bars
+    // refresh double bars
     // int doubleBarNum = mvDoubleMenus.size();
-    // int structNum = mvMenuStruct.size();
-    // if( structNum > 0 && structNum > doubleBarNum )
-    // {
-    //     for(int i = doubleBarNum; i < structNum; i++)
-    //     {
-    //         pangolin::Var<double>* pMenu = new pangolin::Var<double>(string("menu.")+mvMenuStruct[i].name, mvMenuStruct[i].def, mvMenuStruct[i].min, mvMenuStruct[i].max);
-    //         mvDoubleMenus.push_back(pMenu);
-    //     }
+
+    // 标注专区
+    // 管理熟悉：当前物体编号，总物体数量
+    // 每个物体属性： 物体编号、物体语义标签
+
+    // std::cout << "set p_menuAddAnnoObj false" << std::endl;
+
+    // if (p_menuAddAnnoObj != nullptr) {
+    //     std::cout << "p_menuAddAnnoObj = " << p_menuAddAnnoObj->Get() << std::endl;
     // }
+
+    // delete p_menuAnnoIndex;
+    // p_menuAnnoIndex = new pangolin::Var<int>("menu.AnnoIndex",cur_AnnoIndex,-1,AnnoNum);
+
+    // std::cout << "Set AnnoNum = " << AnnoNum << std::endl;
+    // p_menuAddAnnoObj = new pangolin::Var<bool>("menu.AddAnnoObj",false,false);
+
+    int structNum = mvMenuStruct.size();
+
+    for(int i_d = 0; i_d < structNum; i_d++)
+    {
+        pangolin::Var<double>* pMenu = 
+            new pangolin::Var<double>(
+                string("menu.") + mvMenuStruct[i_d]->name,
+                mvMenuStruct[i_d]->def, 
+                mvMenuStruct[i_d]->min, 
+                mvMenuStruct[i_d]->max
+            );
+        delete mvDoubleMenus[i_d];
+        mvDoubleMenus[i_d] = pMenu;
+    }
 
 }
 

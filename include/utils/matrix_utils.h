@@ -7,7 +7,7 @@
 #include <Eigen/Dense>
 
 Eigen::Matrix4d getTransformFromVector(Eigen::VectorXd& pose);
-void addVecToMatirx(Eigen::MatrixXd &mat, Eigen::VectorXd &vec);
+void addVecToMatrix(Eigen::MatrixXd &mat, Eigen::VectorXd &vec);
 
 template <class T>
 Eigen::Quaternion<T> zyx_euler_to_quat(const T &roll, const T &pitch, const T &yaw);

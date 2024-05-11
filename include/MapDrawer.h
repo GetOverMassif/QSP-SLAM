@@ -72,7 +72,7 @@ public:
     // bool drawPoints();
     // void setCalib(Eigen::Matrix3d& calib);
 
-    // bool drawTrajectory();
+    bool drawTrajectory();
     // bool drawTrajectoryDetail();
     // bool drawGivenTrajDetail(std::vector<g2o::SE3Quat*>& traj, const Vector3d& color);
 
@@ -93,9 +93,11 @@ public:
     // void drawArrows();
     void drawLine(const Vector3d& start, const Vector3d& end, const Vector3d& color, double width, double alpha = 1.0);
 
+    void drawAxis(Eigen::Vector3f Scale = Eigen::Vector3f::Identity());
+    void drawCuboid9Dof(Eigen::Matrix4f Two, Eigen::Vector3f Scale, bool with_mesh);
+
     // void SetTransformTge(const g2o::SE3Quat& Tge);
 
-    // void drawAxisNormal();
 
     // void drawEllipsoidsLabelText(double prob_thresh, bool show_ellipsoids = true, bool show_observation = true);
 

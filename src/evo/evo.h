@@ -9,8 +9,8 @@
 
 #include "include/utils/dataprocess_utils.h"
 
-#include <core/Ellipsoid.h>
-#include <core/Geometry.h>
+#include <Ellipsoid.h>
+#include <Geometry.h>
 // #include <System.h>
 #include <Map.h>
 

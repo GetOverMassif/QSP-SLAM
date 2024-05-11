@@ -209,10 +209,14 @@ add_subdirectory(src/tum_rgbd)
 
 # add_subdirectory(src/eval)
 
-# add_subdirectory(src/evo)
+
+
 # add_subdirectory(src/Prior)
 
 # add_subdirectory(Example/interface)
 
 
 # add_subdirectory(src/tools)
+
+# add_subdirectory(src/evo)
+# add_subdirectory(tools)

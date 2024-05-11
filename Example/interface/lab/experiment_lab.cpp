@@ -366,7 +366,7 @@ bool isBorder(Vector4d &measure , int rows, int cols, int config_boarder){
 
             VectorXd vec_instance(11);
             vec_instance << e->miInstanceID, vec, e->miLabel;
-            addVecToMatirx(objMat, vec_instance);
+            addVecToMatrix(objMat, vec_instance);
         }
         return objMat;
     }

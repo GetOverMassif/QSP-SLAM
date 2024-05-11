@@ -366,7 +366,7 @@ void Labeller::DrawCuboid(Eigen::Matrix4f Two, Eigen::Vector3f Scale, bool with_
 #else
     glMultMatrixd(Two_opengl.m);
 #endif
-
+    
     const float mCuboidLineWidth = 3.0;
     glLineWidth(mCuboidLineWidth);
     glColor3f(0.0f,1.0f,0.0f);

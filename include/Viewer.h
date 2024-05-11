@@ -29,6 +29,17 @@
 
 #include <mutex>
 
+struct MenuStruct
+{
+    MenuStruct(string name_,double def_,double min_,double max_)
+        :name(name_), def(def_), min(min_), max(max_)
+    {};
+    double min;
+    double max;
+    double def;
+    string name;
+};
+
 namespace ORB_SLAM2
 {
 
@@ -37,6 +48,15 @@ class FrameDrawer;
 class MapDrawer;
 class ObjectDrawer;
 class System;
+
+class AnnoObj{
+public:
+    int index = 0, label = 0;
+    double x = 0,y = 0,z = 0;
+    double roll = 0, pitch = 0, yaw = 0;
+    double width = 0.1, height = 0.2, length = 0.4;
+
+};
 
 class Viewer
 {
@@ -88,9 +108,32 @@ private:
 
     // Manual control of the point cloud visualization
     map<string,pangolin::Var<bool>*> mmPointCloudOptionMenus;
-
     std::map<std::string,bool> mmPointCloudOptionMap;
+
+
+    // menu lists
+    // vector<pangolin::Var<double>*> mvAnnoDoubleMenus;
+
+    pangolin::Var<int>* p_menuAnnoIndex;
+    pangolin::Var<bool>* p_menuAddAnnoObj;
+
+    vector<pangolin::Var<double>*> mvDoubleMenus;
+    vector<MenuStruct*> mvMenuStruct;
+
+    map<string,pangolin::Var<double>*> mmAnnoOptionMenus;
+    std::map<std::string,double> mmAnnoOptionMap;
+
     void RefreshPointCloudOptions();
+    void RefreshAnnoOptions();
+
+private:
+    // 标注专区
+    int AnnoNum = 0;
+    int cur_AnnoIndex = -1;
+    int prev_AnnoIndex = -1;
+    vector<AnnoObj*> AnnoObjs;
+    AnnoObj* cur_AnnoObj;
+    AnnoObj* prev_AnnoObj;
 
 };
 

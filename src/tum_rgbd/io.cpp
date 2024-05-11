@@ -656,7 +656,7 @@ namespace TUMRGBD
             double timestamp = stod(gtTimeStamp);
             VectorXd pose_withtime; pose_withtime.resize(8);
             pose_withtime << timestamp, pose;
-            addVecToMatirx(gtMat, pose_withtime);
+            addVecToMatrix(gtMat, pose_withtime);
         }
 
         return gtMat;

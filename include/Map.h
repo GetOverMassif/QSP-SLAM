@@ -144,6 +144,13 @@ public:
     // 针对新的接口
     bool AddPointCloudList(const string& name, std::vector<pcl::PointCloud<pcl::PointXYZRGB>>& vCloudPCL, g2o::SE3Quat& Twc, int type = REPLACE_POINT_CLOUD);
 
+    void setCameraState(g2o::SE3Quat* state);
+    g2o::SE3Quat* getCameraState();
+
+    void addCameraStateToTrajectory(g2o::SE3Quat* state);
+    std::vector<g2o::SE3Quat*> getCameraStateTrajectory();
+    void ClearCameraTrajectory();
+
     void addToTrajectoryWithName(SE3QuatWithStamp* state, const string& name);
     Trajectory getTrajectoryWithName(const string& name);
     bool clearTrajectoryWithName(const string& name);

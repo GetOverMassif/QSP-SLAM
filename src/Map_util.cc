@@ -100,6 +100,31 @@ bool Map::AddPointCloudList(const string &name, std::vector<pcl::PointCloud<pcl:
     return true;
 }
 
+void Map::addCameraStateToTrajectory(g2o::SE3Quat* state) {
+    unique_lock<mutex> lock(mMutexMap);
+    mvCameraStates.push_back(state);
+}
+
+std::vector<g2o::SE3Quat*> Map::getCameraStateTrajectory() {
+    unique_lock<mutex> lock(mMutexMap);
+    return mvCameraStates;
+}
+
+void Map::ClearCameraTrajectory() {
+    unique_lock<mutex> lock(mMutexMap);
+    mvCameraStates.clear();
+}
+
+void Map::setCameraState(g2o::SE3Quat* state) {
+    unique_lock<mutex> lock(mMutexMap);
+    mCameraState =  state;
+}
+
+g2o::SE3Quat* Map::getCameraState() {
+    unique_lock<mutex> lock(mMutexMap);
+    return mCameraState;
+}
+
 // Default type = 0: replace when exist , 1: add when exist
 bool Map::AddPointCloudList(const string &name, PointCloud *pCloud, int type) {
     unique_lock<mutex> lock(mMutexMap);

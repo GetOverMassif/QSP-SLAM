@@ -517,7 +517,6 @@ void MapDrawer::drawPointCloudLists(float pointSize, std::string pcd_name)
             glColor3d(p.r/255.0, p.g/255.0, p.b/255.0);
             glVertex3d(p.x, p.y, p.z);
             glEnd();
-
         }
     }
     glPointSize( pointSize );
@@ -539,9 +538,131 @@ void MapDrawer::drawPointCloud(PointCloud *pPoints, float pointSize)
         glColor3d(p.r/255.0, p.g/255.0, p.b/255.0);
         glVertex3d(p.x, p.y, p.z);
         glEnd();
-
     }
     glPopMatrix();
 }
+
+bool MapDrawer::drawTrajectory() {
+    std::vector<g2o::SE3Quat*> traj = mpMap->getCameraStateTrajectory();
+    drawGivenTrajWithColorLines(traj, Vector3d(0.0,0.0,1.0));
+    return true;
+}
+
+// draw axis for ellipsoids
+void MapDrawer::drawAxis(Eigen::Vector3f Scale)
+{
+    // float length = 2.0;
+    
+    const float lx = Scale(0);
+    const float ly = Scale(1);
+    const float lz = Scale(2);
+
+    // x
+    glColor3f(1.0,0.0,0.0); // red x
+    glBegin(GL_LINES);
+    glVertex3f(0.0, 0.0f, 0.0f);
+    glVertex3f(lx, 0.0f, 0.0f);
+    glEnd();
+
+    // y 
+    glColor3f(0.0,1.0,0.0); // green y
+    glBegin(GL_LINES);
+    glVertex3f(0.0, 0.0f, 0.0f);
+    glVertex3f(0.0, ly, 0.0f);
+
+    glEnd();
+
+    // z 
+    glColor3f(0.0,0.0,1.0); // blue z
+    glBegin(GL_LINES);
+    glVertex3f(0.0, 0.0f ,0.0f );
+    glVertex3f(0.0, 0.0f ,lz );
+
+    glEnd();
+}
+
+void MapDrawer::drawCuboid9Dof(Eigen::Matrix4f Two, Eigen::Vector3f Scale, bool with_mesh)
+{
+    const float w = Scale(0) / 2;
+    const float h = Scale(1) / 2;
+    const float l = Scale(2) / 2;
+
+    glPushMatrix();
+
+    pangolin::OpenGlMatrix Two_opengl = ORB_SLAM2::Converter::toMatrixPango(Two);
+
+#ifdef HAVE_GLES
+    glMultMatrixf(Two_opengl.m);
+#else
+    glMultMatrixd(Two_opengl.m);
+#endif
+    
+    const float mCuboidLineWidth = 3.0;
+    glLineWidth(mCuboidLineWidth);
+    glColor3f(0.0f,1.0f,0.0f);
+    glBegin(GL_LINES);
+
+    /**
+    
+          -------
+         |\       \
+         | ---------
+         | |       |
+          \|       |
+            -------
+    
+    */
+
+    vector<vector<float>> pts = {
+        {w,h,l}, {w,-h,l}, {-w,-h,l}, {-w,h,l}, {w,h,-l}, {w,-h,-l}, {-w,-h,-l}, {-w,h,-l}
+    };
+
+    vector<vector<int>> line_pairs = {
+        {0,1},{1,2},{2,3},{3,0},{4,5},{5,6},{6,7},{7,4},{0,4},{1,5},{2,6},{3,7}
+    };
+
+    vector<vector<int>> mesh_pairs = {
+        // {0,2,1},{0,3,2},{5,4,1},{4,0,1},
+        // {6,4,5},{6,7,4},{2,3,6},{3,7,6},
+        {0,4,7},{7,3,0},{1,2,6},{1,6,5}
+    };
+
+    for(auto &pair: line_pairs){
+        vector<float> p1 = pts[pair[0]], p2 = pts[pair[1]];
+        glVertex3f(p1[0],p1[1],p1[2]);
+        glVertex3f(p2[0],p2[1],p2[2]);
+    }
+
+    glEnd();
+
+    // 绘制网格
+    glColor3f(0.0, 1.0, 1.0); // 设置网格颜色为青色
+    glBegin(GL_TRIANGLES);
+
+    for(auto &pair: mesh_pairs){
+        // for (int i = 0; i < 3; i++) {
+        for (int i = 2; i >= 0; i--) {
+            glVertex3f(pts[pair[i]][0],pts[pair[i]][1],pts[pair[i]][2]);
+        }
+    }
+
+    // set ground as black
+    glColor3f(0.0, 0.0, 0.0);
+    glVertex3f(pts[4][0],pts[4][1],pts[4][2]);
+    glVertex3f(pts[5][0],pts[5][1],pts[6][2]);
+    glVertex3f(pts[6][0],pts[6][1],pts[7][2]);
+
+
+    glVertex3f(pts[5][0],pts[5][1],pts[6][2]);
+    glVertex3f(pts[6][0],pts[6][1],pts[7][2]);
+    glVertex3f(pts[7][0],pts[7][1],pts[7][2]);
+
+    glEnd();
+
+    drawAxis(Scale);
+
+    glPopMatrix();
+}
+
 
 } //namespace ORB_SLAM
