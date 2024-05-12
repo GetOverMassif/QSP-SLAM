@@ -74,26 +74,26 @@ void Viewer::Run()
     pangolin::CreatePanel("menu").SetBounds(0.0,1.0,0.0,pangolin::Attach::Pix(175));
 
     mvMenuStruct.resize(9); mvDoubleMenus.resize(9);
-    mvMenuStruct[0] = new MenuStruct(" - X (red)", 0, -10, 10);
-    mvMenuStruct[1] = new MenuStruct(" - Y (blue)", 0, -10, 10);
-    mvMenuStruct[2] = new MenuStruct(" - Z (green)", 0, -10, 10);
+    mvMenuStruct[0] = new MenuStruct(" - X (red)", 0, -5, 5);
+    mvMenuStruct[1] = new MenuStruct(" - Y (green)", 0, -5, 5);
+    mvMenuStruct[2] = new MenuStruct(" - Z (blue)", 0, -5, 5);
 
     double PI = 3.1415927;
     double h_PI = PI / 2.;
-    mvMenuStruct[3] = new MenuStruct(" - Roll", 0,-h_PI,h_PI);
-    mvMenuStruct[4] = new MenuStruct(" - Pitch", 0,-h_PI,h_PI);
-    mvMenuStruct[5] = new MenuStruct(" - Yaw", 0,-h_PI,h_PI);
+    mvMenuStruct[3] = new MenuStruct(" - Roll (red)", 0,-h_PI,h_PI);
+    mvMenuStruct[4] = new MenuStruct(" - Pitch (green)", 0,-h_PI,h_PI);
+    mvMenuStruct[5] = new MenuStruct(" - Yaw (blue)", 0,-h_PI,h_PI);
 
     mvMenuStruct[6] = new MenuStruct(" - Len (red)", 0.5,0.001,3);
-    mvMenuStruct[7] = new MenuStruct(" - Wid (blue)", 0.5,0.001,3);
-    mvMenuStruct[8] = new MenuStruct(" - H (green)", 0.5,0.001,3);
+    mvMenuStruct[7] = new MenuStruct(" - Wid (green)", 0.5,0.001,3);
+    mvMenuStruct[8] = new MenuStruct(" - H (blue)", 0.5,0.001,3);
 
 
     pangolin::Var<bool> menuShowAnnoObj("menu.Show AnnoObj",true,true);
     pangolin::Var<bool> menuAddAnnoObj("menu.AddAnnoObj",false,false);
     pangolin::Var<bool> menuSaveAnnoObj("menu.SaveAnnoObj",false,false);
     // pangolin::Var<int> menuAnnoIndex("menu.AnnoIndex",cur_AnnoIndex,-1,AnnoNum);
-    pangolin::Var<int> menuAnnoIndex("menu.AnnoIndex",-1,-1,15);
+    pangolin::Var<int>* p_menuAnnoIndex = new pangolin::Var<int>("menu.AnnoIndex",-1,-1,15);
 
     // 首先创建这些
     for(int i_d = 0; i_d < 9; i_d++)
@@ -392,18 +392,10 @@ void Viewer::Run()
         }
 
 
-
         if(menuAddAnnoObj){
             AnnoNum++;
-            cur_AnnoIndex = menuAnnoIndex;
-
-            // p_menuAddAnnoObj = new pangolin::Var<bool>("menu.AddAnnoObj",false,false);
             menuAddAnnoObj = false;
             cout << " AnnoNum = " << AnnoNum << std::endl;
-
-            cout << " menuAnnoIndex = " << menuAnnoIndex << std::endl;
-            cout << " cur_AnnoIndex = " << cur_AnnoIndex << std::endl;
-            cout << " prev_AnnoIndex = " << prev_AnnoIndex << std::endl;
             if (AnnoNum > AnnoObjs.size()){
                 AnnoObjs.resize(AnnoNum);
                 AnnoObjs[AnnoNum - 1] = new AnnoObj();
@@ -411,10 +403,16 @@ void Viewer::Run()
             }
         }
 
-        cur_AnnoIndex = int(menuAnnoIndex);
+        cur_AnnoIndex = p_menuAnnoIndex->Get();
+
+        if (cur_AnnoIndex >= AnnoNum) {
+            std::cout << "Please set cur_AnnoIndex = 0 ~ " << AnnoNum - 1 << std::endl;
+            p_menuAnnoIndex->Ref().Set(AnnoNum - 1);
+            cur_AnnoIndex = p_menuAnnoIndex->Get();
+        }
 
         if (AnnoNum > 0 && cur_AnnoIndex < AnnoNum) {
-            if (cur_AnnoIndex = -1) {
+            if (cur_AnnoIndex == -1) {
                 if (prev_AnnoIndex != cur_AnnoIndex) {
                     for (int i_menu = 0; i_menu < 9; i_menu++) {
                         mvDoubleMenus[i_menu]->Ref().Set(mvMenuStruct[i_menu]->def);
@@ -436,7 +434,6 @@ void Viewer::Run()
                     cur_AnnoObj->height = mvDoubleMenus[8]->Get();
                 }
                 else{
-                    std::cout << "prev_AnnoIndex != cur_AnnoIndex" << std::endl;
                     mvDoubleMenus[0]->Ref().Set(cur_AnnoObj->x);
                     mvDoubleMenus[1]->Ref().Set(cur_AnnoObj->y);
                     mvDoubleMenus[2]->Ref().Set(cur_AnnoObj->z);
@@ -448,8 +445,10 @@ void Viewer::Run()
                     mvDoubleMenus[8]->Ref().Set(cur_AnnoObj->height);
                 }
             }
+
+            prev_AnnoIndex = cur_AnnoIndex;
         }
-        prev_AnnoIndex = cur_AnnoIndex;
+        
 
         // RefreshAnnoOptions();
 
