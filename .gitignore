@@ -11,7 +11,7 @@ lib/
 .idea/
 Vocabulary/ORBvoc.txt.tar.gz
 tools/bin_vocabulary
-tools/
+# tools/
 test_dep/
 Thirdparty/DBoW2/lib/
 Thirdparty/DBoW2/build/
