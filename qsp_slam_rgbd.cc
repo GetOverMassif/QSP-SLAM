@@ -51,6 +51,7 @@ typedef pcl::PointCloud<PointT> PointCloudPCL;
  * @param[out] vstrImageFilenamesD       深度图像路径序列
  * @param[out] vTimestamps               时间戳
  */
+
 void LoadImages(const string &strAssociationFilename, vector<string> &vstrImageFilenamesRGB,
                 vector<string> &vstrImageFilenamesD, vector<double> &vTimestamps);
 
@@ -118,7 +119,7 @@ int main(int argc, char **argv)
     std::string dataset_path = std::string(argv[3]);
     std::string save_map_dir = std::string(argv[5]);
 
-    string dataset_path_map = Config::Get<string>("Dataset.Path.Map");
+    // string dataset_path_map = Config::Get<string>("Dataset.Path.Map");
 
     // if(dataset_path_map.size()>0)
     // {
