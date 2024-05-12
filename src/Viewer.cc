@@ -80,9 +80,9 @@ void Viewer::Run()
 
     double PI = 3.1415927;
     double h_PI = PI / 2.;
-    mvMenuStruct[3] = new MenuStruct(" - Roll (red)", 0,-h_PI,h_PI);
-    mvMenuStruct[4] = new MenuStruct(" - Pitch (green)", 0,-h_PI,h_PI);
-    mvMenuStruct[5] = new MenuStruct(" - Yaw (blue)", 0,-h_PI,h_PI);
+    mvMenuStruct[3] = new MenuStruct(" - Roll (red)", 0,-PI,PI);
+    mvMenuStruct[4] = new MenuStruct(" - Pitch (green)", 0,-PI,PI);
+    mvMenuStruct[5] = new MenuStruct(" - Yaw (blue)", 0,-PI,PI);
 
     mvMenuStruct[6] = new MenuStruct(" - Len (red)", 0.5,0.001,3);
     mvMenuStruct[7] = new MenuStruct(" - Wid (green)", 0.5,0.001,3);
@@ -135,6 +135,9 @@ void Viewer::Run()
     // pangolin::Var<bool> menuShowPointCloudLists("menu.Show PointCloudLists", true, true);
 
     pangolin::Var<bool> menuShowEllipsoidsObservation("menu.Ellipsoids-Ob", true, true);
+
+    pangolin::Var<bool> menuShowEllipCuboids("menu. - Show EllipCuboids", true, true);
+
     // pangolin::Var<bool> menuShowCuboids("menu. - Show Cuboids", false, true);
     // pangolin::Var<bool> menuShowPlanes("menu.Show Planes", true, true);
     // pangolin::Var<bool> menuShowBoundingboxes("menu.Show Bboxes", false, true);
@@ -144,17 +147,19 @@ void Viewer::Run()
     pangolin::Var<float> SliderMapPointSize("menu.MapPoint Size", 1.0, 0.5, 5.0);
     pangolin::Var<float> SliderPointCloudListSize("menu.Pointcloud Size", 1.0, 0.5, 5.0);
 
-    // pangolin::Var<bool> menuShowWorldAxis("menu.Draw World Axis", false, true);
+    pangolin::Var<bool> menuShowWorldAxis("menu.Draw World Axis", false, true);
 
     // pangolin::Var<bool> menuAMeaningLessBar("menu.----------", false, false);
 
     // pangolin::Var<bool> menuShowOptimizedTraj("menu.Optimized Traj", true, true);
-    
+
+    pangolin::Var<bool> menuShowRelationArrow("menu.Relation Arrow", false, true);
     pangolin::Var<bool> menuShowGtTraj("menu.Gt Traj", true, true);
     pangolin::Var<bool> menuShowCamTraj("menu.Cam Traj", true, true);
 
+    pangolin::Var<bool> menuShowOptimizedTraj("menu.Optimized Traj", true, true);
+    pangolin::Var<bool> menuShowAlignedGtTraj("menu.Aligned Gt Traj", true, true);
 
-    // pangolin::Var<bool> menuShowRelationArrow("menu.Relation Arrow", false, true);
     // pangolin::Var<int> SliderOdometryWeight("menu.Odometry Weight", 40, 0, 40);
     // pangolin::Var<double> SliderPlaneWeight("menu.Plane Weight", 1, 0, 100);
     // pangolin::Var<double> SliderPlaneDisSigma("menu.PlaneDisSigma", Config::Get<double>("DataAssociation.PlaneError.DisSigma"), 0.01, 0.5);
@@ -253,7 +258,8 @@ void Viewer::Run()
                 rotation = Eigen::AngleAxisf(float(roll), Eigen::Vector3f::UnitX())
                         * Eigen::AngleAxisf(float(pitch), Eigen::Vector3f::UnitY())
                         * Eigen::AngleAxisf(float(yaw), Eigen::Vector3f::UnitZ());
-
+                
+                // TODO: 标注的物体在旋转之后，xyz的平移就不再遵循物体轴颜色
                 Eigen::Matrix4f transformationMatrix = Eigen::Matrix4f::Identity();
                 transformationMatrix.block<3,3>(0,0) = rotation;
                 transformationMatrix(0,3) = float(x);
@@ -270,12 +276,19 @@ void Viewer::Run()
         }
 
 
-
-        // 
+        if(menuShowWorldAxis)
+            mpMapDrawer->drawAxis();
+        
         float mappointSize = SliderMapPointSize;
 
         if(menuShowCamTraj)
             mpMapDrawer->drawTrajectory();
+        
+        if(menuShowOptimizedTraj)
+            mpMapDrawer->drawTrajectoryWithName("OptimizedTrajectory");
+
+        if(menuShowAlignedGtTraj)
+            mpMapDrawer->drawTrajectoryWithName("AlignedGroundtruth");      // aligned gt trajectory
 
         /** From ORB-SLAM*/
         if(menuShowKeyFrames || menuShowGraph)
@@ -292,6 +305,11 @@ void Viewer::Run()
 
         double ellipsoidProbThresh = SliderEllipsoidProbThresh;
 
+
+        // draw external cubes of ellipsoids 
+        if(menuShowEllipCuboids)
+            mpMapDrawer->drawEllipCuboids(ellipsoidProbThresh);
+
         // draw ellipsoids
         // 这里绘制了
         if(menuShowEllipsoids)
@@ -301,8 +319,9 @@ void Viewer::Run()
             mpMapDrawer->drawEllipsoidsObjects(ellipsoidProbThresh);
 
         // // draw the result of the single-frame ellipsoid extraction
-        // if(menuShowEllipsoidsObservation)
-        //     mpMapDrawer->drawObservationEllipsoids(ellipsoidProbThresh);
+
+        if(menuShowEllipsoidsObservation)
+            mpMapDrawer->drawObservationEllipsoids(ellipsoidProbThresh);
         
         // mpMapDrawer->drawEllipsoid();
 
@@ -327,7 +346,8 @@ void Viewer::Run()
         //     mpMap->AddPointCloudList("Builder.Global Points", pCloud);
         // mpMap->AddPointCloudList("Builder.Local Points", pCloudLocal);
 
-        
+        if(menuShowRelationArrow)
+            mpMapDrawer->drawArrows();
 
         if(menuShowGtTraj)
             mpMapDrawer->drawTrajectoryWithName("Groundtruth");
@@ -383,7 +403,7 @@ void Viewer::Run()
                 f << index << " " << setprecision(6)
                   << x << " " << y << " " << z << " "
                   << roll << " " << pitch << " " << yaw << " "
-                  << length << " " << width << " " << height << " "
+                  << length / 2. << " " << width / 2. << " " << height / 2. << " "
                   << label << endl;
             }
             f.close();

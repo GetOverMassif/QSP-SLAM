@@ -52,14 +52,15 @@ LocalMapping::LocalMapping(System *pSys, Map *pMap, ObjectDrawer* pObjectDrawer,
 
     auto& pyDecoders = pSys->mmPyDecoders;
 
+    cout << "Add class_id into mmPyOptimizers: " << std::endl;
+    cout << "  => ";
+
     for (auto it = pyDecoders.begin(); it != pyDecoders.end(); ++it) {
         int class_id = it->first;
-        cout << "!! Add class_id into mmPyOptimizers: " << class_id << std::endl;
+        cout << class_id << ", ";
         // TODO: 对于运行过程序的终端窗口，运行到这里就会报错 895372 Segmentation fault ，可能与内存分配有关
         auto& decoder = it->second;
-        // cout << "11" << endl;
         py::object optimizer = optim.attr("Optimizer")(decoder, pSys->pyCfg);
-        // cout << "12" << endl;
         // py::object* optimizer_ptr = static_cast<py::object*>(&optimizer);
         mmPyOptimizers[class_id] = std::move(optimizer);
         py::object mesh_extractor = optim.attr("MeshExtractor")(decoder, pSys->pyCfg.attr("optimizer").attr("code_len"), pSys->pyCfg.attr("voxels_dim"));
@@ -67,6 +68,7 @@ LocalMapping::LocalMapping(System *pSys, Map *pMap, ObjectDrawer* pObjectDrawer,
         // py::object* mesh_extractor_ptr = &mesh_extractor;
         mmPyMeshExtractors[class_id] = std::move(mesh_extractor);
     }
+    std::cout << std::endl;
 
     mpLastKeyFrame = static_cast<KeyFrame*>(NULL);
     nLastReconKFID = 0;

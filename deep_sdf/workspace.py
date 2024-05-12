@@ -202,7 +202,7 @@ def get_normalization_params_filename(
 def config_decoder(experiment_directory, checkpoint="latest"):
 
     specs_filename = os.path.join(experiment_directory, "specs.json")
-    print(f"specs_filename = {specs_filename}")
+    # print(f"specs_filename = {specs_filename}")
     if not os.path.isfile(specs_filename):
         raise Exception(
             'The experiment directory does not include specifications file "specs.json"'

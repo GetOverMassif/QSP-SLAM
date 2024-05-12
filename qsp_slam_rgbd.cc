@@ -239,9 +239,11 @@ int main(int argc, char **argv)
 
     // 读取.pcd文件到 PointCloudPCL 中
     if (pcl::io::loadPCDFile<PointT>(pcd_filepath, *pCloudPCL) == -1) {
-
         cout << "Couldn't read file.\n";
+        std::cout << "Reconstruct by gt_traj" << std::endl;
         valid_pcd = false;
+
+        // 在这里进行重建
 
         // PCL_ERROR("Couldn't read file.\n");
         // return -1;
@@ -253,6 +255,11 @@ int main(int argc, char **argv)
         auto pCloud = pclToQuadricPointCloudPtr(pCloudPCL);
         SLAM.getMap()->AddPointCloudList("Dataset PointCloud", pCloud);
     }
+
+    
+    // 在标注之前，如果没有现成的数据集点云，首先要使用轨迹真值进行点云重建
+    
+
 
     // SLAM.getMap()->addOneTrajectory(gtTrajInEst, "AlignedGroundtruth");
 
@@ -436,8 +443,6 @@ int main(int argc, char **argv)
 
     // SLAM.Shutdown();
     cv::destroyAllWindows();
-
-    // SLAM.Shutdown();
 
     cout << "End." << endl;
     return 0;

@@ -88,6 +88,7 @@ int main(int argc,char* argv[]) {
     }
 
     string dataset_path_savedir = dataset_path + "/result/";
+
     std::cout << "Load background pointcloud from " << dataset_path_map << "..." << std::endl;
     pSLAM->getTracker()->LoadPointcloud(dataset_path_map, "background_world");
     std::cout << "ok." << std::endl;
@@ -111,18 +112,21 @@ int main(int argc,char* argv[]) {
     // const string path_refObjMat = dataset_path + "/objects_gt.txt";
     const string path_refObjMat = dataset_path + "/objects_gt_ground.txt"; // 注意 _ground 表示仅包括位于地面的物体!
     MatrixXd refObjMat = readDataFromFile(path_refObjMat.c_str());
+
     if(refObjMat.rows()==0){    // 如果不存在ground版本则读原始gt
-        string path_gt_objects = dataset_path+"/objects_gt.txt"; 
+        string path_gt_objects = dataset_path + "/objects_gt.txt"; 
         refObjMat = readDataFromFile(path_gt_objects.c_str());
     }
 
     string estfile_name ("/result/objects.txt");
-    if(argc >= 3){
-        estfile_name = string(argv[2]);
-    }
+
+    // if(argc >= 3){
+    //     estfile_name = string(argv[2]);
+    // }
 
     const string path_estObjMat = dataset_path + "/" + estfile_name;
-    std::cout << "Read Est Obj from : " << path_estObjMat << std::endl;
+
+    std::cout << "\nRead Est Obj from : " << path_estObjMat << std::endl;
 
     /**
      * 读取轨迹真值、是否使用轨迹真值
@@ -130,15 +134,25 @@ int main(int argc,char* argv[]) {
 
     const string path_gtTrajMat = dataset_path + "/groundtruth.txt";
     
-    bool bUseGtTraj = false;
-    if(argc >= 5)
-        bUseGtTraj = (stoi(string(argv[4])) == 1);
+    // bool bUseGtTraj = false;
+
+    // if(argc >= 5)
+    //     bUseGtTraj = (stoi(string(argv[4])) == 1);
     
-    string path_estTrajMat;
-    if(!bUseGtTraj)
-        path_estTrajMat = dataset_path + "/result/traj.txt";
-    else
-        path_estTrajMat = path_gtTrajMat;
+    // string path_estTrajMat;
+
+    // if(!bUseGtTraj)
+    //     path_estTrajMat = dataset_path + "/result/traj.txt";
+    // else
+    //     path_estTrajMat = path_gtTrajMat;
+
+    const string path_estTrajMat = dataset_path + "/result/traj.txt";
+
+    /**
+    std::cout << "path_gtTrajMat = " << path_gtTrajMat << std::endl;
+    std::cout << "path_estTrajMat = " << path_estTrajMat << std::endl;
+
+    */
 
     // obj : instance x y z r p yaw a b c
     MatrixXd estObjMat = readDataFromFile(path_estObjMat.c_str());
@@ -154,15 +168,20 @@ int main(int argc,char* argv[]) {
     std::map<int, COMPARE_RESULT> results;
 
     bool bUseId = false;
-    if(argc>=4){
-        int asso_method = stoi(string(argv[3]));
-        bUseId = (asso_method == 1);
-    }
+
+    // if(argc>=4){
+    //     int asso_method = stoi(string(argv[3]));
+    //     bUseId = (asso_method == 1);
+    // }
+
+    bool manual_check = false;
+    bool filter_sym = false;
+
     bool bResult;
-    if(!bUseId)
-        bResult = evo::Evaluate(refObjMat, estObjMat, gtTrajMat, estTrajMat, staticResult, results, pMap, false);
+    if(!bUseId)  //  bool manual_check, bool filter_sym, bool use_id_to_associate
+        bResult = evo::Evaluate(refObjMat, estObjMat, gtTrajMat, estTrajMat, staticResult, results, pMap, manual_check);
     else 
-        bResult = evo::Evaluate(refObjMat, estObjMat, gtTrajMat, estTrajMat, staticResult, results, pMap, false, false, true);
+        bResult = evo::Evaluate(refObjMat, estObjMat, gtTrajMat, estTrajMat, staticResult, results, pMap, manual_check, filter_sym, true);
 
     if(!bResult) {
         std::cout << "Tips: Please check the following files exist ... "     << std::endl;
@@ -183,12 +202,23 @@ int main(int argc,char* argv[]) {
     cout << endl << endl << endl;
     OutputResult(cout, staticResult, results, refObjMat);
 
-    // 开启加载背景地图功能
-    std::cout << "Load background pointcloud from " << dataset_path_map << "..." << std::endl;
-    pSLAM->getTracker()->LoadPointcloud(dataset_path_map, "background_world");
-    std::cout << "ok." << std::endl;
+    // // 开启加载背景地图功能
+    // std::cout << "Load background pointcloud from " << dataset_path_map << "..." << std::endl;
+    // pSLAM->getTracker()->LoadPointcloud(dataset_path_map, "background_world");
+    // std::cout << "ok." << std::endl;
 
-    while(1);
+    // while(1);
+
+    cout << "Press y to quit." << endl;
+    char key;
+    key = getchar();
+
+    while(key!='y' && key!='Y'){
+        cout << "Press y to quit." << endl;
+        key = getchar();
+    }
+
+    cv::destroyAllWindows();
 
     return 0;
 

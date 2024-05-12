@@ -56,6 +56,106 @@ namespace ORB_SLAM2
         glEnd();
     }
 
+    void MapDrawer::drawOneBoundingbox(Matrix3Xd& corners, Vector3d& color, double alpha)
+    {
+        assert(corners.cols()==8 && "Boundingbox must have 8 corners.");
+        glPushMatrix();
+        glLineWidth(mCameraLineWidth);
+        glColor4d(color[0], color[1], color[2], alpha);
+        
+        glBegin(GL_LINES);
+
+        // draw cube lines. 
+
+        // Version 1: Connect all the points.
+        // for(int m=0;m<corners.cols();m++){
+        //     for( int n=m+1; n<corners.cols();n++)
+        //     {
+        //         int m_first = m;
+        //         glVertex3f(corners(0,m_first),corners(1,m_first),corners(2,m_first));
+        //         int m_next=n;
+        //         glVertex3f(corners(0,m_next),corners(1,m_next),corners(2,m_next));
+        //     }
+        // }
+
+        // Version 2: Standard Cubes
+        // corners_body<< 1, 1, -1, -1, 1, 1, -1, -1,
+        //                 1, -1, -1, 1, 1, -1, -1, 1,
+        //                 -1, -1, -1, -1, 1, 1, 1, 1;
+        // Method:  Connect 1,2,3,4;  5,6,7,8; 1-5,2-6,3-7,4-8;
+        for( int i = 0; i < 4; i++)
+        {
+            int m_first = i;
+            int m_next = (i+1)%4;
+            glVertex3f(corners(0,m_first),corners(1,m_first),corners(2,m_first));
+            glVertex3f(corners(0,m_next),corners(1,m_next),corners(2,m_next));
+        }
+        for( int i = 0; i < 4; i++)
+        {
+            int m_first = i + 4;
+            int m_next = (i+1)%4 + 4;
+            glVertex3f(corners(0,m_first),corners(1,m_first),corners(2,m_first));
+            glVertex3f(corners(0,m_next),corners(1,m_next),corners(2,m_next));
+        }
+        for( int i = 0; i < 4; i++)
+        {
+            int m_first = i;
+            int m_next = i + 4;
+            glVertex3f(corners(0,m_first),corners(1,m_first),corners(2,m_first));
+            glVertex3f(corners(0,m_next),corners(1,m_next),corners(2,m_next));
+        }
+
+        glEnd();
+        glPopMatrix();
+    }
+
+    // draw external cubes.
+    bool MapDrawer::drawEllipCuboids(double prob_thresh) {
+        std::vector<ellipsoid*> ellipsoids = mpMap->GetAllEllipsoids();
+
+        std::vector<ellipsoid*> ellipsoidsVisual = mpMap->GetAllEllipsoidsVisual();
+        ellipsoids.insert(ellipsoids.end(), ellipsoidsVisual.begin(), ellipsoidsVisual.end());
+
+        std::vector<ellipsoid*> ellipsoidsObs = mpMap->GetObservationEllipsoids();
+        ellipsoids.insert(ellipsoids.end(), ellipsoidsObs.begin(), ellipsoidsObs.end());
+
+        std::vector<ellipsoid*> vec_pointmodel_ellipsoids;
+        for( size_t i=0; i<ellipsoids.size(); i++)
+        {
+            g2o::ellipsoid* pE = ellipsoids[i];
+            if(pE->prob < prob_thresh) continue;
+
+            // 对于点模型不显示
+            Vector3d scale = pE->scale;
+            // bool bPointModel = scale[0] < 0.15 && scale[1] < 0.15 && scale[2] < 0.15;
+            double size_point = 0.1;
+            bool bPointModel = scale[0] == size_point && scale[1] == size_point && scale[2] == size_point;
+            if(bPointModel)
+            {
+                vec_pointmodel_ellipsoids.push_back(pE);
+                continue;
+            }
+
+            g2o::ellipsoid e_forshow = *pE;
+            if(mbOpenTransform)
+                e_forshow = e_forshow.transform_from(mTge);
+
+            // Eigen::Matrix3Xd corners = e_forshow.compute3D_BoxCorner();
+            Eigen::Matrix3Xd* corners = e_forshow.compute3D_BoxCorner_ptr();
+            Vector3d color;
+            if(ellipsoids[i]->isColorSet()){
+                color = ellipsoids[i]->getColor();
+            }
+            else
+                color = Vector3d(0, 0, 1.0);
+            drawOneBoundingbox(*corners, color, 1.0);
+        }
+
+        drawAllEllipsoidsInVector(vec_pointmodel_ellipsoids);
+
+        return true;
+    }
+
 void MapDrawer::drawEllipsoid() {
     // SE3Quat TmwSE3 = ellipsoids[i]->pose.inverse();
     // Vector3d scale = ellipsoids[i]->scale;
@@ -161,10 +261,7 @@ bool MapDrawer::drawEllipsoidsObjects(double prob_thresh){
 
 // 加入了 transform
 void MapDrawer::drawAllEllipsoidsInVector(std::vector<ellipsoid*>& ellipsoids, int color_mode)
-{
-    // std::cout << "[MapDrawer::drawAllEllipsoidsInVector] " \
-    //     << "ellipsoids.size() = " << ellipsoids.size() << std::endl;
-    
+{    
     for( size_t i=0; i<ellipsoids.size(); i++)
     {
         drawEllipsoidInVector(ellipsoids[i], color_mode);
@@ -189,20 +286,31 @@ void MapDrawer::drawEllipsoidInVector(ellipsoid* e, int color_mode)
 
     glLineWidth(mCameraLineWidth/3.0);
 
-    // glColor3f(0.0f,0.0f,1.0f);
-    if (color_mode == 0)
-        glColor3f(1.0f,0.0f,0.0f);  // BGR
-    else if (color_mode == 1)
-        glColor3f(0.0f,1.0f,0.0f);
-    else if(color_mode == 2)
-        glColor3f(0.0f,0.0f,1.0f);
-    else if(e->isColorSet()){
-        Vector4d color = e->getColorWithAlpha();
-        // std::cout << "color = " << color.matrix() << std::endl;
-        glColor4d(color(0),color(1),color(2),color(3));
+    // // glColor3f(0.0f,0.0f,1.0f);
+    
+    if (color_mode == 4) {
+        if(e->isColorSet()){
+            Vector4d color = e->getColorWithAlpha();
+            glColor4d(color(0),color(1),color(2),color(3));
+        }
+        else
+            glColor3f(0.2f, 0.7f, 0.5f);
     }
-    else
-        glColor3f(0.0f,0.0f,1.0f);
+    else {
+        if (color_mode == 0)
+            glColor3f(1.0f,0.0f,0.0f);  // BGR
+        else if (color_mode == 1)
+            glColor3f(0.0f,1.0f,0.0f);
+        else if(color_mode == 2)
+            glColor3f(0.0f,0.0f,1.0f);
+        else if(e->isColorSet()){
+            Vector4d color = e->getColorWithAlpha();
+            // std::cout << "color = " << color.matrix() << std::endl;
+            glColor4d(color(0),color(1),color(2),color(3));
+        }
+        else
+            glColor3f(0.0f,0.0f,1.0f);
+    }
     
     GLUquadricObj *pObj;
     pObj = gluNewQuadric();
@@ -236,6 +344,8 @@ bool MapDrawer::drawObservationEllipsoids(double prob_thresh)
     drawAllEllipsoidsInVector(ellipsoids_prob, 4);
     return true;
 }
+
+
 
 // 添加 transform 的矫正
 // bool MapDrawer::drawGivenTrajWithColorLines(std::vector<g2o::SE3Quat*>& traj, const Vector3d& color)
@@ -439,6 +549,20 @@ void MapDrawer::drawPlaneWithEquation(plane *p) {
     }
 
     return;
+}
+
+void MapDrawer::drawArrows()
+{
+    std::vector<Arrow> vArs = mpMap->GetArrows();
+
+    for(int i=0;i<vArs.size();i++)
+    {
+        Arrow& ar = vArs[i];
+        Vector3d norm = ar.norm; 
+        Vector3d end = ar.center + norm;
+
+        drawLine(ar.center, end, ar.color, mCameraLineWidth * 10, 0.8);
+    }
 }
 
 void MapDrawer::drawLine(const Vector3d& start, const Vector3d& end, const Vector3d& color, double width, double alpha)

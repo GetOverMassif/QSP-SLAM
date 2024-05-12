@@ -549,7 +549,9 @@ namespace evo
         //           << refObjMat << std::endl;
 
         double PARAM_MIN_DIS = 1.0;  // 单位为m
+
         if(Config::Get<std::string>("Dataset.Type")=="TUM") PARAM_MIN_DIS = 0.5;
+
         std::cout << "- Align with param dis : " << PARAM_MIN_DIS << std::endl;
 
         int est_obj_num = estObjMat.rows();
@@ -796,6 +798,7 @@ namespace evo
     void VisualizeEllipsoidsInMat(MatrixXd &mat, const Vector3d &color, ORB_SLAM2::Map *pMap, bool show_instance, bool show_in_observation)
     {
         int num = mat.rows();
+        std::cout << "VisualizeEllipsoidsInMat, color = " << color.matrix().transpose() << std::endl;
         for (int i = 0; i < num; i++)
         {
             VectorXd mat_vec = mat.row(i);
@@ -812,11 +815,16 @@ namespace evo
             // 定义颜色等信息
             if (show_in_observation)
             {
+                // std::cout << " => addEllipsoidObservation" << std::endl;
                 pE->miInstanceID = round(mat_vec[0]);
                 pMap->addEllipsoidObservation(pE);
             }
             else
+            {
+                // std::cout << " => addEllipsoidVisual" << std::endl;
                 pMap->addEllipsoidVisual(pE);
+            }
+                
         }
 
         return;
@@ -858,7 +866,9 @@ namespace evo
         pMap->ClearEllipsoidsObservation();
         pMap->clearArrows();
         // VisualizeEllipsoidsInMat(estObjMat, Vector3d(0, 0, 1.0), pMap, true, vAlignEstToRef);    // 仅仅关联上的才可视化
-        VisualizeEllipsoidsInMat(estObjMat, Vector3d(0, 1.0, 0), pMap, true, true);    // 仅仅关联上的才可视化
+        // 蓝色
+        VisualizeEllipsoidsInMat(estObjMat, Vector3d(0, 0, 1.0), pMap, true, true);    // 仅仅关联上的才可视化
+        // 红色
         VisualizeEllipsoidsInMat(refObjMat, Vector3d(1.0, 0, 0), pMap, true);
         DrawAlignLines(estObjMat, refObjMat, vAlignEstToRef, pMap);
     }
@@ -970,23 +980,25 @@ namespace evo
     void OutputResult(ostream &fio, StaticResult &staticResult, std::map<int, COMPARE_RESULT> &results, MatrixXd &refObjMat)
     {
         fio << " ----------- AVERAGE ---------" << endl;
-        fio << "aver_IoU: " << staticResult.aver_IoU << endl;
-        fio << "aver_IoU_aligned: " << staticResult.aver_IoU_aligned << endl;
-        fio << "aver_dis_trans: " << staticResult.aver_dis_trans << endl;
-        fio << "aver_dis_yaw: " << staticResult.aver_dis_yaw << endl;
-        fio << "aver_dis_yaw_arb: " << staticResult.aver_dis_yaw_arb << endl;
-        fio << "aver_dis_yaw_arb_valid: " << staticResult.aver_dis_yaw_arb_valid << endl;
-        fio << "aver_IoU_aligned_arb: " << staticResult.aver_IoU_aligned_arb << endl;
-
+        fio << "    aver_IoU: " << staticResult.aver_IoU << endl;
+        fio << "    aver_IoU_aligned: " << staticResult.aver_IoU_aligned << endl;
+        fio << "    aver_dis_trans: " << staticResult.aver_dis_trans << endl;
+        fio << "    aver_dis_yaw: " << staticResult.aver_dis_yaw << endl;
+        fio << "    aver_dis_yaw_arb: " << staticResult.aver_dis_yaw_arb << endl;
+        fio << "    aver_dis_yaw_arb_valid: " << staticResult.aver_dis_yaw_arb_valid << endl;
+        fio << "    aver_IoU_aligned_arb: " << staticResult.aver_IoU_aligned_arb << endl;
+        
+        fio << endl;
         fio << " ----------- Mid Value ---------" << endl;
-        fio << "mid_IoU: " << staticResult.mid_iou << endl;
-        fio << "mid_IoU_aligned: " << staticResult.mid_iou_aligned << endl;
-        fio << "mid_dis_trans: " << staticResult.mid_dis_trans << endl;
-        fio << "mid_dis_yaw: " << staticResult.mid_dis_yaw << endl;
-        fio << "mid_dis_yaw_arb: " << staticResult.mid_dis_yaw_arb << endl;
-        fio << "mid_dis_yaw_arb_valid: " << staticResult.mid_dis_yaw_arb_valid << endl;
-        fio << "mid_IoU_aligned_arb: " << staticResult.mid_iou_aligned_arb << endl;
+        fio << "    mid_IoU: " << staticResult.mid_iou << endl;
+        fio << "    mid_IoU_aligned: " << staticResult.mid_iou_aligned << endl;
+        fio << "    mid_dis_trans: " << staticResult.mid_dis_trans << endl;
+        fio << "    mid_dis_yaw: " << staticResult.mid_dis_yaw << endl;
+        fio << "    mid_dis_yaw_arb: " << staticResult.mid_dis_yaw_arb << endl;
+        fio << "    mid_dis_yaw_arb_valid: " << staticResult.mid_dis_yaw_arb_valid << endl;
+        fio << "    mid_IoU_aligned_arb: " << staticResult.mid_iou_aligned_arb << endl;
 
+        fio << endl;
         fio << " ----------- SINGLE OBJECTS COMPARE ---------" << endl;
         fio << "instanceID\t"
             << "IoU\t"
@@ -1029,17 +1041,20 @@ namespace evo
         fio << "- F1 : " << staticResult.F1 << std::endl;
 
         // 快速输出
-        fio << "--- Simple version : " << std::endl;
+        fio << endl;
+        fio << "--- Simple version --- " << std::endl;
         fio << "- rmse : " << staticResult.rmse << std::endl;
         fio << "- Tr/Ro/Sh : " << staticResult.aver_dis_trans << "/" << staticResult.aver_dis_yaw_arb << "/" << staticResult.aver_IoU_aligned_arb << std::endl;
         fio << "- P/R/F : " << staticResult.precision << "/" << staticResult.recall << "/" << staticResult.F1 << std::endl;
 
         // 超 Simple
+        fio << endl;
         fio << " ======= All Rotations =======" << std::endl;
         // fio << staticResult.rmse << std::endl;
         fio << staticResult.aver_dis_trans << "/" << staticResult.aver_dis_yaw_arb << "/" << staticResult.aver_IoU_aligned_arb << std::endl;
         fio << staticResult.precision << "/" << staticResult.recall << "/" << staticResult.F1 << std::endl;
 
+        fio << endl;
         fio << " ======= Valid Rotations =======" << std::endl;
         fio << staticResult.aver_dis_trans << "/" << staticResult.aver_dis_yaw_arb_valid << "/" << staticResult.aver_IoU_aligned_arb << std::endl;
         fio << staticResult.precision << "/" << staticResult.recall << "/" << staticResult.F1 << std::endl;
@@ -1177,6 +1192,9 @@ namespace evo
                 StaticResult &output_staticResult, std::map<int, COMPARE_RESULT>& output_results,
                   ORB_SLAM2::Map *pMap, bool manual_check, bool filter_sym, bool use_id_to_associate)
     {
+
+        std::cout << "\n [evo.cpp Evaluate]" << std::endl;
+        
         int refNum = refObjMat.rows();
         int estNum_ori = estObjMat.rows();
         int estNum = estNum_ori;
@@ -1192,6 +1210,7 @@ namespace evo
         alignTrajectory(estTrajMat, gtTrajMat, Tre, gtTrajInEst, estTrajSelected);
 
         // std::cout << "Umeda Align Result [x y z roll pitch yaw] : " << std::endl;
+        std::cout << "Tre.toMinimalVector() = ";
         std::cout << Tre.toMinimalVector().transpose() << std::endl;
 
         // TODO: 可视化轨迹对齐情况
@@ -1212,7 +1231,7 @@ namespace evo
         std::vector<int> vAlignEstToRef;
         if(use_id_to_associate)
             vAlignEstToRef = AlignEllipsoidsUseID(estObjMatInRef, refObjMat);
-        else 
+        else // 使用 Hungarian 算法求解全局最小误差关联
             vAlignEstToRef = AlignEllipsoidsHungarian(estObjMatInRef, refObjMat);
 
         // 在此可视化所有椭球体及它们的关系. 并使用互动界面做检查

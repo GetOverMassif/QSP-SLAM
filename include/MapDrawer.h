@@ -62,6 +62,9 @@ public:
     // bool drawCameraState();
     // bool drawGivenCameraState(g2o::SE3Quat* state, const Vector3d& color);
 
+
+    bool drawEllipCuboids(double prob_thresh = 0);
+
     void drawEllipsoid();
     bool drawEllipsoidsVisual(double prob_thresh = 0);
     bool drawObservationEllipsoids(double prob_thresh = 0);
@@ -90,10 +93,10 @@ public:
     // void drawBoundingboxes();
     // void drawConstrainPlanes(double prob_thresh = 0, int type = 0);
 
-    // void drawArrows();
+    void drawArrows();
     void drawLine(const Vector3d& start, const Vector3d& end, const Vector3d& color, double width, double alpha = 1.0);
 
-    void drawAxis(Eigen::Vector3f Scale = Eigen::Vector3f::Identity());
+    void drawAxis(Eigen::Vector3f Scale = Eigen::Vector3f::Ones());
     void drawCuboid9Dof(Eigen::Matrix4f Two, Eigen::Vector3f Scale, bool with_mesh);
 
     // void SetTransformTge(const g2o::SE3Quat& Tge);
@@ -117,7 +120,7 @@ private:
 
     // pangolin::OpenGlMatrix getGLMatrixFromCenterAndNormal(Vector3f& center, Vector3f& normal);
 
-    // void drawOneBoundingbox(Matrix3Xd& corners, Vector3d& color, double alpha = 1.0);
+    void drawOneBoundingbox(Matrix3Xd& corners, Vector3d& color, double alpha = 1.0);
 
     // bool drawGivenTrajWithColor(std::vector<g2o::SE3Quat*>& traj, const Vector3d& color);
 

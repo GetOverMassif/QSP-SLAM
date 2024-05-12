@@ -141,15 +141,17 @@ System::System(const string &strVocFile, const string &strSettingsFile, const st
 
     py::module optim  = py::module::import("reconstruct.optimizer");
 
+    std::cout << "\n";
+    cout << "mmPyDecoders Add class: " << std::endl;
+
     for (int i_class = 0; i_class < yolo_classes.size(); i_class++){
         int class_id = yolo_classes[i_class];
-        cout << "mmPyDecoders Add class: " << class_id << std::endl;
+        cout << "  => " << class_id << "," << decoder_paths[i_class] << std::endl;
         py::object decoder = deep_sdf_utils.attr("config_decoder")(decoder_paths[i_class]);
         // py::object* decoder_ptr = &decoder;
         mmPyDecoders[class_id] = std::move(decoder);
     }
 
-    // std::cout << "8/8 ";
     InitThread();
 
     //Create KeyFrame Database
