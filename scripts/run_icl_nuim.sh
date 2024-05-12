@@ -24,12 +24,24 @@
 # ICL-NUIM 数据集中的 associations.txt 中顺序为 FrameID, depth_img, FrameID, rgb_img
 # 需要修改为： time, rgb_img, time, depth_img
 
+
+# PROGRAME_TYPE=run
+PROGRAME_TYPE=evo
+
+if [ "$PROGRAME_TYPE" = "run" ]; then
+    CMD=./qsp_slam_rgbd
+fi
+if [ "$PROGRAME_TYPE" = "evo" ]; then
+    CMD=./evo_tool_qsp
+fi
+
+
 # SCENE_TYPE=office
 SCENE_TYPE=home
 DATA_NUM=2
 
 if [ "$SCENE_TYPE" = "home" ]; then
-    ./qsp_slam_rgbd \
+    $CMD \
     Vocabulary/ORBvoc.bin \
     configs/ICL_NUIM_home.yaml \
     /media/lj/TOSHIBA/dataset/ICL-NUIM/home/living_room_traj$DATA_NUM\_frei_png \
@@ -38,7 +50,7 @@ if [ "$SCENE_TYPE" = "home" ]; then
 fi
 
 if [ "$SCENE_TYPE" = "office" ]; then
-    ./qsp_slam_rgbd \
+    $CMD \
     Vocabulary/ORBvoc.bin \
     configs/ICL_NUIM_home.yaml \
     /media/lj/TOSHIBA/dataset/ICL-NUIM/office/traj$DATA_NUM\_frei_png \
