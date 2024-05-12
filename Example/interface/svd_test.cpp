@@ -7,7 +7,7 @@
 # include<fstream>
 # include<iostream>
 
-#include "Initializer.h"
+#include "InitializerQuadric.h"
 #include "core/ConstrainPlane.h"
 
 int main()
@@ -66,7 +66,7 @@ int main()
 	std::cout << se3s << std::endl;
 	std::cout << boxes << std::endl;
 
-	ORB_SLAM2::Initializer svd_init(99999,99999);
+	ORB_SLAM2::InitializerQuadric svd_init(99999,99999);
 	svd_init.flag_openFilter = false;
 
 	auto q = svd_init.initializeQuadric(se3s,boxes,k);

@@ -9,10 +9,10 @@
 
 #include "include/utils/dataprocess_utils.h"
 
-#include <Ellipsoid.h>
-#include <Geometry.h>
-// #include <System.h>
-#include <Map.h>
+#include "Ellipsoid.h"
+#include "Geometry.h"
+#include "System.h"
+// #include "Map.h"
 
 #include "Example/interface/func/func.h"
 
@@ -20,16 +20,11 @@
 
 #include <boost/algorithm/string.hpp>
 
-// #include <pybind11/embed.h>
-// #include <pybind11/eigen.h>
-
-// namespace py = pybind11;
-
 using namespace std;
 using namespace Eigen;
 using namespace ORB_SLAM2;
 
-// ORB_SLAM2::System *pSLAM;
+ORB_SLAM2::System *pSLAM;
 ORB_SLAM2::Map *pMap;
 
 namespace evo
@@ -98,6 +93,6 @@ namespace evo
     void VisualizeEllipsoidsInMat(MatrixXd &mat, const Vector3d &color, ORB_SLAM2::Map *pMap, bool show_instance, bool show_in_observation = false);
 
 
-    std::map<int, std::map<double, int>> VisualizeAndRevisedAssociations(const std::map<int, std::map<double, int>>& objObs, 
-        const std::vector<Frame*> &vpFrames, MatrixXd& refObjMat, ORB_SLAM2::Map* pMap);
+    // std::map<int, std::map<double, int>> VisualizeAndRevisedAssociations(const std::map<int, std::map<double, int>>& objObs, 
+    //     const std::vector<Frame*> &vpFrames, MatrixXd& refObjMat, ORB_SLAM2::Map* pMap);
 }

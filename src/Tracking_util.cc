@@ -1320,6 +1320,45 @@ void Tracking::VisualizeManhattanPlanes()
     }
 }
 
+ORB_SLAM2::PointCloud* filterCloudAsHeight(ORB_SLAM2::PointCloud* pCloud, const g2o::plane& mGroundPlane, double dis_thresh)
+{
+    std::cout << "Filter Cloud using thresh : " << dis_thresh << std::endl;
+    ORB_SLAM2::PointCloud* pCloudFiltered = new ORB_SLAM2::PointCloud;
+    int num = pCloud->size();
+    for(int i=0;i<num;i++)
+    {
+        PointXYZRGB p = (*pCloud)[i];
+        Vector3d center; center << p.x, p.y, p.z;
+
+        double dis = mGroundPlane.distanceToPoint(center);
+        if(dis < dis_thresh)
+            pCloudFiltered->push_back(p);
+    }
+    return pCloudFiltered;
+}
+
+void Tracking::LoadPointcloud(const string& strPcdDir, const string& strPointcloud_name, g2o::SE3Quat Ttrans)
+{
+    pcl::PointCloud<pcl::PointXYZRGB>::Ptr  cloud (new pcl::PointCloud<pcl::PointXYZRGB>);
+    pcl::io::loadPCDFile<pcl::PointXYZRGB>(strPcdDir.c_str(), *cloud);
+
+    Matrix4d transform = Ttrans.to_homogeneous_matrix();
+    pcl::transformPointCloud (*cloud, *cloud, transform);
+
+    auto pCloud = pclToQuadricPointCloudPtr(cloud);
+
+    // 临时过滤顶部
+    double dis_thresh = Config::ReadValue<double>("Visualization.Map.Filter.DisThresh");
+    if(dis_thresh > 0){
+        auto pCloud_filtered = filterCloudAsHeight(pCloud, mGroundPlane, dis_thresh);
+        delete pCloud;
+        pCloud = pCloud_filtered;
+    }
+    mpMap->AddPointCloudList(strPointcloud_name, pCloud);
+
+    return;
+}
+
 void VisualizeRelations(Relations& rls, Map* pMap, g2o::SE3Quat &Twc, std::vector<PointCloudPCL>& vPlanePoints)
 {
     int num = rls.size();

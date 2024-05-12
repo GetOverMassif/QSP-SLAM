@@ -137,6 +137,11 @@ public:
     std::vector<plane*> GetAllPlanes();
     void clearPlanes();
 
+    void addPoint(PointXYZRGB* pPoint);
+    void addPointCloud(PointCloud* pPointCloud);
+    void clearPointCloud();
+    std::vector<PointXYZRGB*> GetAllPoints();
+
     bool AddPointCloudList(const string& name, PointCloud* pCloud, int type = 0);   // type 0: replace when exist,  type 1: add when exist
     bool DeletePointCloudList(const string& name, int type = 0);    // type 0: complete matching, 1: partial matching
     bool ClearPointCloudLists();

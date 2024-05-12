@@ -247,72 +247,72 @@ void LoadRelationsToFrame(const Eigen::MatrixXd& detMatRelation, Frame* pFrame)
 }
 
 
-// update: 6-23 新增读取关系平面
-// iType : 0 baseline, 1 ours, 2 世界坐标系
-// iJump: 此处保持为1， 否则内部可能跳过 3d detection 的 timestamp
-std::vector<Frame*> LoadDataAsFrames(const string& path_odom, const string& dir_detectResult, int iType, int iJump)
-{
-    std::vector<Frame*> vpFrames;
-    MatrixXd odomMat = readDataFromFile(path_odom.c_str());
+// // update: 6-23 新增读取关系平面
+// // iType : 0 baseline, 1 ours, 2 世界坐标系
+// // iJump: 此处保持为1， 否则内部可能跳过 3d detection 的 timestamp
+// std::vector<Frame*> LoadDataAsFrames(const string& path_odom, const string& dir_detectResult, int iType, int iJump)
+// {
+//     std::vector<Frame*> vpFrames;
+//     MatrixXd odomMat = readDataFromFile(path_odom.c_str());
 
-    // std::cout << "odomMat : " << std::endl << odomMat << std::endl;
+//     // std::cout << "odomMat : " << std::endl << odomMat << std::endl;
 
-    // 获得目录下所有detection.
-    // get all the file names under the directory
-    std::cout << "Read detection files in : " << dir_detectResult << std::endl;
-    std::vector<string> mvDetFileNames;
-    GetFileNamesUnderDir(dir_detectResult, mvDetFileNames); // 注意是完整路径
-    sortFileNames(mvDetFileNames, mvDetFileNames);
-    int miTotalNum = mvDetFileNames.size();
+//     // 获得目录下所有detection.
+//     // get all the file names under the directory
+//     std::cout << "Read detection files in : " << dir_detectResult << std::endl;
+//     std::vector<string> mvDetFileNames;
+//     GetFileNamesUnderDir(dir_detectResult, mvDetFileNames); // 注意是完整路径
+//     sortFileNames(mvDetFileNames, mvDetFileNames);
+//     int miTotalNum = mvDetFileNames.size();
 
-    //Relations
-    std::vector<string> mvRelationsFileNames;
-    GetFileNamesUnderDir(dir_detectResult+"/relations/", mvRelationsFileNames); // 注意是完整路径
-    sortFileNames(mvRelationsFileNames, mvRelationsFileNames);
+//     //Relations
+//     std::vector<string> mvRelationsFileNames;
+//     GetFileNamesUnderDir(dir_detectResult+"/relations/", mvRelationsFileNames); // 注意是完整路径
+//     sortFileNames(mvRelationsFileNames, mvRelationsFileNames);
 
-    int num_valid_objs = 0;
-    int num_valid_relations = 0, num_total_relations = 0;
+//     int num_valid_objs = 0;
+//     int num_valid_relations = 0, num_total_relations = 0;
 
-    // 生成 Frame 结构.
-    int frame_num = odomMat.rows();
-    for( int i=0;i<frame_num;i+=iJump)
-    {
-        VectorXd odomVec = odomMat.row(i);
-        double timestamp = odomVec[0];
-        // 由timestamp搜索文件夹读取文件
-        string file_name = FindFileUsingTimestamp(mvDetFileNames, timestamp);
-        if(file_name.size() < 1) continue;
+//     // 生成 Frame 结构.
+//     int frame_num = odomMat.rows();
+//     for( int i=0;i<frame_num;i+=iJump)
+//     {
+//         VectorXd odomVec = odomMat.row(i);
+//         double timestamp = odomVec[0];
+//         // 由timestamp搜索文件夹读取文件
+//         string file_name = FindFileUsingTimestamp(mvDetFileNames, timestamp);
+//         if(file_name.size() < 1) continue;
 
-        //  HACK行为
-        // 从file_name中取末尾的名字
-        // 加上bbox的路径
-        string dir_bbox = dir_detectResult + "../bbox/";
-        string timestamp_txt = splitFileNameFromFullDir(file_name);
-        string bbox_file_name = dir_bbox + timestamp_txt;
-        MatrixXd bboxMat = readDataFromFile(bbox_file_name.c_str());
+//         //  HACK行为
+//         // 从file_name中取末尾的名字
+//         // 加上bbox的路径
+//         string dir_bbox = dir_detectResult + "../bbox/";
+//         string timestamp_txt = splitFileNameFromFullDir(file_name);
+//         string bbox_file_name = dir_bbox + timestamp_txt;
+//         MatrixXd bboxMat = readDataFromFile(bbox_file_name.c_str());
         
-        Frame* pFrame = new Frame(timestamp, odomVec.tail(7), bboxMat, cv::Mat(), cv::Mat(), false);     // no output
+//         Frame* pFrame = new Frame(timestamp, odomVec.tail(7), bboxMat, cv::Mat(), cv::Mat(), false);     // no output
         
-        MatrixXd detMat = readDataFromFile(file_name.c_str());  // 存储 vLocalObjects
-        LoadObjectsObservationsToFrame(detMat, pFrame, iType);
+//         MatrixXd detMat = readDataFromFile(file_name.c_str());  // 存储 vLocalObjects
+//         LoadObjectsObservationsToFrame(detMat, pFrame, iType);
         
-        // 读取Relations.
-        string file_name_relation = FindFileUsingTimestamp(mvRelationsFileNames, timestamp);
-        MatrixXd detMatRelation = readDataFromFile(file_name_relation.c_str());
-        LoadRelationsToFrame(detMatRelation, pFrame);
-        num_valid_relations += pFrame->relations.size();
-        num_total_relations += detMatRelation.rows();
+//         // 读取Relations.
+//         string file_name_relation = FindFileUsingTimestamp(mvRelationsFileNames, timestamp);
+//         MatrixXd detMatRelation = readDataFromFile(file_name_relation.c_str());
+//         LoadRelationsToFrame(detMatRelation, pFrame);
+//         num_valid_relations += pFrame->relations.size();
+//         num_total_relations += detMatRelation.rows();
 
-        vpFrames.push_back(pFrame);
+//         vpFrames.push_back(pFrame);
 
-        num_valid_objs+=pFrame->meas.size();
-    }
-    std::cout << "Read objects : " << num_valid_objs << std::endl;
-    std::cout << "Read frame : " << vpFrames.size() << std::endl;
+//         num_valid_objs+=pFrame->meas.size();
+//     }
+//     std::cout << "Read objects : " << num_valid_objs << std::endl;
+//     std::cout << "Read frame : " << vpFrames.size() << std::endl;
 
-    std::cout << "Read Relations : " << num_valid_relations << " / " << num_total_relations << std::endl;
-    return vpFrames;
-}
+//     std::cout << "Read Relations : " << num_valid_relations << " / " << num_total_relations << std::endl;
+//     return vpFrames;
+// }
 
 void SaveTrajectoryTUM(const string &filename, std::vector<Frame*>& vpKFs)
 {
@@ -327,7 +327,7 @@ void SaveTrajectoryTUM(const string &filename, std::vector<Frame*>& vpKFs)
         Frame* pF = vpKFs[i];
         Eigen::Vector3d trans = pF->cam_pose_Twc.translation();
         Eigen::Quaterniond q = pF->cam_pose_Twc.rotation();
-        f << setprecision(6) << pF->timestamp << " " <<  setprecision(9) << trans[0] << " " << trans[1] << " " << trans[2] << " " << q.x() << " " << q.y() << " " << q.z() << " " << q.w() << endl;
+        f << setprecision(6) << pF->mTimeStamp << " " <<  setprecision(9) << trans[0] << " " << trans[1] << " " << trans[2] << " " << q.x() << " " << q.y() << " " << q.z() << " " << q.w() << endl;
     }
     f.close();
     cout << endl << "trajectory saved!" << endl;
