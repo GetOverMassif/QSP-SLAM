@@ -43,6 +43,10 @@ ScanNet 有一个重要问题：rgb图像与depth图像的分辨率不一致
 常见问题：fatal error: Python.h: No such file or directory
 解决方法：
 
+include_directories(
+    /home/lj/anaconda3/envs/dsp-slam/include/python3.7m
+)
+
 
 下一步工作：
     搭建一个包含多把椅子的仿真环境，规划相机移动轨迹，录制数据集（rgb/depth），并且保存相机轨迹、物体属性真值。

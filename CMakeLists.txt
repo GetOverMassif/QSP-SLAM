@@ -1,5 +1,5 @@
 cmake_policy(SET CMP0048 NEW)
-project("QSP-SLAM")
+project("QSP_SLAM")
 cmake_minimum_required(VERSION 3.2)
 
 # c++ version
@@ -74,6 +74,7 @@ include_directories(
     ${PROJECT_SOURCE_DIR}/Thirdparty/DBoW2
     ${EIGEN3_INCLUDE_DIR}
     ${Pangolin_INCLUDE_DIRS}
+    /home/lj/anaconda3/envs/dsp-slam/include/python3.7m
 )
 
 # You need to set to your own Python paths
@@ -213,10 +214,10 @@ add_subdirectory(src/tum_rgbd)
 
 # add_subdirectory(src/Prior)
 
-# add_subdirectory(Example/interface)
+add_subdirectory(Example/interface)
 
 
 # add_subdirectory(src/tools)
 
-# add_subdirectory(src/evo)
-# add_subdirectory(tools)
+add_subdirectory(src/evo)
+add_subdirectory(tools)

@@ -73,6 +73,32 @@ void Map::clearPlanes() {
     mspPlanes.clear();
 }
 
+//
+
+void Map::addPoint(ORB_SLAM2::PointXYZRGB *pPoint) {
+    unique_lock<mutex> lock(mMutexMap);
+    mspPoints.insert(pPoint);
+}
+
+void Map::addPointCloud(ORB_SLAM2::PointCloud *pPointCloud) {
+    unique_lock<mutex> lock(mMutexMap);
+
+    for(auto iter=pPointCloud->begin();iter!=pPointCloud->end();++iter){
+        mspPoints.insert(&(*iter));
+    }
+}
+
+void Map::clearPointCloud() {
+    unique_lock<mutex> lock(mMutexMap);
+
+    mspPoints.clear();
+}
+
+std::vector<PointXYZRGB*> Map::GetAllPoints() {
+    unique_lock<mutex> lock(mMutexMap);
+    return vector<PointXYZRGB*>(mspPoints.begin(),mspPoints.end());
+}
+
 /**
  * PointCloud
  */

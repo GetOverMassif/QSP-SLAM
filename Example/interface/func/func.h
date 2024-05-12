@@ -1,14 +1,22 @@
-#pragma once
+// #pragma once
+
+#ifndef EXAMPLE_INTERFACE_FUNC_H
+#define EXAMPLE_INTERFACE_FUNC_H
 
 #include <iostream>
-#include <Frame.h>
-#include <System.h>
-#include <Optimizer.h>
-#include <Tracking.h>
-#include <Map.h>
-#include <include/utils/dataprocess_utils.h>
 
-#include <src/config/Config.h>
+#include "System.h"
+
+// #include "Tracking.h"
+#include "Map.h"
+
+#include "Frame.h"
+// #include "Optimizer.h"
+
+
+#include "include/utils/dataprocess_utils.h"
+
+#include "src/config/Config.h"
 
 #include <Eigen/Core>
 
@@ -20,7 +28,9 @@ void alignTrajectory(MatrixXd& estMat, MatrixXd& gtMat, g2o::SE3Quat& transform,
 double CalculateRMSE(Trajectory& estTraj, Trajectory& gtTrajInEst);
 string FindFileUsingTimestamp(std::vector<string>& mvDetFileNames, double timestamp);
 void LoadObjectsObservationsToFrame(MatrixXd& detMat, Frame* pFrame, int iType);
-std::vector<Frame*> LoadDataAsFrames(const string& path_odom, const string& dir_detectResult, int iType = 0, int iJump = 1);
+// std::vector<Frame*> LoadDataAsFrames(const string& path_odom, const string& dir_detectResult, int iType = 0, int iJump = 1);
 void SaveTrajectoryTUM(const string &filename, std::vector<Frame*>& vpKFs);
 
 void GenerateSelectedGtMatAndEstMat(MatrixXd &estMat, MatrixXd &gtMat, MatrixXd &estMatSelected_, MatrixXd& gtMatSelected_);
+
+#endif // EXAMPLE_INTERFACE_FUNC_H
