@@ -74,19 +74,41 @@ void Viewer::Run()
     pangolin::CreatePanel("menu").SetBounds(0.0,1.0,0.0,pangolin::Attach::Pix(175));
 
     mvMenuStruct.resize(9); mvDoubleMenus.resize(9);
-    mvMenuStruct[0] = new MenuStruct(" - X", 0, -10, 10);
-    mvMenuStruct[1] = new MenuStruct(" - Y", 0, -10, 10);
-    mvMenuStruct[2] = new MenuStruct(" - Z", 0, -10, 10);
+    mvMenuStruct[0] = new MenuStruct(" - X (red)", 0, -10, 10);
+    mvMenuStruct[1] = new MenuStruct(" - Y (blue)", 0, -10, 10);
+    mvMenuStruct[2] = new MenuStruct(" - Z (green)", 0, -10, 10);
 
-    double PI = 3.1415926;
+    double PI = 3.1415927;
     double h_PI = PI / 2.;
     mvMenuStruct[3] = new MenuStruct(" - Roll", 0,-h_PI,h_PI);
     mvMenuStruct[4] = new MenuStruct(" - Pitch", 0,-h_PI,h_PI);
     mvMenuStruct[5] = new MenuStruct(" - Yaw", 0,-h_PI,h_PI);
 
-    mvMenuStruct[6] = new MenuStruct(" - Length", 0.5,0.001,3);
-    mvMenuStruct[7] = new MenuStruct(" - Width", 0.5,0.001,3);
-    mvMenuStruct[8] = new MenuStruct(" - Height", 0.5,0.001,3);
+    mvMenuStruct[6] = new MenuStruct(" - Len (red)", 0.5,0.001,3);
+    mvMenuStruct[7] = new MenuStruct(" - Wid (blue)", 0.5,0.001,3);
+    mvMenuStruct[8] = new MenuStruct(" - H (green)", 0.5,0.001,3);
+
+
+    pangolin::Var<bool> menuShowAnnoObj("menu.Show AnnoObj",true,true);
+    pangolin::Var<bool> menuAddAnnoObj("menu.AddAnnoObj",false,false);
+    pangolin::Var<bool> menuSaveAnnoObj("menu.SaveAnnoObj",false,false);
+    // pangolin::Var<int> menuAnnoIndex("menu.AnnoIndex",cur_AnnoIndex,-1,AnnoNum);
+    pangolin::Var<int> menuAnnoIndex("menu.AnnoIndex",-1,-1,15);
+
+    // 首先创建这些
+    for(int i_d = 0; i_d < 9; i_d++)
+    {
+        pangolin::Var<double>* pMenu = 
+            new pangolin::Var<double>(
+                string("menu.") + mvMenuStruct[i_d]->name,
+                mvMenuStruct[i_d]->def, 
+                mvMenuStruct[i_d]->min, 
+                mvMenuStruct[i_d]->max
+            );
+        // std::cout << "mvMenuStruct[" << i_d << "]->def = " << mvMenuStruct[i_d]->def << std::endl;
+        mvDoubleMenus[i_d] = pMenu;
+    }
+
 
     pangolin::Var<bool> menuFollowCamera("menu.Follow Camera",false,true);
     pangolin::Var<bool> menuShowPoints("menu.Show Points",false,true);
@@ -132,9 +154,6 @@ void Viewer::Run()
     pangolin::Var<bool> menuShowGtTraj("menu.Gt Traj", true, true);
     pangolin::Var<bool> menuShowCamTraj("menu.Cam Traj", true, true);
 
-    pangolin::Var<bool> menuAnnoObj("menu.Show AnnoObj",true,true);
-    pangolin::Var<bool> menuAddAnnoObj("menu.AddAnnoObj",false,false);
-    pangolin::Var<bool> menuSaveAnnoObj("menu.SaveAnnoObj",false,false);
 
     // pangolin::Var<bool> menuShowRelationArrow("menu.Relation Arrow", false, true);
     // pangolin::Var<int> SliderOdometryWeight("menu.Odometry Weight", 40, 0, 40);
@@ -179,38 +198,8 @@ void Viewer::Run()
 
     while(1)
     {
-        // pangolin::Var<int> menuAnnoIndex("menu.AnnoIndex",cur_AnnoIndex,-1,AnnoNum);
-        pangolin::Var<int> menuAnnoIndex("menu.AnnoIndex",cur_AnnoIndex,-1,10);
-
-        cur_AnnoIndex = menuAnnoIndex;
 
         RefreshMenu();  // Deal with dynamic menu bars
-
-        if (menuSaveAnnoObj) {
-            menuSaveAnnoObj = false;
-            std::string dataset_path = "/media/lj/TOSHIBA/dataset/ICL-NUIM/home/living_room_traj2_frei_png";
-            std::string obj_gt_txt = dataset_path + "/objects_gt.txt";
-            ofstream f;
-            f.open(obj_gt_txt.c_str());
-            f << fixed;
-            // index, x,y,z, roll, pitch, yaw, half length of axis x,y,z, label
-            for (int i_anno = 0; i_anno < AnnoObjs.size(); i_anno++)
-            {
-                AnnoObj* p_obj = AnnoObjs[i_anno];
-                int index = p_obj->index, label = p_obj->label;
-                double x = p_obj->x, y = p_obj->y, z = p_obj->z;
-                double roll = p_obj->roll, pitch = p_obj->pitch, yaw = p_obj->yaw;
-                double length = p_obj->length, width = p_obj->width, height = p_obj->height;
-
-                f << index << " " << setprecision(6)
-                  << x << " " << y << " " << z << " "
-                  << roll << " " << pitch << " " << yaw << " "
-                  << length << " " << width << " " << height << " "
-                  << label << endl;
-            }
-            f.close();
-        }
-        
 
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -252,7 +241,7 @@ void Viewer::Run()
         glClearColor(1.0f,1.0f,1.0f,1.0f);
         mpMapDrawer->DrawCurrentCamera(Twc);
 
-        if (menuAnnoObj)
+        if (menuShowAnnoObj)
         {
             // Anno objects
             for (int i_anno = 0; i_anno < AnnoObjs.size(); i_anno++)
@@ -376,6 +365,94 @@ void Viewer::Run()
             menuPause = false;
         }
 
+        if (menuSaveAnnoObj) {
+            menuSaveAnnoObj = false;
+            std::string dataset_path = "/media/lj/TOSHIBA/dataset/ICL-NUIM/home/living_room_traj2_frei_png";
+            std::string obj_gt_txt = dataset_path + "/objects_gt.txt";
+            ofstream f;
+            f.open(obj_gt_txt.c_str());
+            f << fixed;
+            // index, x,y,z, roll, pitch, yaw, half length of axis x,y,z, label
+            for (int i_anno = 0; i_anno < AnnoObjs.size(); i_anno++)
+            {
+                AnnoObj* p_obj = AnnoObjs[i_anno];
+                int index = p_obj->index, label = p_obj->label;
+                double x = p_obj->x, y = p_obj->y, z = p_obj->z;
+                double roll = p_obj->roll, pitch = p_obj->pitch, yaw = p_obj->yaw;
+                double length = p_obj->length, width = p_obj->width, height = p_obj->height;
+
+                f << index << " " << setprecision(6)
+                  << x << " " << y << " " << z << " "
+                  << roll << " " << pitch << " " << yaw << " "
+                  << length << " " << width << " " << height << " "
+                  << label << endl;
+            }
+            f.close();
+            std::cout << "Save obj gt to : " << obj_gt_txt << std::endl;
+        }
+
+
+
+        if(menuAddAnnoObj){
+            AnnoNum++;
+            cur_AnnoIndex = menuAnnoIndex;
+
+            // p_menuAddAnnoObj = new pangolin::Var<bool>("menu.AddAnnoObj",false,false);
+            menuAddAnnoObj = false;
+            cout << " AnnoNum = " << AnnoNum << std::endl;
+
+            cout << " menuAnnoIndex = " << menuAnnoIndex << std::endl;
+            cout << " cur_AnnoIndex = " << cur_AnnoIndex << std::endl;
+            cout << " prev_AnnoIndex = " << prev_AnnoIndex << std::endl;
+            if (AnnoNum > AnnoObjs.size()){
+                AnnoObjs.resize(AnnoNum);
+                AnnoObjs[AnnoNum - 1] = new AnnoObj();
+                AnnoObjs[AnnoNum - 1]->index = AnnoNum - 1;
+            }
+        }
+
+        cur_AnnoIndex = int(menuAnnoIndex);
+
+        if (AnnoNum > 0 && cur_AnnoIndex < AnnoNum) {
+            if (cur_AnnoIndex = -1) {
+                if (prev_AnnoIndex != cur_AnnoIndex) {
+                    for (int i_menu = 0; i_menu < 9; i_menu++) {
+                        mvDoubleMenus[i_menu]->Ref().Set(mvMenuStruct[i_menu]->def);
+                    }
+                }
+            }
+            else{
+                cur_AnnoObj = AnnoObjs[cur_AnnoIndex];
+                // 如果 menuAnnoIndex 没有发生变化，无需手动更新滑动条数值
+                if (prev_AnnoIndex == cur_AnnoIndex){
+                    cur_AnnoObj->x = mvDoubleMenus[0]->Get();
+                    cur_AnnoObj->y = mvDoubleMenus[1]->Get();
+                    cur_AnnoObj->z = mvDoubleMenus[2]->Get();
+                    cur_AnnoObj->roll = mvDoubleMenus[3]->Get();
+                    cur_AnnoObj->pitch = mvDoubleMenus[4]->Get();
+                    cur_AnnoObj->yaw = mvDoubleMenus[5]->Get();
+                    cur_AnnoObj->length = mvDoubleMenus[6]->Get();
+                    cur_AnnoObj->width = mvDoubleMenus[7]->Get();
+                    cur_AnnoObj->height = mvDoubleMenus[8]->Get();
+                }
+                else{
+                    std::cout << "prev_AnnoIndex != cur_AnnoIndex" << std::endl;
+                    mvDoubleMenus[0]->Ref().Set(cur_AnnoObj->x);
+                    mvDoubleMenus[1]->Ref().Set(cur_AnnoObj->y);
+                    mvDoubleMenus[2]->Ref().Set(cur_AnnoObj->z);
+                    mvDoubleMenus[3]->Ref().Set(cur_AnnoObj->roll);
+                    mvDoubleMenus[4]->Ref().Set(cur_AnnoObj->pitch);
+                    mvDoubleMenus[5]->Ref().Set(cur_AnnoObj->yaw);
+                    mvDoubleMenus[6]->Ref().Set(cur_AnnoObj->length);
+                    mvDoubleMenus[7]->Ref().Set(cur_AnnoObj->width);
+                    mvDoubleMenus[8]->Ref().Set(cur_AnnoObj->height);
+                }
+            }
+        }
+        prev_AnnoIndex = cur_AnnoIndex;
+
+        // RefreshAnnoOptions();
+
         if(menuReset)
         {
             menuShowGraph = true;
@@ -408,47 +485,6 @@ void Viewer::Run()
         if(CheckFinish())
             break;
 
-        if(menuAddAnnoObj){
-            AnnoNum++;
-            // p_menuAddAnnoObj = new pangolin::Var<bool>("menu.AddAnnoObj",false,false);
-            menuAddAnnoObj = false;
-
-            // std::cout << "p_menuAddAnnoObj = " << p_menuAddAnnoObj->Get() << std::endl;
-            cout << " AnnoNum = " << AnnoNum << std::endl;
-            AnnoObjs.resize(AnnoNum);
-            AnnoObjs[AnnoNum - 1] = new AnnoObj();
-            AnnoObjs[AnnoNum - 1]->index = AnnoNum - 1;
-        }
-
-        if (AnnoNum > 0 && cur_AnnoIndex >= 0 && cur_AnnoIndex < AnnoNum) {
-            cur_AnnoObj = AnnoObjs[cur_AnnoIndex];
-            if(prev_AnnoIndex >= 0) {
-
-                prev_AnnoObj = AnnoObjs[prev_AnnoIndex];
-                prev_AnnoObj->x = mvDoubleMenus[0]->Get();
-                prev_AnnoObj->y = mvDoubleMenus[1]->Get();;
-                prev_AnnoObj->z = mvDoubleMenus[2]->Get();
-                prev_AnnoObj->roll = mvDoubleMenus[3]->Get();
-                prev_AnnoObj->pitch = mvDoubleMenus[4]->Get();
-                prev_AnnoObj->yaw = mvDoubleMenus[5]->Get();
-                prev_AnnoObj->length = mvDoubleMenus[6]->Get();
-                prev_AnnoObj->width = mvDoubleMenus[7]->Get();
-                prev_AnnoObj->height = mvDoubleMenus[8]->Get();
-            }
-            mvMenuStruct[0]->def = cur_AnnoObj->x;
-            mvMenuStruct[1]->def = cur_AnnoObj->y;
-            mvMenuStruct[2]->def = cur_AnnoObj->z;
-            mvMenuStruct[3]->def = cur_AnnoObj->roll;
-            mvMenuStruct[4]->def = cur_AnnoObj->pitch;
-            mvMenuStruct[5]->def = cur_AnnoObj->yaw;
-            mvMenuStruct[6]->def = cur_AnnoObj->length;
-            mvMenuStruct[7]->def = cur_AnnoObj->width;
-            mvMenuStruct[8]->def = cur_AnnoObj->height;
-
-            prev_AnnoIndex = cur_AnnoIndex;
-        }
-
-        RefreshAnnoOptions();
     }
 
     SetFinish();
@@ -590,20 +626,9 @@ void Viewer::RefreshMenu(){
     // std::cout << "Set AnnoNum = " << AnnoNum << std::endl;
     // p_menuAddAnnoObj = new pangolin::Var<bool>("menu.AddAnnoObj",false,false);
 
-    int structNum = mvMenuStruct.size();
+    
 
-    for(int i_d = 0; i_d < structNum; i_d++)
-    {
-        pangolin::Var<double>* pMenu = 
-            new pangolin::Var<double>(
-                string("menu.") + mvMenuStruct[i_d]->name,
-                mvMenuStruct[i_d]->def, 
-                mvMenuStruct[i_d]->min, 
-                mvMenuStruct[i_d]->max
-            );
-        delete mvDoubleMenus[i_d];
-        mvDoubleMenus[i_d] = pMenu;
-    }
+
 
 }
 

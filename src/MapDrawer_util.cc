@@ -652,10 +652,9 @@ void MapDrawer::drawCuboid9Dof(Eigen::Matrix4f Two, Eigen::Vector3f Scale, bool 
     glVertex3f(pts[5][0],pts[5][1],pts[6][2]);
     glVertex3f(pts[6][0],pts[6][1],pts[7][2]);
 
-
-    glVertex3f(pts[5][0],pts[5][1],pts[6][2]);
     glVertex3f(pts[6][0],pts[6][1],pts[7][2]);
     glVertex3f(pts[7][0],pts[7][1],pts[7][2]);
+    glVertex3f(pts[4][0],pts[4][1],pts[4][2]);
 
     glEnd();
 

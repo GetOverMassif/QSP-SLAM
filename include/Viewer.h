@@ -29,8 +29,9 @@
 
 #include <mutex>
 
-struct MenuStruct
+class MenuStruct
 {
+public:
     MenuStruct(string name_,double def_,double min_,double max_)
         :name(name_), def(def_), min(min_), max(max_)
     {};
@@ -129,8 +130,7 @@ private:
 private:
     // 标注专区
     int AnnoNum = 0;
-    int cur_AnnoIndex = -1;
-    int prev_AnnoIndex = -1;
+    int cur_AnnoIndex = -1, prev_AnnoIndex = -1;
     vector<AnnoObj*> AnnoObjs;
     AnnoObj* cur_AnnoObj;
     AnnoObj* prev_AnnoObj;
