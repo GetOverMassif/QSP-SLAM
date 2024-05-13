@@ -337,6 +337,8 @@ bool MapDrawer::drawObservationEllipsoids(double prob_thresh)
     std::vector<ellipsoid*> ellipsoids_prob;
     for(auto& pE : ellipsoidsObservation)
     {
+        
+        // std::cout << " drawObservationEllipsoids : pE->prob = " << pE->prob << std::endl;
         if(pE->prob > prob_thresh )
             ellipsoids_prob.push_back(pE);
     }

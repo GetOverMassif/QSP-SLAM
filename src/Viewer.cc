@@ -307,8 +307,10 @@ void Viewer::Run()
 
 
         // draw external cubes of ellipsoids 
-        if(menuShowEllipCuboids)
+        if(menuShowEllipCuboids){
+            // std::cout << "Ingnore mpMapDrawer->drawEllipCuboids tmp" << std::endl;
             mpMapDrawer->drawEllipCuboids(ellipsoidProbThresh);
+        }
 
         // draw ellipsoids
         // 这里绘制了

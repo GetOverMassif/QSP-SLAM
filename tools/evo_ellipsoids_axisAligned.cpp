@@ -963,7 +963,7 @@ void OutputResult(ostream& fio, StaticResult& staticResult, std::map<int,COMPARE
     fio << "mid_iouE_aligned_arb: " << staticResult.mid_iou_aligned_arb << endl;
 
     fio << " ----------- SINGLE OBJECTS COMPARE ---------" << endl;
-    fio << "instanceID\t" << "IoUE\t" << "IoUE_aligned\t" << "dis_trans\t" << "dis_yaw\t" << "dis_yaw_arb\t" << "IoUE_aligned_arb\t" << endl;
+    fio << "instanceID\t" << "IoUE\t" << "IoUE_aligned\t" << "dis_trans\t" << "dis_yaw(deg)\t" << "dis_yaw_arb(deg)\t" << "IoUE_aligned_arb\t" << endl;
 
     int refNum = refObjMat.rows();
     for(int n=0; n<refNum; n++){

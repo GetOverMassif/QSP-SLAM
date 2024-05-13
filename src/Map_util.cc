@@ -297,6 +297,7 @@ void Map::ClearEllipsoidsObjects() {
 
 void Map::addEllipsoidObservation(ellipsoid *pObj) {
     unique_lock<mutex> lock(mMutexMap);
+    // std::cout << " addEllipsoidObservation : pE->prob = " << pObj->prob << std::endl;
     mspEllipsoidsObservation.push_back(pObj);
 }
 

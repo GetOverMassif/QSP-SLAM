@@ -199,7 +199,7 @@ int main(int argc,char* argv[]) {
     fio.close();
     cout << "Save result to " << path_output << endl;
 
-    cout << endl << endl << endl;
+    cout << endl << endl;
     OutputResult(cout, staticResult, results, refObjMat);
 
     // // 开启加载背景地图功能
@@ -207,11 +207,13 @@ int main(int argc,char* argv[]) {
     // pSLAM->getTracker()->LoadPointcloud(dataset_path_map, "background_world");
     // std::cout << "ok." << std::endl;
 
-    while(1);
+    std::cout << "ok." << std::endl;
 
     cout << "Press y to quit." << endl;
     char key;
     key = getchar();
+
+    // while(1);
 
     while(key!='y' && key!='Y'){
         cout << "Press y to quit." << endl;

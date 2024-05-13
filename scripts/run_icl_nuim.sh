@@ -25,8 +25,8 @@
 # 需要修改为： time, rgb_img, time, depth_img
 
 
-PROGRAME_TYPE=run
-# PROGRAME_TYPE=evo
+# PROGRAME_TYPE=run
+PROGRAME_TYPE=evo
 
 if [ "$PROGRAME_TYPE" = "run" ]; then
     CMD=./qsp_slam_rgbd

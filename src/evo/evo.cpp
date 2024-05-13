@@ -44,19 +44,23 @@ namespace evo
         else 
             return false;
     }
-
+    
+    // TODO： IOU计算
     // obj : instance x y z r p yaw a b c
     //           0    1 2 3 4 5  6  7 8 9
     // Resolution: 点的分辨率 m. 总共Sample的点为 (Volumn/Resolution^3)
     // Shape: 0 Quadrics, 1 Rectangle
     double MonteCarloIoU(VectorXd &ob1, VectorXd &ob2, int sample_num = 1000, int shape = 1)
     {
-        bool bDebug = false;
+        bool bDebug = true;
 
         // 获得立方体.
         // 取 x,y,z最大值
-        double radius1 = MAX(MAX(ob1[7], ob1[8]), ob1[9]);
-        double radius2 = MAX(MAX(ob2[7], ob2[8]), ob2[9]);
+        // double radius1 = MAX(MAX(ob1[7], ob1[8]), ob1[9]);
+        // double radius2 = MAX(MAX(ob2[7], ob2[8]), ob2[9]);
+
+        double radius1 = sqrt(ob1[7]*ob1[7]+ob1[8]*ob1[8]+ob1[9]*ob1[9]);
+        double radius2 = sqrt(ob2[7]*ob2[7]+ob2[8]*ob2[8]+ob2[9]*ob2[9]);
 
         double x_max = MAX(ob1[1] + radius1, ob2[1] + radius2);
         double x_min = MIN(ob1[1] - radius1, ob2[1] - radius2);
@@ -118,6 +122,8 @@ namespace evo
                     //     rec_isInside_1 = JudgeInsideRec(point_vec, e2);
 
                     // // }
+
+                    // std::cout << "bUseQuadric = " << bUseQuadric << std::endl;
 
                     if(bUseQuadric)
                     {
@@ -198,7 +204,7 @@ namespace evo
         }
 
         // 输出结果.
-        double IoU = both_num / double(ob1_num + ob2_num);
+        double IoU = both_num / double(ob1_num + ob2_num - both_num);
         return IoU;
     }
 
@@ -236,33 +242,6 @@ namespace evo
         return matLists;
     }
 
-    // 2020-6-9 任意两个椭球体的最小旋转 Rotation angle
-    double GetMinAngleArbitrary(g2o::ellipsoid &e1, g2o::ellipsoid &e2)
-    {
-
-        Matrix3d rotMat1(e1.pose.rotation());
-        Matrix3d rotMat2(e2.pose.rotation());
-
-        std::vector<Matrix3d, Eigen::aligned_allocator<Matrix3d>> rotMat2_allpos = GenerateAllPotentialMat(rotMat2);
-        std::vector<double> angle_vec;
-        for (int i = 0; i < 24; i++)
-        {
-            Matrix3d diffMat = rotMat1.inverse() * rotMat2_allpos[i];
-            // 其实就是绕 x,y,z 轴旋转, 遍历所有可能性 ( 一共 6 个? )
-            AngleAxisd axis(diffMat);
-            double angle = axis.angle();
-
-            double abs_angle = std::abs(angle);
-            angle_vec.push_back(abs_angle);
-        }
-        // 思考如何生成 24种 所有可能性吧...
-        // TOBEDONE.
-
-        auto iter_min = std::min_element(angle_vec.begin(), angle_vec.end());
-
-        double min_angle_deg = *iter_min / M_PI * 180;
-        return min_angle_deg;
-    }
 
     // 2020-6-9: 对任意两个椭球体，无需对齐，计算 Aligned IoU.
     // obj : instance x y z r p yaw a b c
@@ -299,11 +278,41 @@ namespace evo
         return *iter;
     }
 
+    // 2020-6-9 任意两个椭球体的最小旋转 Rotation angle
+    double GetMinAngleArbitrary(g2o::ellipsoid &e1, g2o::ellipsoid &e2)
+    {
+
+        Matrix3d rotMat1(e1.pose.rotation());
+        Matrix3d rotMat2(e2.pose.rotation());
+
+        std::vector<Matrix3d, Eigen::aligned_allocator<Matrix3d>> rotMat2_allpos = GenerateAllPotentialMat(rotMat2);
+        std::vector<double> angle_vec;
+        for (int i = 0; i < 24; i++)
+        {
+            Matrix3d diffMat = rotMat1.inverse() * rotMat2_allpos[i];
+            // 其实就是绕 x,y,z 轴旋转, 遍历所有可能性 ( 一共 6 个? )
+            AngleAxisd axis(diffMat);
+            double angle = axis.angle();
+
+            double abs_angle = std::abs(angle);
+            angle_vec.push_back(abs_angle);
+        }
+        // 思考如何生成 24种 所有可能性吧...
+        // TOBEDONE.
+
+        auto iter_min = std::min_element(angle_vec.begin(), angle_vec.end());
+
+        double min_angle_deg = *iter_min / M_PI * 180;
+        return min_angle_deg;
+    }
+
+
     // 2020-2-22: 假定椭球体z轴已对齐(支持粗略对齐)，计算 MIoU.
     // obj : instance x y z r p yaw a b c
     //           0    1 2 3 4 5  6  7 8 9
     double GetAxisAlignedMIoU(VectorXd &ob1, VectorXd &ob2, bool align = false)
     {
+        // std::cout << "GetAxisAlignedMIoU, align = " << align << std::endl;
         if (!align)
         {
             g2o::ellipsoid e1;
@@ -401,6 +410,8 @@ namespace evo
 
         Vector4d rotate_errors_norm;
         Vector4d rotate_angles(-1, 0, 1, 2); // rotate -90 0 90 180
+
+        // TODO: 不一定可以选择四个旋转方向
         for (int i = 0; i < rotate_errors_norm.rows(); i++)
         {
             ellipsoid e2_rotated = e2.rotate_ellipsoid(rotate_angles(i) * M_PI / 2.0); // rotate new cuboids
@@ -440,6 +451,7 @@ namespace evo
     {
         // 综合评价: 直接比较IoU
 
+        std::cout << std::endl;
         std::cout << "compareObjectWithVector : " << std::endl;
         std::cout << " => ob1: " << ob1.matrix().transpose() << std::endl;
         std::cout << " => ob2: " << ob2.matrix().transpose() << std::endl;
@@ -449,23 +461,29 @@ namespace evo
         Vector3d ob2_ori = ob2.block(1, 0, 3, 1);
         double origin_distance = (ob1_ori - ob2_ori).norm();
 
-        // 原始IoU
+        /**
+         * 计算 IoU 
+        */
 
         // 首先判断Z轴是否对齐了!
         double IoU_ori;
+        int sample_num = 27000;
         if(IsAxisAligned(ob1,ob2)){
-            std::cout << "IsAxisAligned" << std::endl;
+            // std::cout << "IsAxisAligned" << std::endl;
             IoU_ori = 1 - GetAxisAlignedMIoU(ob1, ob2, false);
         }
         else{
-            std::cout << "Not AxisAligned" << std::endl;
-            IoU_ori = MonteCarloIoU(ob1, ob2, 1000);
+            // std::cout << "Not AxisAligned" << std::endl;
+            IoU_ori = MonteCarloIoU(ob1, ob2, sample_num);
         }
 
         // 放到原点比较IoU
         double IoU_aligned = 1 - GetAxisAlignedMIoU(ob1, ob2, true);
 
-        std::cout << "IoU_ori = " << IoU_ori << ", IoU_aligned = " << IoU_aligned << std::endl;
+        
+        /**
+         * 
+        */
 
         // getchar();
         // 构造旋转矩阵比较 angle.
@@ -489,9 +507,24 @@ namespace evo
         output.IoU = IoU_ori;
         output.IoU_aligned = IoU_aligned;
 
+        // 偏行角任意
         output.dis_yaw_arbitrary = yaw_deg_arb;
         output.IoU_aligned_arbitrary = IoU_aligned_arb;
         output.iou_order = iou_order;
+
+        bool bDebug = true;
+        if (bDebug) {
+            std::cout << "instanceID\t" << "IoU\t" << "IoU_aligned\t" << "dis_trans\t" << "dis_yaw(deg)\t"
+                << "dis_yaw_arb(deg)\t"<< "IoU_aligned_arb\t" << endl;
+
+
+            std::cout << "    "  << output.instanceID << "\t" << setprecision(6) 
+                << output.IoU << "\t" << output.IoU_aligned << "\t"
+                << output.dis_trans << "\t" << output.dis_yaw << "\t" 
+                << output.dis_yaw_arbitrary << "\t" << output.IoU_aligned_arbitrary << "\t" 
+                << "(est)" << endl;
+        }
+
 
         return output;
     }
@@ -809,6 +842,7 @@ namespace evo
     {
         int num = mat.rows();
         std::cout << "VisualizeEllipsoidsInMat, color = " << color.matrix().transpose() << std::endl;
+        std::cout << "show_in_observation = " << show_in_observation << std::endl;
         for (int i = 0; i < num; i++)
         {
             VectorXd mat_vec = mat.row(i);
@@ -817,10 +851,14 @@ namespace evo
             pE->fromMinimalVector(obj_vec);
             pE->setColor(color);
             pE->prob = 1.0;
+            // std::cout << " VisualizeEllipsoidsInMat : pE->prob = " << pE->prob << std::endl;
+
             if(mat_vec.size()>10)
                 pE->miLabel = round(mat_vec[10]);
             if (show_instance)
                 pE->miInstanceID = round(mat_vec[0]);
+
+            // std::cout << " pE->prob = " << pE->prob << std::endl;
 
             // 定义颜色等信息
             if (show_in_observation)
@@ -1014,8 +1052,8 @@ namespace evo
             << "IoU\t"
             << "IoU_aligned\t"
             << "dis_trans\t"
-            << "dis_yaw\t"
-            << "dis_yaw_arb\t"
+            << "dis_yaw(deg)\t"
+            << "dis_yaw_arb(deg)\t"
             << "IoU_aligned_arb\t" << endl;
 
         int refNum = refObjMat.rows();
@@ -1025,7 +1063,7 @@ namespace evo
             auto iter = results.find(ins_id_ref);
             if (iter != results.end())
             {
-                fio << iter->first << "\t" << iter->second.IoU << "\t" << iter->second.IoU_aligned << "\t" << iter->second.dis_trans << "\t" << iter->second.dis_yaw
+                fio << "    " << iter->first << "\t" << setprecision(6) << iter->second.IoU << "\t" << iter->second.IoU_aligned << "\t" << iter->second.dis_trans << "\t" << iter->second.dis_yaw
                     << "\t" << iter->second.dis_yaw_arbitrary << "\t" << iter->second.IoU_aligned_arbitrary << "\t" << iter->second.est_id_origin << "(est)" << endl;
             }
             else
@@ -1061,15 +1099,15 @@ namespace evo
         fio << endl;
         fio << " ======= All Rotations =======" << std::endl;
         // fio << staticResult.rmse << std::endl;
-        fio << "aver_dis_trans / aver_dis_yaw_arb / aver_IoU_aligned_arb = " << std::endl;
-        fio << "  " << staticResult.aver_dis_trans << "/" << staticResult.aver_dis_yaw_arb << "/" << staticResult.aver_IoU_aligned_arb << std::endl;
-        fio << "precision / recall / F1 = " << std::endl;
-        fio << "  " << staticResult.precision << "/" << staticResult.recall << "/" << staticResult.F1 << std::endl;
+        fio << "aver_dis_trans\t" << "aver_dis_yaw_arb\t" << "aver_IoU_aligned_arb" << std::endl;
+        fio << staticResult.aver_dis_trans << "\t" << staticResult.aver_dis_yaw_arb << "\t" << staticResult.aver_IoU_aligned_arb << std::endl;
+        fio << "precision\t" << "recall\t" << "F1" << std::endl;
+        fio << staticResult.precision << "\t" << staticResult.recall << "\t" << staticResult.F1 << std::endl;
 
-        fio << endl;
-        fio << " ======= Valid Rotations =======" << std::endl;
-        fio << staticResult.aver_dis_trans << "/" << staticResult.aver_dis_yaw_arb_valid << "/" << staticResult.aver_IoU_aligned_arb << std::endl;
-        fio << staticResult.precision << "/" << staticResult.recall << "/" << staticResult.F1 << std::endl;
+        // fio << endl;
+        // fio << " ======= Valid Rotations =======" << std::endl;
+        // fio << staticResult.aver_dis_trans << "/" << staticResult.aver_dis_yaw_arb_valid << "/" << staticResult.aver_IoU_aligned_arb << std::endl;
+        // fio << staticResult.precision << "/" << staticResult.recall << "/" << staticResult.F1 << std::endl;
     }
 
     StaticResult CalculateResult(std::map<int, COMPARE_RESULT> &results)
@@ -1318,7 +1356,7 @@ namespace evo
         }
 
         // TODO: 补充可视化 ，有待放入参数文件
-        bool bSupVisualization = true;
+        bool bSupVisualization = false;
         if (bSupVisualization)
         {
             // 1) 可视化aligned_iou_arb的最佳顺序
@@ -1328,6 +1366,7 @@ namespace evo
             {
                 std::cout << "Visualize Result ID : " << result_id << "..." << std::endl;
 
+                // 这段程序可能还有一些问题
                 // 在原点可视化一下?
                 auto order = iter->second.iou_order;
                 int ref_id = iter->second.ref_id;
@@ -1339,6 +1378,7 @@ namespace evo
                 g2o::ellipsoid e1;
                 e1.fromMinimalVector(vec1);
                 e1.setColor(Vector3d(1.0, 0, 0));
+                e1.prob = 1;
 
                 VectorXd estOb = estObjMatInRef.row(est_id).head(10);
                 Vector9d vec2;
@@ -1348,7 +1388,8 @@ namespace evo
                 vec2 << 0, 0, 0, 0, 0, 0, estOb[first], estOb[second], estOb[third];
                 g2o::ellipsoid e2;
                 e2.fromMinimalVector(vec2);
-                e1.setColor(Vector3d(0, 0, 1.0));
+                e2.setColor(Vector3d(0, 0, 1.0));
+                e2.prob = 1;
 
                 // 先清理槽, 然后可视化 e1, e2
                 pMap->ClearEllipsoidsObservation();

@@ -452,7 +452,8 @@ namespace g2o
     {
         return calculateIntersectionError(*this, e);
     }
-
+    
+    // 
     double ellipsoid::calculateIntersectionOnZ(const g2o::ellipsoid& e1, const g2o::ellipsoid& e2) const
     {
         g2o::SE3Quat pose_diff = e1.pose.inverse() * e2.pose;
@@ -467,6 +468,7 @@ namespace g2o
         double length = MAX(0, MIN( cross , 2*scale2));
         length = MIN( length, 2*scale1);
 
+
         // std::cout << "****TEMP: THIS IS THE NEW Intersection Function ... " << std::endl;
         // std::cout << " - z1 : " << z1 << std::endl;
         // std::cout << " - z2 : " << z2 << std::endl;
@@ -478,6 +480,7 @@ namespace g2o
         return length;
     }
 
+    // 计算外接立方体的体积
     double ellipsoid::calculateArea(const g2o::ellipsoid& e) const
     {
         return e.scale[0]*e.scale[1]*e.scale[2]*8;
@@ -491,9 +494,12 @@ namespace g2o
         std::cout << std::endl;
     }
 
-    // Calculate the intersection area after projected the external cubes of two axis-aligned ellipsoids into XY-Plane.
+    // Calculate the intersection area 
+    // after projected the external cubes of two axis-aligned ellipsoids into XY-Plane.
+    // 计算两个轴向椭球体的外立方体投影到xy平面后的交点面积
     double ellipsoid::calculateIntersectionOnXY(const g2o::ellipsoid& e1, const g2o::ellipsoid& e2) const
     {
+        // std::cout << "calculateIntersectionOnXY" << std::endl;
         // First, get the axis-aligned pose error
         g2o::SE3Quat pose_diff = e1.pose.inverse() * e2.pose;
         double x_center1 = 0; double y_center1 = 0;
@@ -501,8 +507,12 @@ namespace g2o
         double x_center2 = pose_diff.translation()[0];
         double y_center2 = pose_diff.translation()[1];
 
+        // std::cout << "x_center2 = " << x_center2 << ", y_center2 = " << y_center2 << std::endl;
+
         double roll,pitch,yaw;
         quat_to_euler_zyx(pose_diff.rotation(),roll,pitch,yaw);
+
+        // std::cout << "roll = " << roll << ", pitch = " << pitch << ", yaw = " << yaw << std::endl;
 
         double a1 = std::abs(e1.scale[0]);
         double b1 = std::abs(e1.scale[1]);
@@ -510,56 +520,84 @@ namespace g2o
         double a2 = std::abs(e2.scale[0]);
         double b2 = std::abs(e2.scale[1]);
 
-        // *************************
-        // 旧版本: 使用 Polygon 库
-        // *************************
-        // Use polygon to calculate the intersection
-        ORB_SLAM2::Polygon polygon1, polygon2;
-        double resolution = 0.001;  // m / resolution = pixel
+        // // *************************
+        // // 旧版本: 使用 Polygon 库
+        // // *************************
+        // // Use polygon to calculate the intersection
+        // ORB_SLAM2::Polygon polygon1, polygon2;
+        // double resolution = 0.001;  // m / resolution = pixel
 
-        // polygon1.add(cv::Point(a1/resolution, b1/resolution));    // cvPoint only accepts integer, so use resolution to map meter to pixel ( 0.01 resolution means: 1pixel = 0.01m )
-        // polygon1.add(cv::Point(-a1/resolution, b1/resolution)); 
-        // polygon1.add(cv::Point(-a1/resolution, -b1/resolution)); 
-        // polygon1.add(cv::Point(a1/resolution, -b1/resolution)); 
+        // // cvPoint only accepts integer, 
+        // // so use resolution to map meter to pixel ( 0.01 resolution means: 1pixel = 0.01m )
+        // polygon1.add(cv::Point(cvRound(a1/resolution), cvRound(b1/resolution)));
+        // polygon1.add(cv::Point(cvRound(-a1/resolution), cvRound(b1/resolution)));
+        // polygon1.add(cv::Point(cvRound(-a1/resolution), cvRound(-b1/resolution)));
+        // polygon1.add(cv::Point(cvRound(a1/resolution), cvRound(-b1/resolution)));
 
-        polygon1.add(cv::Point(cvRound(a1/resolution), cvRound(b1/resolution)));
-        polygon1.add(cv::Point(cvRound(-a1/resolution), cvRound(b1/resolution)));
-        polygon1.add(cv::Point(cvRound(-a1/resolution), cvRound(-b1/resolution)));
-        polygon1.add(cv::Point(cvRound(a1/resolution), cvRound(-b1/resolution)));
+        // // 第二个矩形的对角线长度
+        // double c_length = sqrt(a2*a2+b2*b2);
 
-        double c_length = sqrt(a2*a2+b2*b2);
+        // double init_theta = CV_PI/2.0 - atan2(a2,b2);
+        // Vector4d angle_plus_vec;
+        // angle_plus_vec << 0, atan2(a2,b2)*2, CV_PI, CV_PI+atan2(a2,b2)*2;
 
-        double init_theta = CV_PI/2.0 - atan2(a2,b2);
-        Vector4d angle_plus_vec;
-        angle_plus_vec << 0, atan2(a2,b2)*2, CV_PI, CV_PI+atan2(a2,b2)*2;
-        for( int n=0;n<4;n++){
-            double angle_plus = angle_plus_vec[n];  // rotate 90deg for four times
-            double point_x = c_length * cos( init_theta - yaw + angle_plus ) + x_center2;
-            double point_y = c_length * sin( init_theta - yaw + angle_plus ) + y_center2;
-            polygon2.add(cv::Point(point_x/resolution, point_y/resolution));  
-        }
+        // for( int n=0;n<4;n++){
+        //     double angle_plus = angle_plus_vec[n];  // rotate 90deg for four times
+        //     double point_x = c_length * cos( init_theta - yaw + angle_plus ) + x_center2;
+        //     double point_y = c_length * sin( init_theta - yaw + angle_plus ) + y_center2;
+        //     polygon2.add(cv::Point(point_x/resolution, point_y/resolution));  
+        // }
 
-        // calculate the intersection
-        ORB_SLAM2::Polygon interPolygon;
-        ORB_SLAM2::intersectPolygon(polygon1, polygon2, interPolygon);
+        // // calculate the intersection
+        // ORB_SLAM2::Polygon interPolygon;
+        // ORB_SLAM2::intersectPolygon(polygon1, polygon2, interPolygon);
 
-        // eliminate resolution.
-        double inter_area = interPolygon.area();
-        double inter_area_in_m = inter_area * resolution * resolution;
-        // *************************
+        // std::cout << "polygon1: " << std::endl;
+        // for(int i_p = 0; i_p < polygon1.n; i_p++) {
+        //     std::cout << "  => " << polygon1[i_p] << std::endl;
+        // }
 
-        // *************************
-        // 新版本: 使用 cv 库
-        // 似乎没有 RotatedRect 的并集!
-        // *************************
+        // std::cout << "polygon2: " << std::endl;
+        // for(int i_p = 0; i_p < polygon2.n; i_p++) {
+        //     std::cout << "  => " << polygon2[i_p] << std::endl;
+        // }
+
+        // std::cout << "interPolygon: " << std::endl;
+        // for(int i_p = 0; i_p < interPolygon.n; i_p++) {
+        //     std::cout << "  => " << interPolygon[i_p] << std::endl;
+        // }
+
+        // // eliminate resolution.
+        // double inter_area = interPolygon.area();
+        // double inter_area_in_m = inter_area * resolution * resolution;
+        // // *************************
+
+
+        // // *************************
+        // // 新版本: 使用 cv 库
+        // // 似乎没有 RotatedRect 的并集!
+        // // *************************
         // // 与bbox求IoU
-        // cv::Rect r1(cv::Point(rect[0], rect[1]), cv::Point(rect[2], rect[3]));
-        // cv::Rect r2(cv::Point(bbox[0], bbox[1]), cv::Point(bbox[2], bbox[3]));
+
+        // max()
+
+        // std::cout << "a1 = " << a1 << ", b1 = " << b1 << std::endl;
+        // std::cout << "a2 = " << a2 << ", b2 = " << b2 << std::endl;
+        cv::Rect2d r1(cv::Point2d(-a1, -b1), cv::Point2d(a1, b1));
+        cv::Rect2d r2(cv::Point2d(-a2, -b2), cv::Point2d(a2, b2));
+
         // cv::RotatedRect(); // 检查 是否有交并补 
 
         // cv::Rect r_and = r1 | r2;
-        // cv::Rect r_U = r1 & r2;
-        // double iou = r_U.area()*1.0/r_and.area();
+        cv::Rect2d r_U = r1 & r2;
+
+        // double area_U = r_U.area(), area1 = r1.area(), area2 = r2.area();
+
+        // std::cout << "area1 = " << r1.area() << ", area2 = " << r2.area() << std::endl;
+        // std::cout << "area_U = " << r_U.area() << std::endl;
+
+        // double inter_area_in_m = area_U / (area1 + area2 - area_U);
+        double inter_area_in_m = r_U.area();
 
 
         return inter_area_in_m;
@@ -567,6 +605,7 @@ namespace g2o
 
     double ellipsoid::calculateIntersectionError(const g2o::ellipsoid& e1, const g2o::ellipsoid& e2) const
     {
+        // std::cout << "calculateIntersectionError " << std::endl;
         //          AXB          
         // IoU = ----------
         //          AUB
@@ -575,23 +614,35 @@ namespace g2o
 
         // Error of IoU : 1 - IoU
         double areaA = std::abs(calculateArea(e1));        
-        // std::cout << "areaA : " << areaA << std::endl;
+        // std::cout << "  => areaA : " << areaA << std::endl;
 
         double areaB = std::abs(calculateArea(e2));
-        // std::cout << "areaB : " << areaB << std::endl;
+        // std::cout << "  => areaB : " << areaB << std::endl;
+
+        // std::cout << "  => e1.scale = " << e1.scale.transpose().matrix() << std::endl;
+        // std::cout << "  => e2.scale = " << e2.scale.transpose().matrix() << std::endl;
 
         double proj_inter = calculateIntersectionOnXY(e1,e2);
         double z_inter = calculateIntersectionOnZ(e1,e2);
-        // std::cout << "projInter : " << proj_inter << std::endl;
-        // std::cout << "z_inter : " << z_inter << std::endl;
+
+        // std::cout << "  => projInter : " << proj_inter << std::endl;
+        // std::cout << "  => z_inter : " << z_inter << std::endl;
 
         double areaIntersection = proj_inter * z_inter;
         // std::cout << "areaIntersection : " << areaIntersection << std::endl;
+
+
+        // std::cout << "calculateIntersectionError" << std::endl;
+        // std::cout << "areaA = " << areaA << ", areaB = " << areaB << std::endl;
+        // std::cout << "areaIntersection = " << areaIntersection << std::endl;
+
 
         double MIoU = 1 - ((areaIntersection) / (areaA + areaB - areaIntersection));
         // std::cout << "MIoU : " << MIoU << std::endl;
         // std::cout << "e1 : " << e1.toMinimalVector().transpose() << std::endl;
         // std::cout << "e2 : " << e2.toMinimalVector().transpose() << std::endl;
+
+        std::cout << std::endl;
 
         return MIoU;
     }

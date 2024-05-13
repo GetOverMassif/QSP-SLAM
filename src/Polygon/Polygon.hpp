@@ -22,6 +22,7 @@ bool pointInPolygon(cv::Point p,const cv::Point * points,int n) ;
 bool pointInPolygon(CvPoint2D32f p,const CvPoint2D32f * points,int n) ;
 
 
+// use for 
 #define MAX_POINT_POLYGON 64
 struct Polygon {
 	cv::Point pt[MAX_POINT_POLYGON];

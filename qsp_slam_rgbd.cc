@@ -220,18 +220,23 @@ int main(int argc, char **argv)
 
     // p_gtMat->col(2) = -p_gtMat->col(2);
 
-    g2o::SE3Quat init_pose, init_pose_inv;
+    g2o::SE3Quat init_pose, init_pose_inv, random_pose;
     init_pose.fromVector(p_gtMat->row(0).tail(7));
 
     init_pose_inv = init_pose.inverse();
+
+    random_pose.fromVector(p_gtMat->row(460).tail(7));
+
 
 
     for (int i = 0; i < p_gtMat->rows(); i++) {
         SE3QuatWithStamp* pGtSE3T = new SE3QuatWithStamp();
         VectorXd gtPose = p_gtMat->row(i);
         pGtSE3T->pose.fromVector(gtPose.tail(7));
-        
+
+
         // pGtSE3T->pose^=init_pose_inv;
+        pGtSE3T->pose^=random_pose;
         // pGtSE3T->pose = pGtSE3T->pose.inverse();
         pGtSE3T->timestamp = gtPose[0];
 
@@ -472,9 +477,13 @@ int main(int argc, char **argv)
     //     }
     // }
     
-    SLAM.SaveTrajectoryTUM(dataset_path + "/CameraTrajectory_QSP.txt");
+    bool use_index = true;
 
-    SLAM.SaveTrajectoryTwc(dataset_path + "/CameraTrajectory_Twc_QSP.txt");
+    SLAM.SaveTrajectoryTUM(dataset_path + "/CameraTrajectory_QSP_times.txt");
+    SLAM.SaveTrajectoryTUM(dataset_path + "/CameraTrajectory_QSP_indexes.txt", use_index);
+
+    SLAM.SaveTrajectoryTwc(dataset_path + "/CameraTrajectory_Twc_QSP_times.txt");
+    SLAM.SaveTrajectoryTwc(dataset_path + "/CameraTrajectory_Twc_QSP_indexes.txt", use_index);
 
 
     SLAM.SaveKeyFrameTrajectoryTUM(dataset_path + "/KeyFrameTrajectory_QSP.txt");

@@ -5,8 +5,8 @@
         "name": "C++ Launch",
         "type": "cppdbg",
         "request": "launch",
-        "program": "${workspaceFolder}/qsp_slam_rgbd",
-        // "program": "${workspaceFolder}/label_tool",
+        // "program": "${workspaceFolder}/qsp_slam_rgbd",
+        "program": "${workspaceFolder}/evo_tool_qsp",
         // "program": "${workspaceFolder}/instanceAnnotation",
         "args": [
             // "Vocabulary/ORBvoc.bin",

@@ -299,7 +299,7 @@ int main(int argc,char* argv[]) {
     fio << "mid_dis_yaw: " << mid_dis_yaw << endl;
 
     fio << " ----------- SINGLE OBJECTS COMPARE ---------" << endl;
-    fio << "instanceID\t" << "IoU\t" << "IoU_aligned\t" << "dis_trans\t" << "dis_yaw\t" << endl;
+    fio << "instanceID\t" << "IoU\t" << "IoU_aligned\t" << "dis_trans\t" << "dis_yaw(deg)\t" << endl;
     for(int n=0; n<refNum; n++){
         auto iter = results.find(n);
         if(iter != results.end())

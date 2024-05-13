@@ -495,7 +495,7 @@ void System::Shutdown()
     PyGILState_Ensure();
 }
 
-void System::SaveTrajectoryTUM(const string &filename)
+void System::SaveTrajectoryTUM(const string &filename, bool useIndex)
 {
     cout << endl << "Saving camera trajectory to " << filename << " ..." << endl;
     if(mSensor==MONOCULAR)
@@ -527,6 +527,7 @@ void System::SaveTrajectoryTUM(const string &filename)
     list<double>::iterator lT = mpTracker->mlFrameTimes.begin();
     list<bool>::iterator lbL = mpTracker->mlbLost.begin();
     // lit: 
+    int i_t = 0;
     for(list<cv::Mat>::iterator lit=mpTracker->mlRelativeFramePoses.begin(),
             lend=mpTracker->mlRelativeFramePoses.end();
         lit!=lend;
@@ -561,7 +562,15 @@ void System::SaveTrajectoryTUM(const string &filename)
 
         vector<float> q = Converter::toQuaternion(Rwc);
 
-        f << setprecision(6) << *lT << " " <<  setprecision(9) \
+        if (useIndex) {
+            f << i_t;
+            i_t++;
+        }
+        else {
+            f << setprecision(6) << *lT;
+        }
+
+        f << " " <<  setprecision(9) \
           << twc.at<float>(0) << " " << twc.at<float>(1) << " " << twc.at<float>(2) << " "
           << q[0] << " " << q[1] << " " << q[2] << " " << q[3] << endl;
     }
@@ -569,7 +578,7 @@ void System::SaveTrajectoryTUM(const string &filename)
     cout << endl << "trajectory saved!" << endl;
 }
 
-void System::SaveTrajectoryTwc(const string &filename)
+void System::SaveTrajectoryTwc(const string &filename, bool useIndex)
 {
     // mTwcList
     ofstream f;
@@ -579,8 +588,14 @@ void System::SaveTrajectoryTwc(const string &filename)
     for(int i_t = 0; i_t < mTwcList.size(); i_t++)
     {
         Vector7d& Twc_vec = mTwcList[i_t];
-        // f << setprecision(6) << mTimeList[i_t] << " " <<  setprecision(9)
-        f << i_t << " " <<  setprecision(9) \
+        if (useIndex) {
+            f << i_t;
+        }
+        else {
+            f << setprecision(6) << mTimeList[i_t];
+        }
+
+        f << " " <<  setprecision(9) \
           << Twc_vec(0) << " " << Twc_vec(1) << " " << Twc_vec(2) << " "
           << Twc_vec(3) << " " << Twc_vec(4) << " " << Twc_vec(5) << " " << Twc_vec(6) << endl;
     }
