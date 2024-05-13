@@ -207,7 +207,7 @@ int main(int argc,char* argv[]) {
     // pSLAM->getTracker()->LoadPointcloud(dataset_path_map, "background_world");
     // std::cout << "ok." << std::endl;
 
-    // while(1);
+    while(1);
 
     cout << "Press y to quit." << endl;
     char key;

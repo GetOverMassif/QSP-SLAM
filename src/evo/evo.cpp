@@ -440,6 +440,10 @@ namespace evo
     {
         // 综合评价: 直接比较IoU
 
+        std::cout << "compareObjectWithVector : " << std::endl;
+        std::cout << " => ob1: " << ob1.matrix().transpose() << std::endl;
+        std::cout << " => ob2: " << ob2.matrix().transpose() << std::endl;
+
         // 位置: 原点差距
         Vector3d ob1_ori = ob1.block(1, 0, 3, 1);
         Vector3d ob2_ori = ob2.block(1, 0, 3, 1);
@@ -449,13 +453,19 @@ namespace evo
 
         // 首先判断Z轴是否对齐了!
         double IoU_ori;
-        if(IsAxisAligned(ob1,ob2))
+        if(IsAxisAligned(ob1,ob2)){
+            std::cout << "IsAxisAligned" << std::endl;
             IoU_ori = 1 - GetAxisAlignedMIoU(ob1, ob2, false);
-        else 
+        }
+        else{
+            std::cout << "Not AxisAligned" << std::endl;
             IoU_ori = MonteCarloIoU(ob1, ob2, 1000);
+        }
 
         // 放到原点比较IoU
         double IoU_aligned = 1 - GetAxisAlignedMIoU(ob1, ob2, true);
+
+        std::cout << "IoU_ori = " << IoU_ori << ", IoU_aligned = " << IoU_aligned << std::endl;
 
         // getchar();
         // 构造旋转矩阵比较 angle.
@@ -1051,14 +1061,15 @@ namespace evo
         fio << endl;
         fio << " ======= All Rotations =======" << std::endl;
         // fio << staticResult.rmse << std::endl;
-        fio << staticResult.aver_dis_trans << "/" << staticResult.aver_dis_yaw_arb << "/" << staticResult.aver_IoU_aligned_arb << std::endl;
-        fio << staticResult.precision << "/" << staticResult.recall << "/" << staticResult.F1 << std::endl;
+        fio << "aver_dis_trans / aver_dis_yaw_arb / aver_IoU_aligned_arb = " << std::endl;
+        fio << "  " << staticResult.aver_dis_trans << "/" << staticResult.aver_dis_yaw_arb << "/" << staticResult.aver_IoU_aligned_arb << std::endl;
+        fio << "precision / recall / F1 = " << std::endl;
+        fio << "  " << staticResult.precision << "/" << staticResult.recall << "/" << staticResult.F1 << std::endl;
 
         fio << endl;
         fio << " ======= Valid Rotations =======" << std::endl;
         fio << staticResult.aver_dis_trans << "/" << staticResult.aver_dis_yaw_arb_valid << "/" << staticResult.aver_IoU_aligned_arb << std::endl;
         fio << staticResult.precision << "/" << staticResult.recall << "/" << staticResult.F1 << std::endl;
-
     }
 
     StaticResult CalculateResult(std::map<int, COMPARE_RESULT> &results)
@@ -1275,11 +1286,11 @@ namespace evo
             VectorXd estOb = estObjMatInRef.row(i);
             int ref_id = vAlignEstToRef[i];
 
-            int ins_id_est = round(estOb[0]);
+            int origin_est_id = round(estOb[0]);
             if (ref_id == -1)
             {
                 // no align
-                list_noAlign.insert(ins_id_est);
+                list_noAlign.insert(origin_est_id);
                 estNum--;
                 continue;
             }
@@ -1293,10 +1304,10 @@ namespace evo
             result.instanceID = round(refOb[0]); // 此处ins记录的是reference id 的值
             result.est_id = i;
             result.ref_id = ref_id;
-            result.est_id_origin = ins_id_est;
+            result.est_id_origin = origin_est_id;
 
             // 评估是否是对称物体
-            if(estOb.size()>=11){
+            if(estOb.size() >= 11){
                 int label = round(estOb[10]);
                 bool is_sym = IsSymmetry(label);
                 result.valid_angle = !is_sym; // 不对称的才评估
@@ -1306,8 +1317,8 @@ namespace evo
             results.insert(make_pair(result.instanceID, result));
         }
 
-        // 补充可视化
-        bool bSupVisualization = false;
+        // TODO: 补充可视化 ，有待放入参数文件
+        bool bSupVisualization = true;
         if (bSupVisualization)
         {
             // 1) 可视化aligned_iou_arb的最佳顺序
@@ -1344,7 +1355,8 @@ namespace evo
                 pMap->addEllipsoidObservation(&e1);
                 pMap->addEllipsoidObservation(&e2);
 
-                getchar();
+                // std::cout << "bool bSupVisualization = true" << std::endl;
+                // getchar();
                 result_id++;
             }
         }

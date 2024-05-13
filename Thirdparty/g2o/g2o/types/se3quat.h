@@ -115,6 +115,15 @@ namespace g2o {
         return result;
       }
 
+      // 左乘
+      inline SE3Quat& operator^= (const SE3Quat& tr1){
+        _t=tr1._r*_t + tr1._t;
+        _r=tr1._r * _r;
+        normalizeRotation();
+        return *this;
+      }
+
+      // 右乘
       inline SE3Quat& operator*= (const SE3Quat& tr2){
         _t+=_r*tr2._t;
         _r*=tr2._r;

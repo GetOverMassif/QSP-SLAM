@@ -716,7 +716,7 @@ void Tracking::TaskGroundPlane()
 void Tracking::SetGroundPlaneMannually(const Eigen::Vector4d &param)
 {
     std::cout << "[GroundPlane] Set groundplane mannually: " << param.transpose() << std::endl;
-     cout << "Ground Plane param = " << param.matrix() << endl;
+     cout << "Ground Plane param = " << param.transpose().matrix() << endl;
 
     miGroundPlaneState = 3;
     mGroundPlane.param = param;

@@ -117,7 +117,8 @@ void MapDrawer::DrawMapPoints(float mappointSize, bool drawRawObjPoint)
 
     // for ReferenceMapPoints
     //显示局部地图点，大小为2个像素，红色
-    glPointSize(mPointSize);
+    
+    glPointSize(mappointSize);
     glBegin(GL_POINTS);
     glColor3f(1.0,0.0,0.0);
 

@@ -19,6 +19,8 @@ using namespace Eigen;
 using namespace std;
 
 void Builder::processFrame(cv::Mat &rgb, cv::Mat &depth, Eigen::VectorXd &pose, double depth_thresh){
+
+    // std::cout << "Builder::processFrame " << std::endl;
     if(!mbInitialized) {
         std::cerr << "Please initialize the builder first." << std::endl;
         return;

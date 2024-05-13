@@ -23,8 +23,12 @@ namespace TUMRGBD
         msDatasetDir = path;
         msRGBDir = msDatasetDir + "/rgb/";
         msDepthDir = msDatasetDir + "/depth/";
+        // img_num: 
+        // "/groundtruth.txt": index(1~img_num-1) x y z qx qy qz qw
         msGroundtruthPath = msDatasetDir + "/groundtruth.txt";
+        // "/associate.txt": index(0~img_num-1) rgb_filename index depth_filename
         msAssociatePath = msDatasetDir + "/associate.txt";
+        // "/associateGroundtruth.txt": index(0~img_num-1) rgb_filename index depth_filename
         msAssociateGroundtruthPath = msDatasetDir + "/associateGroundtruth.txt";
 
         // get all the file names under the directory
@@ -34,6 +38,7 @@ namespace TUMRGBD
         miTotalNum = mvRGBFileNames.size();
 
         // generate the map between the timestamps to the depth images
+        std::cout << "msGroundtruthPath = " << msGroundtruthPath << std::endl;
         loadGroundTruthToMap(msGroundtruthPath);
         // std::cout << "2..." << std::endl;
 

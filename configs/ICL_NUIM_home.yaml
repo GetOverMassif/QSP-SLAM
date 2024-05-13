@@ -20,7 +20,11 @@ Tracking.MinimumPtNumToJudgeGood: 5  # default 20
 
 LocalMapping.DistFiltParam: 0.1
 
-Tracking.IgnoreObject: 0
+Tracking.IgnoreObject: 1
+
+# Visualization
+Visualization.Builder.Open: 1
+Visualization.Builder.Global.Open: 1
 
 
 # Tracking.UseGroundTruthTraj: 1
@@ -155,7 +159,7 @@ EllipObjects.maskErrosion: 5
 
 
 System.UseEllipsoldPoseForDSP.Open: 1
-Running.skip_num: 2
+Running.skip_num: 1
 Running.total_ratio: 1.0
 
 flip_sample_num: 4
@@ -275,10 +279,6 @@ Measurement.Probability.Thresh: 0
 # A observation will only be valid when the robot has a change of view.
 # Close it to consider every observations.
 Tracking.KeyFrameCheck.Close: 1
-
-# Visualization
-Visualization.Builder.Open: 1
-Visualization.Builder.Global.Open: 1
 
 # when >0, filter using dis to groundplane
 Visualization.Map.Filter.DisThresh: 2.3

@@ -164,7 +164,6 @@ bool Map::AddPointCloudList(const string &name, PointCloud *pCloud, int type) {
     //     std::cout << strPoints << "," << std::endl;
     // }
 
-    // cout << "[Map::AddPointCloudList] " << name << std::endl;
 
     // Check repetition
     if (mmPointCloudLists.find(name) != mmPointCloudLists.end()) {

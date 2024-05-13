@@ -138,6 +138,8 @@ public:
     // See format details at: http://vision.in.tum.de/data/datasets/rgbd-dataset
     void SaveTrajectoryTUM(const string &filename);
 
+    void SaveTrajectoryTwc(const string &filename);
+
     // Save keyframe poses in the TUM RGB-D dataset format.
     // This method works for all sensor input.
     // Call first Shutdown()
@@ -249,6 +251,9 @@ private:
     // Add by Lj
     vector<string> mvstrImageFilenamesRGB;
     bool mbMapInSameThread;
+
+    std::vector<double> mTimeList;
+    std::vector<Vector7d, Eigen::aligned_allocator<Vector7d>> mTwcList;
 };
 
 }// namespace ORB_SLAM

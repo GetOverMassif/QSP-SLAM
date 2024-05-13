@@ -3,6 +3,7 @@ import sys
 
 def process_file(input_file, output_file, divide_value):
     with open(input_file, 'r') as f_in, open(output_file, 'w') as f_out:
+        cnt = 0
         for line in f_in:
             # 按空格分割每行数据
             data = line.strip().split()
@@ -14,15 +15,18 @@ def process_file(input_file, output_file, divide_value):
             time_formatted = "{:.{}f}".format(time, decimal_places)
             # 写入新文件
             # f_out.write(f"{time_formatted} {x} {-float(y)} {z} {qx} {qy} {qz} {qw}\n")
-            f_out.write(f"{time_formatted} {x} {y} {z} {qx} {qy} {qz} {qw}\n")
+            f_out.write(f"{cnt} {x} {-float(y)} {z} {qx} {qy} {qz} {qw}\n")
+            cnt += 1
+            # f_out.write(f"{time_formatted} {x} {y} {z} {qx} {qy} {qz} {qw}\n")
 
 
 ICL_NUIM_PATH = "/media/lj/TOSHIBA/dataset/ICL-NUIM"
-# scene_type = 'home'
-scene_type = 'office'
-data_num = 1
+scene_type = 'home'
+# scene_type = 'office'
+data_num = 2
 
 # 指定除数值
+# divide_value = 30  # 你可以根据需求调整这个值
 divide_value = 30  # 你可以根据需求调整这个值
 
 if scene_type == 'home':

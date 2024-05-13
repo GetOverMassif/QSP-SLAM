@@ -31,6 +31,8 @@
 #include "include/core/Ellipsoid.h"
 #include "src/tum_rgbd/io.h"
 
+#include <src/dense_builder/builder.h>
+
 #include "include/utils/file_operate.h"
 
 #include <pangolin/pangolin.h>
@@ -76,6 +78,11 @@ int main(int argc, char **argv)
     }
 
     LoadImages(strAssociationFilename, vstrImageFilenamesRGB, vstrImageFilenamesD, vTimestamps);
+
+    std::vector<std::string> vstrImageFilenamesRGB_all(vstrImageFilenamesRGB);
+    std::vector<std::string> vstrImageFilenamesD_all(vstrImageFilenamesD);
+    std::vector<double> vTimestamps_all(vTimestamps);
+
 
     int nImages = vstrImageFilenamesRGB.size();
 
@@ -170,7 +177,6 @@ int main(int argc, char **argv)
         vstrImageFilenamesRGB[new_index] = vstrImageFilenamesRGB[raw_index];
         vstrImageFilenamesD[new_index] = vstrImageFilenamesD[raw_index];
         vTimestamps[new_index] = vTimestamps[raw_index];
-
         indexes[new_index] = raw_index;
     }
 
@@ -179,9 +185,7 @@ int main(int argc, char **argv)
     vstrImageFilenamesD.resize(nImages);
     vTimestamps.resize(nImages);
 
-
     SLAM.SetImageNames(vstrImageFilenamesRGB);
-
     
     TUMRGBD::Dataset loader;
 
@@ -208,23 +212,31 @@ int main(int argc, char **argv)
         std::cout << "Fail to load the dataset. Please check the path." << std::endl;
         abort();
     }
-    
 
     auto p_gtMat = loader.GetGroundtruthTrajectory_ptr(); // 该方法读取的似乎是 Odometry???
 
     Trajectory gtTrajVO;
     gtTrajVO.resize(p_gtMat->rows());
 
+    // p_gtMat->col(2) = -p_gtMat->col(2);
+
+    g2o::SE3Quat init_pose, init_pose_inv;
+    init_pose.fromVector(p_gtMat->row(0).tail(7));
+
+    init_pose_inv = init_pose.inverse();
+
+
     for (int i = 0; i < p_gtMat->rows(); i++) {
         SE3QuatWithStamp* pGtSE3T = new SE3QuatWithStamp();
         VectorXd gtPose = p_gtMat->row(i);
         pGtSE3T->pose.fromVector(gtPose.tail(7));
+        
+        // pGtSE3T->pose^=init_pose_inv;
+        // pGtSE3T->pose = pGtSE3T->pose.inverse();
         pGtSE3T->timestamp = gtPose[0];
 
         gtTrajVO[i] = pGtSE3T;
     }
-
-    // std::cout << "p_gtMat = " << p_gtMat->matrix() << std::endl;
 
     // gtTrajInEst
 
@@ -239,15 +251,78 @@ int main(int argc, char **argv)
 
     // 读取.pcd文件到 PointCloudPCL 中
     if (pcl::io::loadPCDFile<PointT>(pcd_filepath, *pCloudPCL) == -1) {
-        cout << "Couldn't read file.\n";
+        cout << "Couldn't read pcd file: " << pcd_filepath << std::endl;
         std::cout << "Reconstruct by gt_traj" << std::endl;
         valid_pcd = false;
 
-        // 在这里进行重建
+        /**在标注之前，如果没有现成的数据集点云，首先要使用轨迹真值进行点云重建*/
+        Builder* mp_Builder = new Builder();
 
-        // PCL_ERROR("Couldn't read file.\n");
-        // return -1;
+        cv::FileStorage fSettings(strSettingsFile, cv::FileStorage::READ);
+
+        float fx = fSettings["Camera.fx"];
+        float fy = fSettings["Camera.fy"];
+        float cx = fSettings["Camera.cx"];
+        float cy = fSettings["Camera.cy"];
+        Eigen::Matrix3d mCalib;
+        mCalib << fx,  0, cx,
+                  0, fy, cy,
+                  0,  0,  1;
+
+        double mCamera_scale = fSettings["Camera.scale"];
+        mp_Builder->setCameraIntrinsic(mCalib, mCamera_scale);
+        double depth_range = Config::ReadValue<double>("EllipsoidExtractor_DEPTH_RANGE");   // Only consider pointcloud within depth_range
+
+        // vstrImageFilenamesRGB_all, vstrImageFilenamesD_all, vTimestamps_all
+
+        int frame_num = vstrImageFilenamesRGB_all.size();
+        int gt_traj_num = gtTrajVO.size();
+        cout << "frame_num = " << frame_num << ", gt_traj_num = " << gt_traj_num << std::endl;
+        assert((frame_num==gt_traj_num) && "frame_num should be equal to gt_traj_num");
+
+        for (int i_frame = 0; i_frame < frame_num; i_frame++)
+        {
+            std::cout << "frame: " << i_frame << "/" << frame_num << std::endl;
+            cv::Mat rgb_img = cv::imread(dataset_path+"/"+vstrImageFilenamesRGB_all[i_frame], CV_LOAD_IMAGE_UNCHANGED);
+            cv::Mat depth_img = cv::imread(dataset_path+"/"+vstrImageFilenamesD_all[i_frame], CV_LOAD_IMAGE_UNCHANGED);
+
+            // cv::imshow("rgb_img", rgb_img);
+            cv::imshow("depth_range", depth_range);
+            cv::waitKey(20);
+
+            // Tcw: x,y,z,qx,qy,qz,qw
+            Eigen::VectorXd pose = gtTrajVO[i_frame]->pose.toVector();
+            // pose(2) = -pose(2);
+
+            cout << "Pose " << i_frame << ": " << pose.transpose().matrix() << std::endl;
+
+            mp_Builder->processFrame(rgb_img, depth_img, pose, depth_range);
+            mp_Builder->voxelFilter(0.01);   // Down sample threshold; smaller the finer; depend on the hardware.
+
+            // getchar();
+
+            PointCloudPCL::Ptr pCloudPCL = mp_Builder->getMap();
+            auto pCloud = pclToQuadricPointCloudPtr(pCloudPCL);
+
+            SLAM.getMap()->AddPointCloudList("Builder.GT Global Points", pCloud);
+
+            // delete pCloudPCL;
+            // printMemoryUsage();
+
+        }
+
+        std::cout << "Save pointcloud Map to : " << pcd_filepath << std::endl;
+        mp_Builder->saveMap(pcd_filepath);
+
+        if (pcl::io::loadPCDFile<PointT>(pcd_filepath, *pCloudPCL) == -1) {
+            cout << "Couldn't read file again: " << pcd_filepath << std::endl;
+            valid_pcd = false;
+            return -1;
+        }
     }
+    std::cout << "Finish dataset.pcd generation." << std::endl;
+
+    printMemoryUsage();
 
     if (valid_pcd) {
         // 输出点云中点的数量
@@ -255,11 +330,6 @@ int main(int argc, char **argv)
         auto pCloud = pclToQuadricPointCloudPtr(pCloudPCL);
         SLAM.getMap()->AddPointCloudList("Dataset PointCloud", pCloud);
     }
-
-    
-    // 在标注之前，如果没有现成的数据集点云，首先要使用轨迹真值进行点云重建
-    
-
 
     // SLAM.getMap()->addOneTrajectory(gtTrajInEst, "AlignedGroundtruth");
 
@@ -300,8 +370,8 @@ int main(int argc, char **argv)
         std::chrono::steady_clock::time_point t1_read = std::chrono::steady_clock::now();
 
         //! 读取图像
-        imRGB = cv::imread(string(argv[3])+"/"+vstrImageFilenamesRGB[ni], CV_LOAD_IMAGE_UNCHANGED);
-        imD = cv::imread(string(argv[3])+"/"+vstrImageFilenamesD[ni], CV_LOAD_IMAGE_UNCHANGED);
+        imRGB = cv::imread(dataset_path+"/"+vstrImageFilenamesRGB[ni], CV_LOAD_IMAGE_UNCHANGED);
+        imD = cv::imread(dataset_path+"/"+vstrImageFilenamesD[ni], CV_LOAD_IMAGE_UNCHANGED);
 
         std::chrono::steady_clock::time_point t2_read = std::chrono::steady_clock::now();
         double t_read = std::chrono::duration_cast<std::chrono::duration<double> >(t2_read - t1_read).count();
@@ -313,7 +383,7 @@ int main(int argc, char **argv)
         if(imRGB.empty())
         {
             cerr << endl << "Failed to load image at: "
-                 << string(argv[3]) << "/" << vstrImageFilenamesRGB[ni] << endl;
+                 << dataset_path << "/" << vstrImageFilenamesRGB[ni] << endl;
             return 1;/*  */
         }
 
@@ -398,11 +468,14 @@ int main(int argc, char **argv)
     //         traj_path = std::string(fSettings["System.output_path"]) + std::string("/") + std::string(fSettings["System.output"]);
     //     }
     //     else{
-    //         traj_path = std::string(argv[3]) + std::string("/") + fSettings["System.output"];
+    //         traj_path = dataset_path + std::string("/") + fSettings["System.output"];
     //     }
     // }
     
     SLAM.SaveTrajectoryTUM(dataset_path + "/CameraTrajectory_QSP.txt");
+
+    SLAM.SaveTrajectoryTwc(dataset_path + "/CameraTrajectory_Twc_QSP.txt");
+
 
     SLAM.SaveKeyFrameTrajectoryTUM(dataset_path + "/KeyFrameTrajectory_QSP.txt");
 

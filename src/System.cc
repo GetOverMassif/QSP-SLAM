@@ -340,6 +340,11 @@ cv::Mat System::TrackRGBD(const cv::Mat &im, const cv::Mat &depthmap, const doub
 
     // mpTracker->mCurrentFrame->SetPose(Tcw);
     
+    // std::cout << "!!! mpTracker->mCurrentFrame->cam_pose_Twc.toVector() = "
+    //           << mpTracker->mCurrentFrame->cam_pose_Twc.toVector().transpose().matrix() << std::endl;
+
+    mTimeList.push_back(mpTracker->mCurrentFrame->mTimeStamp);
+    mTwcList.push_back(mpTracker->mCurrentFrame->cam_pose_Twc.toVector());
 
     mpTracker->DenseBuild();
 
@@ -504,6 +509,8 @@ void System::SaveTrajectoryTUM(const string &filename)
 
     // Transform all keyframes so that the first keyframe is at the origin.
     // After a loop closure the first keyframe might not be at the origin.
+
+    // 第一帧位姿
     cv::Mat Two = vpKFs[0]->GetPoseInverse();
 
     ofstream f;
@@ -519,8 +526,11 @@ void System::SaveTrajectoryTUM(const string &filename)
     list<ORB_SLAM2::KeyFrame*>::iterator lRit = mpTracker->mlpReferences.begin();
     list<double>::iterator lT = mpTracker->mlFrameTimes.begin();
     list<bool>::iterator lbL = mpTracker->mlbLost.begin();
+    // lit: 
     for(list<cv::Mat>::iterator lit=mpTracker->mlRelativeFramePoses.begin(),
-        lend=mpTracker->mlRelativeFramePoses.end();lit!=lend;lit++, lRit++, lT++, lbL++)
+            lend=mpTracker->mlRelativeFramePoses.end();
+        lit!=lend;
+        lit++, lRit++, lT++, lbL++)
     {
         if(*lbL)
             continue;
@@ -532,22 +542,50 @@ void System::SaveTrajectoryTUM(const string &filename)
         // If the reference keyframe was culled, traverse the spanning tree to get a suitable keyframe.
         while(pKF->isBad())
         {
-            Trw = Trw*pKF->mTcp;
+            Trw = Trw * pKF->mTcp;
             pKF = pKF->GetParent();
         }
 
-        Trw = Trw*pKF->GetPose()*Two;
+        // Trw = Trw * Tcw * Twk
+        Trw = Trw * pKF->GetPose() * Two;
 
         cv::Mat Tcw = (*lit)*Trw;
         cv::Mat Rwc = Tcw.rowRange(0,3).colRange(0,3).t();
-        cv::Mat twc = -Rwc*Tcw.rowRange(0,3).col(3);
+        cv::Mat twc = -Rwc * Tcw.rowRange(0,3).col(3);
+
+        /*
+          Rwc
+          twc = 
+
+        */
 
         vector<float> q = Converter::toQuaternion(Rwc);
 
-        f << setprecision(6) << *lT << " " <<  setprecision(9) << twc.at<float>(0) << " " << twc.at<float>(1) << " " << twc.at<float>(2) << " " << q[0] << " " << q[1] << " " << q[2] << " " << q[3] << endl;
+        f << setprecision(6) << *lT << " " <<  setprecision(9) \
+          << twc.at<float>(0) << " " << twc.at<float>(1) << " " << twc.at<float>(2) << " "
+          << q[0] << " " << q[1] << " " << q[2] << " " << q[3] << endl;
     }
     f.close();
     cout << endl << "trajectory saved!" << endl;
+}
+
+void System::SaveTrajectoryTwc(const string &filename)
+{
+    // mTwcList
+    ofstream f;
+    f.open(filename.c_str());
+    f << fixed;
+
+    for(int i_t = 0; i_t < mTwcList.size(); i_t++)
+    {
+        Vector7d& Twc_vec = mTwcList[i_t];
+        // f << setprecision(6) << mTimeList[i_t] << " " <<  setprecision(9)
+        f << i_t << " " <<  setprecision(9) \
+          << Twc_vec(0) << " " << Twc_vec(1) << " " << Twc_vec(2) << " "
+          << Twc_vec(3) << " " << Twc_vec(4) << " " << Twc_vec(5) << " " << Twc_vec(6) << endl;
+    }
+    f.close();
+    cout << endl << "Twc save to :" << filename << endl;
 }
 
 

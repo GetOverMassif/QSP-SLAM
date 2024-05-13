@@ -1,5 +1,8 @@
 // Builder generates dense point cloud from RGB-D data and groundtruth camera poses.
 
+#ifndef DENSE_BUILDER_H
+#define DENSE_BUILDER_H
+
 #include <opencv2/opencv.hpp>
 #include <Eigen/Core>
 
@@ -57,3 +60,5 @@ private:
     PointCloudPCL::Ptr mpCurrentMap;
 
 };
+
+#endif  // DENSE_BUILDER_H
