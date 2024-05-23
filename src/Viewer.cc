@@ -23,6 +23,8 @@
 
 #include <mutex>
 
+#include "utils/dataprocess_utils.h"
+
 namespace ORB_SLAM2
 {
 
@@ -39,16 +41,27 @@ Viewer::Viewer(System* pSystem, FrameDrawer *pFrameDrawer, MapDrawer *pMapDrawer
 
     mImageWidth = fSettings["Camera.width"];
     mImageHeight = fSettings["Camera.height"];
+
     if(mImageWidth<1 || mImageHeight<1)
     {
         mImageWidth = 640;
         mImageHeight = 480;
     }
 
+    miRows = fSettings["Camera.height"];
+    miCols = fSettings["Camera.width"];
+
     mViewpointX = fSettings["Viewer.ViewpointX"];
     mViewpointY = fSettings["Viewer.ViewpointY"];
     mViewpointZ = fSettings["Viewer.ViewpointZ"];
     mViewpointF = fSettings["Viewer.ViewpointF"];
+
+    std::string dataset_path = fSettings["Dataset.Path.Root"];
+    std::string obj_gt_path = fSettings["Dataset.Path.ObjectGT"];
+
+    mObjAnnoGtTxt = dataset_path + obj_gt_path;
+
+    loadObjGtAnnoData(mObjAnnoGtTxt);
 }
 
 cv::Mat Viewer::GetFrame()
@@ -143,11 +156,12 @@ void Viewer::Run()
     // pangolin::Var<bool> menuShowBoundingboxes("menu.Show Bboxes", false, true);
     // pangolin::Var<bool> menuShowConstrainPlanesBbox("menu.ConstrainPlanes-bbox", false, true);
     // pangolin::Var<bool> menuShowConstrainPlanesCuboids("menu.ConstrainPlanes-cuboids", false, true);
+
     pangolin::Var<double> SliderEllipsoidProbThresh("menu.Ellipsoid Prob", 0.3, 0.0, 1.0);
     pangolin::Var<float> SliderMapPointSize("menu.MapPoint Size", 1.0, 0.5, 5.0);
     pangolin::Var<float> SliderPointCloudListSize("menu.Pointcloud Size", 1.0, 0.5, 5.0);
 
-    pangolin::Var<bool> menuShowWorldAxis("menu.Draw World Axis", false, true);
+    pangolin::Var<bool> menuShowWorldAxis("menu.Draw World Axis", true, true);
 
     // pangolin::Var<bool> menuAMeaningLessBar("menu.----------", false, false);
 
@@ -159,6 +173,8 @@ void Viewer::Run()
 
     pangolin::Var<bool> menuShowOptimizedTraj("menu.Optimized Traj", true, true);
     pangolin::Var<bool> menuShowAlignedGtTraj("menu.Aligned Gt Traj", true, true);
+
+    pangolin::Var<bool> menuShowFrameImg("menu.Show FrameImg", true, true);
 
     // pangolin::Var<int> SliderOdometryWeight("menu.Odometry Weight", 40, 0, 40);
     // pangolin::Var<double> SliderPlaneWeight("menu.Plane Weight", 1, 0, 100);
@@ -187,6 +203,15 @@ void Viewer::Run()
             .SetBounds(0.0, 1.0, pangolin::Attach::Pix(175), 1.0, -float(w) / float(h))
             .SetHandler(new pangolin::Handler3D(s_cam));
 
+    // Add view for images
+    pangolin::View& rgb_image = pangolin::Display("rgb")
+    .SetBounds(0,0.3,0.2,0.5,float(miCols) / float(miRows))
+    .SetLock(pangolin::LockLeft, pangolin::LockBottom);
+
+    pangolin::View& depth_image = pangolin::Display("depth")
+    .SetBounds(0,0.3,0.5,0.8,float(miCols) / float(miRows))
+    .SetLock(pangolin::LockLeft, pangolin::LockBottom);
+
     auto mpRenderer = new ObjectRenderer(w, h);
     mpRenderer->SetupCamera(mViewpointF, mViewpointF, double(w) / 2, double(h) / 2, 0.1, 5000);
     mpObjectDrawer->SetRenderer(mpRenderer);
@@ -194,11 +219,13 @@ void Viewer::Run()
     pangolin::OpenGlMatrix Twc;
     Twc.SetIdentity();
 
-    cv::namedWindow("QSP-SLAM: Current Frame");
+    // cv::namedWindow("QSP-SLAM: Current Frame");
 
     bool bFollow = true;
     bool bLocalizationMode = false;
     Eigen::Matrix4f Tec;
+
+    pangolin::GlTexture imageTexture(miCols,miRows,GL_RGB,false,0,GL_BGR,GL_UNSIGNED_BYTE);
 
     while(1)
     {
@@ -254,24 +281,49 @@ void Viewer::Run()
                 double x = p_obj->x, y = p_obj->y, z = p_obj->z;
                 double roll = p_obj->roll, pitch = p_obj->pitch, yaw = p_obj->yaw;
                 double length = p_obj->length, width = p_obj->width, height = p_obj->height;
-                Eigen::Matrix3f rotation;
-                rotation = Eigen::AngleAxisf(float(roll), Eigen::Vector3f::UnitX())
-                        * Eigen::AngleAxisf(float(pitch), Eigen::Vector3f::UnitY())
-                        * Eigen::AngleAxisf(float(yaw), Eigen::Vector3f::UnitZ());
-                
-                // TODO: 标注的物体在旋转之后，xyz的平移就不再遵循物体轴颜色
-                Eigen::Matrix4f transformationMatrix = Eigen::Matrix4f::Identity();
-                transformationMatrix.block<3,3>(0,0) = rotation;
-                transformationMatrix(0,3) = float(x);
-                transformationMatrix(1,3) = float(y);
-                transformationMatrix(2,3) = float(z);
 
-                Eigen::Matrix4f Two = transformationMatrix;
+                // Eigen::Matrix3f rotation;
+                // rotation = Eigen::AngleAxisf(float(roll), Eigen::Vector3f::UnitX())
+                //         * Eigen::AngleAxisf(float(pitch), Eigen::Vector3f::UnitY())
+                //         * Eigen::AngleAxisf(float(yaw), Eigen::Vector3f::UnitZ());
+                
+                // // TODO: 标注的物体在旋转之后，xyz的平移就不再遵循物体轴颜色
+                // Eigen::Matrix4f transformationMatrix = Eigen::Matrix4f::Identity();
+                // transformationMatrix.block<3,3>(0,0) = rotation;
+                // transformationMatrix(0,3) = float(x);
+                // transformationMatrix(1,3) = float(y);
+                // transformationMatrix(2,3) = float(z);
+
+                /*method 2*/
+                VectorXd v(9);
+                v << x, y, z, roll, pitch, yaw, length, width, height;
+                Eigen::Quaterniond posequat = zyx_euler_to_quat(v(3),v(4),v(5));
+                SE3Quat pose = SE3Quat(posequat, v.head<3>());
+                Eigen::Matrix4d Td = pose.to_homogeneous_matrix();
+                Eigen::Matrix4f Two;
+
+                Two << (float)Td(0,0), (float)Td(0,1), (float)Td(0,2), (float)Td(0,3), \
+                       (float)Td(1,0), (float)Td(1,1), (float)Td(1,2), (float)Td(1,3), \
+                       (float)Td(2,0), (float)Td(2,1), (float)Td(2,2), (float)Td(2,3), \
+                       (float)Td(3,0), (float)Td(3,1), (float)Td(3,2), (float)Td(3,3);
+
+                // Two << Td(0,0), Td(0,1), Td(0,2), Td(0,3), \
+                //        Td(1,0), Td(1,1), Td(1,2), Td(1,3), \
+                //        Td(2,0), Td(2,1), Td(2,2), Td(2,3), \
+                //        Td(3,0), Td(3,1), Td(3,2), Td(3,3);
+
+                // Eigen::Matrix4f Two = transformationMatrix;
                 Eigen::Vector3f Scale;
                 Scale << float(length),float(width),float(height);
                 bool with_mesh = true;
-                mpMapDrawer->drawCuboid9Dof(Two, Scale, with_mesh);
-                
+                Eigen::Vector3f color;
+                if (i_anno == cur_AnnoIndex){
+                    color << 1,0,0;
+                }
+                else{
+                    color << 0,1,0;
+                }
+                mpMapDrawer->drawCuboid9Dof(Two, Scale, with_mesh, color);
             }
         }
 
@@ -370,16 +422,37 @@ void Viewer::Run()
 
         // std::cout << "After mpObjectDrawer->DrawObjects" << std::endl;
 
+        // cv::Mat rgb = mpFrameDrawer->getCurrentFrameImage();
+
+        if (menuShowFrameImg) {
+            cv::Mat rgb = GetFrame();
+            if(!rgb.empty())
+            {
+                imageTexture.Upload(rgb.data,GL_BGR,GL_UNSIGNED_BYTE);
+                //display the image
+                rgb_image.Activate();
+                glColor3f(1.0,1.0,1.0);
+                imageTexture.RenderToViewportFlipY();
+            }
+
+            cv::Mat depth = mpFrameDrawer->getCurrentDepthFrameImage();
+            if(!depth.empty())
+            {
+                imageTexture.Upload(depth.data,GL_BGR,GL_UNSIGNED_BYTE);
+                //display the image
+                depth_image.Activate();
+                glColor3f(1.0,1.0,1.0);
+                imageTexture.RenderToViewportFlipY();
+            }
+        }
+
         pangolin::FinishFrame();
 
+        // cv::Mat rgb = GetFrame();
+        // cv::imshow("QSP-SLAM: Current Frame", rgb);
+        // cv::waitKey(mT);
 
 
-        cv::Mat im = GetFrame();
-//        double scale = float(w) / im.size().width;
-//        cv::Mat scaled_im;
-//        cv::resize(im, scaled_im, cv::Size(0, 0), scale, scale);
-        cv::imshow("QSP-SLAM: Current Frame", im);
-        cv::waitKey(mT);
 
         if(menuPause) {
             mpTracker->SetFrameByFrame();
@@ -388,10 +461,9 @@ void Viewer::Run()
 
         if (menuSaveAnnoObj) {
             menuSaveAnnoObj = false;
-            std::string dataset_path = "/media/lj/TOSHIBA/dataset/ICL-NUIM/home/living_room_traj2_frei_png";
-            std::string obj_gt_txt = dataset_path + "/objects_gt.txt";
+            
             ofstream f;
-            f.open(obj_gt_txt.c_str());
+            f.open(mObjAnnoGtTxt.c_str());
             f << fixed;
             // index, x,y,z, roll, pitch, yaw, half length of axis x,y,z, label
             for (int i_anno = 0; i_anno < AnnoObjs.size(); i_anno++)
@@ -409,7 +481,7 @@ void Viewer::Run()
                   << label << endl;
             }
             f.close();
-            std::cout << "Save obj gt to : " << obj_gt_txt << std::endl;
+            std::cout << "Save obj gt to : " << mObjAnnoGtTxt << std::endl;
         }
 
 
@@ -626,31 +698,35 @@ void Viewer::RefreshMenu(){
             mmPointCloudOptionMenus.insert(make_pair(cloudPair.first, pMenu));            
         }
     }
-
-    // refresh double bars
-    // int doubleBarNum = mvDoubleMenus.size();
-
-    // 标注专区
-    // 管理熟悉：当前物体编号，总物体数量
-    // 每个物体属性： 物体编号、物体语义标签
-
-    // std::cout << "set p_menuAddAnnoObj false" << std::endl;
-
-    // if (p_menuAddAnnoObj != nullptr) {
-    //     std::cout << "p_menuAddAnnoObj = " << p_menuAddAnnoObj->Get() << std::endl;
-    // }
-
-    // delete p_menuAnnoIndex;
-    // p_menuAnnoIndex = new pangolin::Var<int>("menu.AnnoIndex",cur_AnnoIndex,-1,AnnoNum);
-
-    // std::cout << "Set AnnoNum = " << AnnoNum << std::endl;
-    // p_menuAddAnnoObj = new pangolin::Var<bool>("menu.AddAnnoObj",false,false);
-
-    
-
-
-
 }
+
+void Viewer::loadObjGtAnnoData(string& mObjAnnoGtTxt)
+{
+    std::vector<std::vector<std::string>> strMat = readStringFromFile(mObjAnnoGtTxt.c_str(), 0);
+
+    AnnoNum = strMat.size();
+    AnnoObjs.resize(AnnoNum);
+    for(int i=0;i<AnnoNum; i++)
+    {
+        AnnoObjs[i] = new AnnoObj();
+        AnnoObj* cur_Obj = AnnoObjs[i];
+        std::vector<std::string> strVec = strMat[i];
+        
+        cur_Obj->index = std::stoi(strVec[0]);
+        cur_Obj->x = std::stod(strVec[1]);
+        cur_Obj->y = std::stod(strVec[2]);
+        cur_Obj->z = std::stod(strVec[3]);
+        cur_Obj->roll = std::stod(strVec[4]);
+        cur_Obj->pitch = std::stod(strVec[5]);
+        cur_Obj->yaw = std::stod(strVec[6]);
+        cur_Obj->length = std::stod(strVec[7]) * 2;
+        cur_Obj->width = std::stod(strVec[8]) * 2;
+        cur_Obj->height = std::stod(strVec[9]) * 2;
+        cur_Obj->label = std::stod(strVec[10]);
+    }
+}
+
+
 
 
 }

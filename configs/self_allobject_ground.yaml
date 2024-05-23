@@ -20,6 +20,35 @@ Tracking.MinimumPtNumToJudgeGood: 5  # default 20
 
 LocalMapping.DistFiltParam: 0.1
 
+Tracking.IgnoreObject: 0
+
+# Visualization
+Visualization.Builder.Open: 1
+Visualization.Builder.Global.Open: 0
+
+
+Vocabulary.Path: Vocabulary/ORBvoc.bin
+Config.StandardParamFile: configs/ICL_NUIM_home.yaml
+
+
+Dataset.Type: "MySimDataset"
+Dataset.Path.Root: /media/lj/TOSHIBA/dataset/MySimDataset/GroundObjects
+Dataset.Path.Save: map/self/GroundObjects
+Dataset.Path.MapPcd: "./dataset.pcd"
+
+Dataset.Path.ObjectGT: /objects_gt.txt
+Dataset.Path.ObjectGroundGT:  /objects_gt.txt
+Dataset.Path.TrajectoryGT:  /groundtruth.txt
+
+Result.ObjectEstimate: /result/objects.txt
+Result.TrajectoryEstimate: /result/traj.txt
+
+
+
+# Tracking.UseGroundTruthTraj: 1
+
+# Tracking.GroundTruthTrajFile: 
+
 #--------------------------------------------------------------------------------------------
 # yolo
 #         "person人类",  //0
@@ -80,17 +109,11 @@ DecoderPaths: ["weights/deepsdf/chairs_64",
                "weights/deepsdf/beds_64"]
 
 
-# [Dataset Path]
-Dataset.Type: "Redwood"
-Dataset.Path.Root: "/media/lj/TOSHIBA/dataset/MySimDataset/GroundObjects"
-Dataset.Path.Map: "./dataset.pcd"
-
-
 frame_by_frame: 1  # 1: True, 0: False
 Tracking.frame_by_frame: 1  # 1: True, 0: False
 
 System.mode: RGBD
-System.output: KeyFrameTrajectoryRGBD.txt
+System.output: KeyFrameTrajectory_QSP.txt
 
 # System.mode: MONOCULAR
 # System.output: KeyFrameTrajectoryMONO.txt
@@ -102,10 +125,16 @@ System.LocalMappingInSameThread: 1
 #---------------------------
 
 # Camera calibration and distortion parameters (OpenCV)
+# Camera.fx: 554.254691191187
+# Camera.fy: 554.254691191187
+# Camera.cx: 320.5
+# Camera.cy: 240.5
+
 Camera.fx: 554.254691191187
 Camera.fy: 554.254691191187
 Camera.cx: 320.5
 Camera.cy: 240.5
+
 
 Camera.k1: 0.0
 Camera.k2: 0.0
@@ -148,7 +177,7 @@ EllipObjects.maskErrosion: 5
 
 
 System.UseEllipsoldPoseForDSP.Open: 1
-Running.skip_num: 2
+Running.skip_num: 1
 Running.total_ratio: 1.0
 
 flip_sample_num: 4
@@ -243,12 +272,12 @@ Plane.AngleThreshold: 3.0
 Plane.DistanceThreshold: 0.05
 Plane.MannualCheck.Open: 1
 
-# # Mannual set
+# Mannual set
 # Plane.Groundplane.param: !!opencv-matrix
 #   rows: 1
 #   cols: 4
 #   dt: d
-#   data: [-0.00144757,   0.999998, -0.00141902,     1.16925]
+#   data: [-0.00144757,   0.999998, -0.00141902,     -1.2]
 
 # Whether use the normal of the groundplane to constrain the ellipsoid
 Optimizer.Edges.GravityPrior.Open: 1
@@ -268,10 +297,6 @@ Measurement.Probability.Thresh: 0
 # A observation will only be valid when the robot has a change of view.
 # Close it to consider every observations.
 Tracking.KeyFrameCheck.Close: 1
-
-# Visualization
-Visualization.Builder.Open: 1
-Visualization.Builder.Global.Open: 1
 
 # when >0, filter using dis to groundplane
 Visualization.Map.Filter.DisThresh: 2.3

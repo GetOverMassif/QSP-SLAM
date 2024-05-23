@@ -1,4 +1,6 @@
 {
+    // "C_Cpp.intelliSenseEngineFallback": "disabled",
+  
     "files.associations": {
       "shared_mutex": "cpp",
       "condition_variable": "cpp",
@@ -94,6 +96,36 @@
       "__functional_base": "cpp",
       "__string": "cpp"
     },
+
+    "editor.rulers": [
+      80 //一行限制80字符
+    ],
+    // "editor.tabSize": 2,//默认tab是2个字符
+    // "editor.detectIndentation": false,//取消自动缩进
+    // "editor.fontFamily": "monospace",//设置为等宽字体，保证代码字体显示大小
+    // "C_Cpp.clang_format_fallbackStyle": "Google",
+    // "C_Cpp.clang_format_style": "Google",//此两项设置为google编码风格
+    // "editor.formatOnSave": true,//保存时就格式化代码
+    // "editor.renderWhitespace": "all",//显示所有空格
+    // "editor.quickSuggestionsDelay": 1,//代码提示延迟1ms
+    // "editor.suggest.snippetsPreventQuickSuggestions": false,//允许活动区域代码提示
+    // "editor.hover.delay": 300,//hover 提示延迟300ms
+    // "C_Cpp.intelliSenseEngine": "Tag Parser", //修复不提示c++内置和stl等相关代码提示，不加此项，string,vector等无提示
+
+    "workbench.colorTheme": "Default Dark+",
+    "cmake.configureOnOpen": true,
+    "window.zoomLevel": 2,
+    "editor.minimap.enabled": true,
+    "C_Cpp.autocomplete": "default",
+    "[cpp]": {
+        "editor.quickSuggestions": true,
+        "editor.wordBasedSuggestions": true
+    },
+    "[c]": {
+        "editor.quickSuggestions": true,
+        "editor.wordBasedSuggestions": true
+    },
+
     //todo-tree settings
     "todo-tree.tree.showScanModeButton": false,
     "todo-tree.filtering.excludeGlobs": ["**/node_modules", "*.xml", "*.XML"],
@@ -145,6 +177,11 @@
         "icon": "unverified",
         "foreground": "#E91E63",
         "type":"line"
+      },
+      "!":{
+        "icon": "!",
+        "foreground": "#E91E63",
+        "type":"line"
       }
     },
     "todo-tree.general.tags": [
@@ -156,8 +193,17 @@
       "INFO",
       "NOTE",
       "TAG",
-      "XXX"
+      "XXX",
+      "!"
     ],
     "todo-tree.general.statusBar": "total",
     "todo-tree.tree.showBadges": true,
+    "[c][cpp]": {
+      "editor.wordBasedSuggestions": "matchingDocuments",
+      "editor.quickSuggestions": {
+        "comments": "on",
+        "strings": "on",
+        "other": "on"
+      }
+    },
 }

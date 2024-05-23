@@ -1,40 +1,45 @@
  ----------- AVERAGE ---------
-    aver_IoU: 0.949871
-    aver_IoU_aligned: 1
-    aver_dis_trans: 0.0141421
-    aver_dis_yaw: 0.572958
-    aver_dis_yaw_arb: 0.572958
-    aver_dis_yaw_arb_valid: 0.572958
-    aver_IoU_aligned_arb: 1
+    aver_IoU: 0.729734
+    aver_IoU_aligned: 0.847911
+    aver_dis_trans: 0.091406
+    aver_dis_yaw: 30.8669
+    aver_dis_yaw_arb: 7.65601
+    aver_dis_yaw_arb_valid: 7.65601
+    aver_IoU_aligned_arb: 0.847911
 
  ----------- Mid Value ---------
-    mid_IoU: 1
-    mid_IoU_aligned: 1
-    mid_dis_trans: 6.28037e-16
-    mid_dis_yaw: 8.22614e-15
-    mid_dis_yaw_arb: 5.53163e-15
-    mid_dis_yaw_arb_valid: 5.53163e-15
-    mid_IoU_aligned_arb: 1
+    mid_IoU: 0.804567
+    mid_IoU_aligned: 0.824577
+    mid_dis_trans: 0.0831166
+    mid_dis_yaw: 3.42153
+    mid_dis_yaw_arb: 3.42153
+    mid_dis_yaw_arb_valid: 3.42153
+    mid_IoU_aligned_arb: 0.824577
 
  ----------- SINGLE OBJECTS COMPARE ---------
 instanceID	IoU	IoU_aligned	dis_trans	dis_yaw(deg)	dis_yaw_arb(deg)	IoU_aligned_arb	
-    0	0.849614	1	0.0424264	2.92823e-15	2.92823e-15	1	0(est)
-    1	1	1	6.28037e-16	8.22614e-15	5.53163e-15	1	1(est)
-    2	1	1	4.00297e-16	1.71887	1.71887	1	2(est)
+    0	0.804567	0.898395	0.0656743	3.42153	3.42153	0.898395	2(est)
+    1	0.571757	0.820762	0.125427	88.0091	18.3763	0.820762	1(est)
+    2	0.812878	0.824577	0.0831166	1.17017	1.17017	0.824577	0(est)
+3	Empty.
+4	Empty.
+5	Empty.
+6	Empty.
+7	Empty.
 List_noAlign( est_id ) : 
 
- [ RMSE : 4.43161e-16 ] 
+ [ RMSE : 0.00748215 ] 
 - precision : 1
-- recall : 1
-- F1 : 1
+- recall : 0.375
+- F1 : 0.545455
 
 --- Simple version --- 
-- rmse : 4.43161e-16
-- Tr/Ro/Sh : 0.0141421/0.572958/1
-- P/R/F : 1/1/1
+- rmse : 0.00748215
+- Tr/Ro/Sh : 0.091406/7.65601/0.847911
+- P/R/F : 1/0.375/0.545455
 
  ======= All Rotations =======
 aver_dis_trans	aver_dis_yaw_arb	aver_IoU_aligned_arb
-0.0141421	0.572958	1
+0.091406	7.65601	0.847911
 precision	recall	F1
-1	1	1
+1	0.375	0.545455

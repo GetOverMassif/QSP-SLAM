@@ -5,7 +5,7 @@ CreateSingleObject: 1
 # [Dataset Path]
 Dataset.Type: "Redwood"
 Dataset.Path.Root: "/home/lj/Documents/dataset/RedwoodOS/data/rgbd/01053"
-Dataset.Path.Map: "./dataset.pcd"
+Dataset.Path.MapPcd: "./dataset.pcd"
 
 
 frame_by_frame: 1  # 1: True, 0: False

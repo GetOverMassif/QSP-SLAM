@@ -27,15 +27,31 @@ void Builder::processFrame(cv::Mat &rgb, cv::Mat &depth, Eigen::VectorXd &pose, 
     }
 
     PointCloudPCL::Ptr pLocalPointCloud = image2PointCloud(rgb, depth, depth_thresh);
+    cout << "  - processFrame: create pLocalPointCloud ";
+    printMemoryUsage();
+
     PointCloudPCL::Ptr pGlobalPointCloud = transformToWolrd(pLocalPointCloud, pose);   // pose: Twc
+    pLocalPointCloud.reset();
+    cout << "  - processFrame: create pGlobalPointCloud and reset pLocalPointCloud";
+    printMemoryUsage();
+
+    mpCurrentMap.reset();
+    cout << "  - processFrame: mpCurrentMap.reset ";
+    printMemoryUsage();
+
     mpCurrentMap = pGlobalPointCloud;
+
+    cout << "  - processFrame: set equal ";
+    printMemoryUsage();
 
     // add to map
     bool bGlobalMap = ORB_SLAM2::Config::Get<int>("Visualization.Builder.Global.Open") == 1;
-    if(bGlobalMap)
+    if(bGlobalMap){
         addPointCloudToMap(pGlobalPointCloud);
-    // cout << "41 " << endl;
-    // printMemoryUsage();
+        cout << "  - processFrame: after addPointCloudToMap ";
+        printMemoryUsage();
+    }
+    pGlobalPointCloud.reset();
     return;
 }
 
@@ -127,6 +143,7 @@ void Builder::addPointCloudToMap(PointCloudPCL::Ptr pPointCloud){
     // std::cout << "Size of mpMap pointed object: " << sizeof(pcl::PointXYZ) * mpMap->size() << " bytes" << std::endl;
     // std::cout << "Size of pPointCloud pointed object: " << sizeof(pcl::PointXYZ) * pPointCloud->size() << " bytes" << std::endl;
     // printMemoryUsage();
+
     *mpMap = *mpMap + *pPointCloud;
     // printMemoryUsage();
     // std::cout << "Size of mpMap pointed object: " << sizeof(pcl::PointXYZ) * mpMap->size() << " bytes" << std::endl;
@@ -154,8 +171,8 @@ void Builder::voxelFilter(double grid_size){
     // Voxel grid downsample
     // cout << "voxelFilter" << endl;
     // std::cout << "Size of mpMap pointed object: " << sizeof(pcl::PointXYZ) * mpMap->size() << " bytes" << std::endl;
+    // 设置体素网格器，输入地图点云，创建暂存点云，将降采样结果存入，重新设置地图点云
     static pcl::VoxelGrid<PointT> voxel;
-
     double gridsize = grid_size;
     voxel.setLeafSize( gridsize, gridsize, gridsize );
     voxel.setInputCloud( mpMap );
@@ -166,4 +183,17 @@ void Builder::voxelFilter(double grid_size){
     tmp.reset();
     // std::cout << "mpMap->points.size() = " << mpMap->points.size() << std::endl;
     // std::cout << "Size of mpMap pointed object: " << sizeof(pcl::PointXYZ) * mpMap->size() << " bytes" << std::endl;
+}
+
+PointCloudPCL::Ptr VoxelFilterPointCloud(PointCloudPCL::Ptr pointcloud, double grid_size){
+    static pcl::VoxelGrid<PointT> voxel;
+    double gridsize = grid_size;
+    voxel.setLeafSize( gridsize, gridsize, gridsize );
+    voxel.setInputCloud( pointcloud );
+    PointCloudPCL::Ptr tmp( new PointCloudPCL() );
+    voxel.filter( *tmp );
+    pointcloud.reset(new PointCloudPCL());
+    pcl::copyPointCloud(*tmp, *pointcloud);
+    tmp.reset();
+    return pointcloud;
 }

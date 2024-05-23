@@ -333,21 +333,45 @@ void Tracking::DenseBuild()
             Eigen::VectorXd pose = mCurrentFrame->cam_pose_Twc.toVector();
             // cv::imshow("mCurrentFrame->rgb_img", mCurrentFrame->rgb_img);
             cv::waitKey(20);
+
+            cout << "DenseBuild: before processFrame ";
+            printMemoryUsage();
+
+            // TODO： 下面这一步产生了较大的内存使用
             mpBuilder->processFrame(mCurrentFrame->rgb_img, mCurrentFrame->frame_img, pose, depth_range);
-            // cout << "338 " << endl;
-            // printMemoryUsage();
+            cout << "DenseBuild: after processFrame ";
+            printMemoryUsage();
+
             mpBuilder->voxelFilter(0.01);   // Down sample threshold; smaller the finer; depend on the hardware.
-            // cout << "341 " << endl;
-            // printMemoryUsage();
-            PointCloudPCL::Ptr pCloudPCL = mpBuilder->getMap();
+            cout << "DenseBuild: after voxelFilter ";
+            printMemoryUsage();
+
             PointCloudPCL::Ptr pCurrentCloudPCL = mpBuilder->getCurrentMap();
-            // cout << "345 " << endl;
+            // cout << "DenseBuild: after getCurrentMap ";
             // printMemoryUsage();
-            auto pCloud = pclToQuadricPointCloudPtr(pCloudPCL);
+
             auto pCloudLocal = pclToQuadricPointCloudPtr(pCurrentCloudPCL);
-            mpMap->AddPointCloudList("Builder.Global Points", pCloud);
+            // cout << "DenseBuild: after pclToQuadricPointCloudPtr ";
+            // printMemoryUsage();
+
             mpMap->AddPointCloudList("Builder.Local Points", pCloudLocal);
+            // cout << "DenseBuild: after AddPointCloudList ";
+            // printMemoryUsage();
+
+            // Get and visualize global pointcloud.
+            PointCloudPCL::Ptr pCloudPCL = mpBuilder->getMap();
+            auto pCloud = pclToQuadricPointCloudPtr(pCloudPCL);
+            mpMap->AddPointCloudList("Builder.Global Points", pCloud);
+            
+            // auto pCloudLocal = pclToQuadricPointCloudPtr2(pCurrentCloudPCL);
+            // mpMap->AddPointCloudList("Builder.Global Points", pCloud);
+            // mpMap->AddPointCloudList("Builder.Local Points", pCloudLocal);
+            // delete pCloudPCL; pCloudPCL = NULL;
+            // delete pCurrentCloudPCL; pCurrentCloudPCL = NULL;
+
         }
+        // cout << "DenseBuild: 351 " << endl;
+        // printMemoryUsage();
     }
 }
 
@@ -1254,7 +1278,7 @@ void Tracking::CreateNewKeyFrame()
         cout << "Object detection takes " << ttrack << endl;
     }
     // KEY: [Tracking] 此处进地面提取、物体检测、前端处理、投影数据关联和内存清理
-    else if (mSensor == System::RGBD && !ignoreObjFlag)
+    else if (mSensor == System::RGBD)
     {
         std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
 

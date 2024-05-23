@@ -78,7 +78,7 @@ System::System(const string &strVocFile, const string &strSettingsFile, const st
     Config::SetParameterFile(strSettingsFile);
 
     //TODO:这里有待优化
-    Config::CheckParams("configs/standard_param.yaml");
+    Config::CheckParams(Config::Get<string>("Config.StandardParamFile"));
 
     //Load ORB Vocabulary
     cout << endl << "Loading ORB Vocabulary. This could take a while..." << endl;
@@ -170,6 +170,9 @@ System::System(const string &strVocFile, const string &strSettingsFile, const st
     //(it will live in the main thread of execution, the one that called this constructor)
     mpTracker = new Tracking(this, mpVocabulary, mpFrameDrawer, mpMapDrawer,
                              mpMap, mpKeyFrameDatabase, strSettingsFile, mSensor);
+
+    
+    mpFrameDrawer->setTracker(mpTracker);
 
     //Initialize the Local Mapping thread and launch
     // Set an option: Multithread or single thread
@@ -331,25 +334,36 @@ cv::Mat System::TrackRGBD(const cv::Mat &im, const cv::Mat &depthmap, const doub
     // TODO: 设置可以使用标准轨迹
     cv::Mat Tcw = mpTracker->GrabImageRGBD(im,depthmap,timestamp);
 
-    auto traj_gt = mpMap->getTrajectoryWithName("Groundtruth");
-    int i_gt = 0;
-    for(; i_gt < traj_gt.size() && traj_gt[i_gt]->timestamp < timestamp; i_gt++){    }
-    i_gt = min(i_gt, int(traj_gt.size())-1);
-    Tcw = Converter::toCvMat(traj_gt[i_gt]->pose.to_homogeneous_matrix());
+    // auto traj_gt = mpMap->getTrajectoryWithName("Groundtruth");
+    // int i_gt = 0;
+    // for(; i_gt < traj_gt.size() && traj_gt[i_gt]->timestamp < timestamp; i_gt++){    }
+    // i_gt = min(i_gt, int(traj_gt.size())-1);
+    // Tcw = Converter::toCvMat(traj_gt[i_gt]->pose.to_homogeneous_matrix());
+
+
     // Tcw = Tcw.inv();
 
     // mpTracker->mCurrentFrame->SetPose(Tcw);
-    
-    // std::cout << "!!! mpTracker->mCurrentFrame->cam_pose_Twc.toVector() = "
-    //           << mpTracker->mCurrentFrame->cam_pose_Twc.toVector().transpose().matrix() << std::endl;
 
     mTimeList.push_back(mpTracker->mCurrentFrame->mTimeStamp);
-    mTwcList.push_back(mpTracker->mCurrentFrame->cam_pose_Twc.toVector());
 
+
+    // Vector7d Twc_vec = mpTracker->mCurrentFrame->cam_pose_Twc.toVector();
+
+    Vector7d Twc_vec = Converter::toSE3Quat(Tcw.inv()).toVector();
+    mTwcList.push_back(Twc_vec);
     mpTracker->DenseBuild();
 
-    // 处理可时候内容
+    cout << "After DenseBuild";
+    printMemoryUsage();
+
+
+    // 处理可视化内容
     mpMap->addCameraStateToTrajectory(&(mpTracker->mCurrentFrame->cam_pose_Twc));
+    // Render rgb images and depth images for visualization.
+    cv::Mat imForShowRGB = mpFrameDrawer->drawRGBFrame();
+    cv::Mat imForShowDepth = mpFrameDrawer->drawDepthFrame();
+    // cv::Mat imForShowDepthWithVisualPoints = mpFrameDrawer->drawDepthFrameWithVisualPoints();   // 包含点云分割过程的可视化的图.
     
     // 更新状态
     unique_lock<mutex> lock2(mMutexState);

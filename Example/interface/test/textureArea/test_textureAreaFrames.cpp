@@ -48,7 +48,7 @@ int main(int argc,char* argv[])
     std::vector<Frame *> vecFrames = GenerateFrames(frameDatas);
 
     // 读取gt点云并可视化.
-    string dataset_path_map = Config::Get<string>("Dataset.Path.Map");
+    string dataset_path_map = Config::Get<string>("Dataset.Path.MapPcd");
     if(dataset_path_map.size()>0)
     {
         if(dataset_path_map[0]=='.')    // 相对路径

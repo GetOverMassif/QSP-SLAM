@@ -90,7 +90,7 @@ DecoderPaths: ["weights/deepsdf/chairs_64",
 # [Dataset Path]
 # Dataset.Type: "Redwood"
 # Dataset.Path.Root: "/media/lj/TOSHIBA/dataset/MySimDataset/GroundObjects"
-# Dataset.Path.Map: "./dataset.pcd"
+# Dataset.Path.MapPcd: "./dataset.pcd"
 
 
 frame_by_frame: 1  # 1: True, 0: False

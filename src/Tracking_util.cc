@@ -306,7 +306,16 @@ void Tracking::GetObjectDetectionsRGBD(KeyFrame *pKF)
 
     // Get a series of object detections
     // printMemoryUsage();
-    py::list detections = mpSystem->pySequence.attr("get_frame_by_name")(pKF->mnFrameId, frame_name);
+
+    py::list detections;
+
+    if (!ignoreObjFlag){
+        detections = mpSystem->pySequence.attr("get_frame_by_name")(pKF->mnFrameId, frame_name);
+    }
+    else {
+        detections = py::list(0);
+        cout << "Size detections = " << detections.size() << endl;
+    }
 
     // cout << "sizeof (detections) = " << sizeof(detections) << " bytes" << endl;
 
@@ -720,7 +729,15 @@ void Tracking::SetGroundPlaneMannually(const Eigen::Vector4d &param)
 
     miGroundPlaneState = 3;
     mGroundPlane.param = param;
-    mGroundPlane.color = Vector3d(0,1,0);
+    mGroundPlane.color = Vector3d(0,0,0);
+
+    // g2o::SE3Quat& Twc = mCurrentFrame->cam_pose_Twc;
+    // 可视化该平面 : 为了 Mannual Check.
+    // mGroundPlane.color = Eigen::Vector3d(0.0,0.8,0.0);
+    mGroundPlane.InitFinitePlane(Vector3d::Zero(), 10);
+    mpMap->addPlane(&mGroundPlane);
+
+    ActivateGroundPlane(mGroundPlane);
 }
 
 void Tracking::ProcessGroundPlaneEstimation()
@@ -1320,7 +1337,7 @@ void Tracking::VisualizeManhattanPlanes()
     }
 }
 
-ORB_SLAM2::PointCloud* filterCloudAsHeight(ORB_SLAM2::PointCloud* pCloud, const g2o::plane& mGroundPlane, double dis_thresh)
+ORB_SLAM2::PointCloud* filterCloudAsHeight(ORB_SLAM2::PointCloud* pCloud, const g2o::plane& mGroundPlane, double dis_thresh, double dis_thresh2)
 {
     std::cout << "Filter Cloud using thresh : " << dis_thresh << std::endl;
     ORB_SLAM2::PointCloud* pCloudFiltered = new ORB_SLAM2::PointCloud;
@@ -1331,13 +1348,13 @@ ORB_SLAM2::PointCloud* filterCloudAsHeight(ORB_SLAM2::PointCloud* pCloud, const 
         Vector3d center; center << p.x, p.y, p.z;
 
         double dis = mGroundPlane.distanceToPoint(center);
-        if(dis < dis_thresh)
+        if(dis < dis_thresh && dis > dis_thresh2)
             pCloudFiltered->push_back(p);
     }
     return pCloudFiltered;
 }
 
-void Tracking::LoadPointcloud(const string& strPcdDir, const string& strPointcloud_name, g2o::SE3Quat Ttrans)
+void Tracking::LoadPointcloud(const string& strPcdDir, const string& strPointcloud_name, g2o::SE3Quat Ttrans, double voxelsize)
 {
     pcl::PointCloud<pcl::PointXYZRGB>::Ptr  cloud (new pcl::PointCloud<pcl::PointXYZRGB>);
     pcl::io::loadPCDFile<pcl::PointXYZRGB>(strPcdDir.c_str(), *cloud);
@@ -1345,12 +1362,24 @@ void Tracking::LoadPointcloud(const string& strPcdDir, const string& strPointclo
     Matrix4d transform = Ttrans.to_homogeneous_matrix();
     pcl::transformPointCloud (*cloud, *cloud, transform);
 
+    double voxel_size = Config::Get<double>("QSPSLAM.VoxelSize");
+
+    if (voxel_size > 0) {
+        std::cout << "voxelsize = " << voxelsize << std::endl;
+        cloud = VoxelFilterPointCloud(cloud, voxel_size);
+    }
+
     auto pCloud = pclToQuadricPointCloudPtr(cloud);
+    
+    auto plane_c = new g2o::plane(mGroundPlane);
+    mpMap->addPlane(plane_c);
 
     // 临时过滤顶部
     double dis_thresh = Config::ReadValue<double>("Visualization.Map.Filter.DisThresh");
+    double dis_thresh2 = Config::ReadValue<double>("Visualization.Map.Filter.DisThresh2");
+
     if(dis_thresh > 0){
-        auto pCloud_filtered = filterCloudAsHeight(pCloud, mGroundPlane, dis_thresh);
+        auto pCloud_filtered = filterCloudAsHeight(pCloud, mGroundPlane, dis_thresh, dis_thresh2);
         delete pCloud;
         pCloud = pCloud_filtered;
     }

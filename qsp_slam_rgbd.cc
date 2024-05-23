@@ -48,33 +48,89 @@ typedef pcl::PointCloud<PointT> PointCloudPCL;
 /**
  * @brief 加载图像
  * 
- * @param[in] strAssociationFilename     关联文件的访问路径
+ * @param[in] path_to_association     关联文件的访问路径
  * @param[out] vstrImageFilenamesRGB     彩色图像路径序列
  * @param[out] vstrImageFilenamesD       深度图像路径序列
  * @param[out] vTimestamps               时间戳
  */
 
-void LoadImages(const string &strAssociationFilename, vector<string> &vstrImageFilenamesRGB,
+void LoadImages(const string &path_to_association, vector<string> &vstrImageFilenamesRGB,
                 vector<string> &vstrImageFilenamesD, vector<double> &vTimestamps);
+
+
+bool checkEmpty(const vector<string> str_vec, std::string str1);
+bool checkEqual(int a, int b, string str1);
+
+void ReconstrucScenePointCloud(ORB_SLAM2::System& SLAM, 
+    cv::FileStorage& fSettings, Builder* mp_Builder, string dataset_path,
+    vector<string>& rgbFilenames, vector<string>& depthFilenames,
+    Trajectory& gtTrajVO);
 
 int main(int argc, char **argv)
 {
-    if(argc != 6)
+    if(argc != 2)
     {
-        cerr << endl << "Usage: ./qsp_slam_rgbd path_to_vocabulary path_to_settings path_to_sequence path_to_association path_to_saved_trajectory" << endl;
+        cerr << endl << "Usage: ./qsp_slam_rgbd path_to_settings" << endl;
         return 1;
+    }
+
+    std::string settings_path = std::string(argv[1]);
+    cv::FileStorage fSettings(settings_path, cv::FileStorage::READ);
+
+    std::string vocabulary_path = fSettings["Vocabulary.Path"];
+    std::string dataset_path = fSettings["Dataset.Path.Root"];
+    std::string save_map_dir = fSettings["Dataset.Path.Save"];
+    std::string strAssociationFilename = dataset_path + "/associate.txt";
+
+    // string pcd_filepath = dataset_path + "./dataset.pcd";
+
+    std::string pcd_filepath = fSettings["Dataset.Path.MapPcd"];
+
+    if(pcd_filepath.size()>0)
+    {
+        if(pcd_filepath[0]=='.')    // 相对路径
+            pcd_filepath = dataset_path + "/" + pcd_filepath.substr(2);
+    }
+
+    string save_result_dir = dataset_path + "/result/";
+    string strDetectionDir = dataset_path + "/bbox/";
+
+    assert(CreateDirIfNotExist(save_map_dir));
+    assert(CreateDirIfNotExist(save_result_dir));
+    assert(CreateDirIfNotExist(strDetectionDir));
+    
+    auto msensor = ORB_SLAM2::System::MONOCULAR;
+    
+    if(fSettings["System.mode"].isNamed()) {
+        string system_mode = fSettings["System.mode"];
+        if (system_mode=="RGBD") {
+            msensor = ORB_SLAM2::System::RGBD;
+        }
     }
 
     vector<string> vstrImageFilenamesRGB;
     vector<string> vstrImageFilenamesD;
     vector<double> vTimestamps;
-    string strAssociationFilename = string(argv[4]);
 
-    cv::FileStorage fSettings(string(argv[2]), cv::FileStorage::READ);
+    // if(fSettings["CoutToFile"].isNamed()) {
+    //     ofstream fout("logs/log.txt"); //文件输出流对象
+    //     streambuf* pOld =cout.rdbuf(fout.rdbuf());
+    // }
 
-    if(fSettings["CoutToFile"].isNamed()) {
-        ofstream fout("logs/log.txt"); //文件输出流对象
-        streambuf* pOld =cout.rdbuf(fout.rdbuf());
+    std::cout << "- settings file: " << settings_path << std::endl;
+    std::cout << "- dataset_path: " << dataset_path << std::endl;
+    std::cout << "- strDetectionDir: " << strDetectionDir << std::endl;
+    string dataset_type = fSettings["Dataset.Type"];
+    std::cout << "- dataset_type : " << dataset_type << std::endl;
+
+    //! 加载数据集数据
+    TUMRGBD::Dataset loader;
+    loader.loadDataset(dataset_path);
+    // loader.loadDetectionDir(strDetectionDir);
+    if(loader.empty())
+    {
+        std::cout << "Fail to load the dataset. Please check the path." << std::endl;
+        abort();
     }
 
     LoadImages(strAssociationFilename, vstrImageFilenamesRGB, vstrImageFilenamesD, vTimestamps);
@@ -83,93 +139,45 @@ int main(int argc, char **argv)
     std::vector<std::string> vstrImageFilenamesD_all(vstrImageFilenamesD);
     std::vector<double> vTimestamps_all(vTimestamps);
 
-
     int nImages = vstrImageFilenamesRGB.size();
 
-    if(vstrImageFilenamesRGB.empty()){
-        cerr << endl << "No images found in provided path." << endl;
+    if (checkEmpty(vstrImageFilenamesRGB, "\nNo images found in provided path.\n"))
         return 1;
-    }
-    else if(vstrImageFilenamesD.size()!=vstrImageFilenamesRGB.size()){
-        cerr << endl << "Different number of images for rgb and depth." << endl;
+    else if (checkEqual(int(vstrImageFilenamesD.size()), int(vstrImageFilenamesRGB.size()), \
+            "\nDifferent number of images for rgb and depth.\n"))
         return 1;
-    }
 
-    auto msensor = ORB_SLAM2::System::MONOCULAR;
+    // Create SLAM system. 
+    // It initializes all system threads and gets ready to process frames.
+    ORB_SLAM2::System SLAM(vocabulary_path, settings_path, dataset_path, msensor);
 
-    if(fSettings["System.mode"].isNamed()) {
-        string system_mode = fSettings["System.mode"];
-        if (system_mode=="RGBD") {
-            msensor = ORB_SLAM2::System::RGBD;
-        }
-    }
-
-    // Create SLAM system. It initializes all system threads and gets ready to process frames.
-    ORB_SLAM2::System SLAM(argv[1], argv[2], argv[3], msensor);
-
-    struct rusage rusage;
-    long long memory_init, memory_last, memory_curr;
+    //! 显示内存使用情况
+    struct rusage rusage; long long memory_init, memory_last, memory_curr;
     if (getrusage(RUSAGE_SELF, &rusage) == 0) {
         memory_init = rusage.ru_maxrss;
         memory_last = memory_init;
-        std::cout << "\nMemory usage: " << (double)memory_init / 1024. << " MB" << std::endl;
+        std::cout << "\n Memory usage: " << (double)memory_init / 1024. << " MB" << std::endl;
     } else {
         std::cerr << "Failed to get memory usage." << std::endl;
     }
 
-    string strSettingsFile = argv[2];
-
-    // Config::CheckParams("configs/standard_param.yaml");
-
-    //  path_to_dataset [path_to_map]
-
-    std::string dataset_path = std::string(argv[3]);
-    std::string save_map_dir = std::string(argv[5]);
-
-    // string dataset_path_map = Config::Get<string>("Dataset.Path.Map");
-
-    // if(dataset_path_map.size()>0)
-    // {
-    //     if(dataset_path_map[0]=='.')    // 相对路径
-    //         dataset_path_map = dataset_path + "/" + dataset_path_map.substr(2);
-    // }
-
-    // string dataset_path_savedir = dataset_path + "/result/";
-
-    string strDetectionDir = dataset_path + "/bbox/";
-
-    assert(CreateDirIfNotExist(save_map_dir));
-
-    std::cout << "- settings file: " << strSettingsFile << std::endl;
-    std::cout << "- dataset_path: " << dataset_path << std::endl;
-    std::cout << "- strDetectionDir: " << strDetectionDir << std::endl;
-    string dataset_type = Config::Get<string>("Dataset.Type");
-    std::cout << "- dataset_type : " << dataset_type << std::endl;
-
-    // set groundplane mannually
+    //! set groundplane mannually
     cv::Mat paramMat = Config::GetMat("Plane.Groundplane.param");
-    if(!paramMat.empty())
-    {
+    if(!paramMat.empty()){
         Eigen::Vector4d plane_param = Converter::toVector4d(paramMat);
-        cout << "paramMat = " << paramMat << endl;
-        cout << "plane_param = " << plane_param.matrix() << endl;
-        // cv::cv2eigen(paramMat, plane_param);
+        // cout << "plane_param = " << plane_param.matrix() << endl;
         SLAM.getTracker()->SetGroundPlaneMannually(plane_param);
     }
 
-    // 这里的跳步对后续的图像物体检测造成了影响
+    //! 设置跳步运行
     int skip_num = Config::Get<int>("Running.skip_num");
     double total_ratio = Config::Get<double>("Running.total_ratio");
-
     cout << "nImages = " << nImages << std::endl;
-
     int total_num = std::min(int(total_ratio * (double)nImages + 1), nImages);
     skip_num = std::max(1, skip_num);
-
     std::cout << "total_num = " << total_num << ", skip_num = " << skip_num << std::endl;
 
     int new_index = 0, raw_index = 0;
-
     int index_num = total_num / skip_num + 1;
     vector<int> indexes(index_num);
     
@@ -185,136 +193,63 @@ int main(int argc, char **argv)
     vstrImageFilenamesD.resize(nImages);
     vTimestamps.resize(nImages);
 
+    //! 这里为了能够让SLAM系统可以通过创建的 Frame ID 获取到正确的图像文件
     SLAM.SetImageNames(vstrImageFilenamesRGB);
     
-    TUMRGBD::Dataset loader;
 
-    loader.loadDataset(dataset_path);
-    // loader.loadDetectionDir(strDetectionDir);
+    // if(!(Config::Get<int>("Dataset.UseGroundtruth") > 0))
+    // {
+    //     string odom_path = dataset_path+"/CameraTrajectoryVO.txt";
+    //     string asso_path = dataset_path+"/associateOdom.txt";
+    //     std::cout << "Load odometry from : " << odom_path << std::endl;
+    //     std::cout << "Associate file : " << asso_path << std::endl;
 
-    if(!(Config::Get<int>("Dataset.UseGroundtruth") > 0))
-    {
-        string odom_path = dataset_path+"/CameraTrajectoryVO.txt";
-        string asso_path = dataset_path+"/associateOdom.txt";
-        std::cout << "Load odometry from : " << odom_path << std::endl;
-        std::cout << "Associate file : " << asso_path << std::endl;
+    //     if(!loader.SetOdometryAndLoadAssociate(odom_path, asso_path, false)){
+    //         std::cout << "Load odometry failed, please check." << std::endl;
+    //         return 0;
+    //     }
+    // }
+    // else
+    //     std::cout << "Load [Groundtruth] as Odometry." << std::endl;
 
-        if(!loader.SetOdometryAndLoadAssociate(odom_path, asso_path, false)){
-            std::cout << "Load odometry failed, please check." << std::endl;
-            return 0;
-        }
-    }
-    else
-        std::cout << "Load [Groundtruth] as Odometry." << std::endl;
-
-    if(loader.empty())
-    {
-        std::cout << "Fail to load the dataset. Please check the path." << std::endl;
-        abort();
-    }
-
+    //! 获取轨迹真值数据，并放入图像中
     auto p_gtMat = loader.GetGroundtruthTrajectory_ptr(); // 该方法读取的似乎是 Odometry???
-
+    std::cout << "p_gtMat->rows() = " << p_gtMat->rows() << std::endl;
     Trajectory gtTrajVO;
     gtTrajVO.resize(p_gtMat->rows());
 
-    // p_gtMat->col(2) = -p_gtMat->col(2);
-
-    g2o::SE3Quat init_pose, init_pose_inv, random_pose;
-    init_pose.fromVector(p_gtMat->row(0).tail(7));
-
-    init_pose_inv = init_pose.inverse();
-
-    random_pose.fromVector(p_gtMat->row(460).tail(7));
-
-
+    // g2o::SE3Quat init_pose, init_pose_inv, random_pose;
+    // init_pose.fromVector(p_gtMat->row(0).tail(7));
+    // init_pose_inv = init_pose.inverse();
 
     for (int i = 0; i < p_gtMat->rows(); i++) {
         SE3QuatWithStamp* pGtSE3T = new SE3QuatWithStamp();
         VectorXd gtPose = p_gtMat->row(i);
         pGtSE3T->pose.fromVector(gtPose.tail(7));
-
-
         // pGtSE3T->pose^=init_pose_inv;
-        pGtSE3T->pose^=random_pose;
-        // pGtSE3T->pose = pGtSE3T->pose.inverse();
         pGtSE3T->timestamp = gtPose[0];
-
         gtTrajVO[i] = pGtSE3T;
     }
 
-    // gtTrajInEst
-
     SLAM.getMap()->addOneTrajectory(gtTrajVO, "Groundtruth");
 
-    // 处理可能的点云输入
-
-    string pcd_filepath = dataset_path + "/dataset.pcd";
+    //! 处理场景点云真值，如果有，直接进入真值标注环节
+    //! 否则使用 traj_gt 和 depth,rgb 进行场景点云重建
 
     PointCloudPCL::Ptr pCloudPCL(new PointCloudPCL);
     bool valid_pcd = true;
 
+    std::cout << "pcd_filepath = " << pcd_filepath << std::endl;
+
     // 读取.pcd文件到 PointCloudPCL 中
     if (pcl::io::loadPCDFile<PointT>(pcd_filepath, *pCloudPCL) == -1) {
         cout << "Couldn't read pcd file: " << pcd_filepath << std::endl;
-        std::cout << "Reconstruct by gt_traj" << std::endl;
         valid_pcd = false;
 
-        /**在标注之前，如果没有现成的数据集点云，首先要使用轨迹真值进行点云重建*/
         Builder* mp_Builder = new Builder();
 
-        cv::FileStorage fSettings(strSettingsFile, cv::FileStorage::READ);
-
-        float fx = fSettings["Camera.fx"];
-        float fy = fSettings["Camera.fy"];
-        float cx = fSettings["Camera.cx"];
-        float cy = fSettings["Camera.cy"];
-        Eigen::Matrix3d mCalib;
-        mCalib << fx,  0, cx,
-                  0, fy, cy,
-                  0,  0,  1;
-
-        double mCamera_scale = fSettings["Camera.scale"];
-        mp_Builder->setCameraIntrinsic(mCalib, mCamera_scale);
-        double depth_range = Config::ReadValue<double>("EllipsoidExtractor_DEPTH_RANGE");   // Only consider pointcloud within depth_range
-
-        // vstrImageFilenamesRGB_all, vstrImageFilenamesD_all, vTimestamps_all
-
-        int frame_num = vstrImageFilenamesRGB_all.size();
-        int gt_traj_num = gtTrajVO.size();
-        cout << "frame_num = " << frame_num << ", gt_traj_num = " << gt_traj_num << std::endl;
-        assert((frame_num==gt_traj_num) && "frame_num should be equal to gt_traj_num");
-
-        for (int i_frame = 0; i_frame < frame_num; i_frame++)
-        {
-            std::cout << "frame: " << i_frame << "/" << frame_num << std::endl;
-            cv::Mat rgb_img = cv::imread(dataset_path+"/"+vstrImageFilenamesRGB_all[i_frame], CV_LOAD_IMAGE_UNCHANGED);
-            cv::Mat depth_img = cv::imread(dataset_path+"/"+vstrImageFilenamesD_all[i_frame], CV_LOAD_IMAGE_UNCHANGED);
-
-            // cv::imshow("rgb_img", rgb_img);
-            cv::imshow("depth_range", depth_range);
-            cv::waitKey(20);
-
-            // Tcw: x,y,z,qx,qy,qz,qw
-            Eigen::VectorXd pose = gtTrajVO[i_frame]->pose.toVector();
-            // pose(2) = -pose(2);
-
-            cout << "Pose " << i_frame << ": " << pose.transpose().matrix() << std::endl;
-
-            mp_Builder->processFrame(rgb_img, depth_img, pose, depth_range);
-            mp_Builder->voxelFilter(0.01);   // Down sample threshold; smaller the finer; depend on the hardware.
-
-            // getchar();
-
-            PointCloudPCL::Ptr pCloudPCL = mp_Builder->getMap();
-            auto pCloud = pclToQuadricPointCloudPtr(pCloudPCL);
-
-            SLAM.getMap()->AddPointCloudList("Builder.GT Global Points", pCloud);
-
-            // delete pCloudPCL;
-            // printMemoryUsage();
-
-        }
+        ReconstrucScenePointCloud(SLAM, fSettings, mp_Builder, dataset_path,
+            vstrImageFilenamesRGB_all, vstrImageFilenamesD_all, gtTrajVO);
 
         std::cout << "Save pointcloud Map to : " << pcd_filepath << std::endl;
         mp_Builder->saveMap(pcd_filepath);
@@ -324,16 +259,16 @@ int main(int argc, char **argv)
             valid_pcd = false;
             return -1;
         }
+        else{
+            valid_pcd = true;
+        }
     }
     std::cout << "Finish dataset.pcd generation." << std::endl;
 
     printMemoryUsage();
 
     if (valid_pcd) {
-        // 输出点云中点的数量
-        std::cout << "Loaded " << pCloudPCL->size() << " points." << std::endl;
-        auto pCloud = pclToQuadricPointCloudPtr(pCloudPCL);
-        SLAM.getMap()->AddPointCloudList("Dataset PointCloud", pCloud);
+        SLAM.getTracker()->LoadPointcloud(pcd_filepath, "Dataset PointCloud");
     }
 
     // SLAM.getMap()->addOneTrajectory(gtTrajInEst, "AlignedGroundtruth");
@@ -394,10 +329,6 @@ int main(int argc, char **argv)
 
         std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
 
-        // cout << "imRGB.type() = " << imRGB.type() << endl;
-
-        // cout << "imD.type() = " << imD.type() << endl;
-
         assert(imRGB.type()==16);
         assert(imD.type()==2);
 
@@ -444,7 +375,6 @@ int main(int argc, char **argv)
             std::this_thread::sleep_for(std::chrono::microseconds(static_cast<size_t>((T- ttrack)*1e6)));
         }
 
-
         SLAM.LoadPause();
 
         if(frame_by_frame) {
@@ -460,13 +390,9 @@ int main(int argc, char **argv)
                 break;
             }
         }
-//        if (SLAM.GetTrackingState() == ORB_SLAM2::Tracking::OK)
-//            SLAM.SaveMapCurrentFrame(string(argv[4]), ni);
     }
 
     SLAM.SaveEntireMap(save_map_dir);
-
-    // string traj_path = dataset_path  + "KeyFrameTrajectory.txt";
 
     // if(fSettings["System.output"].isNamed()) {
     //     if(fSettings["System.output_path"].isNamed()) {
@@ -482,16 +408,18 @@ int main(int argc, char **argv)
     SLAM.SaveTrajectoryTUM(dataset_path + "/CameraTrajectory_QSP_times.txt");
     SLAM.SaveTrajectoryTUM(dataset_path + "/CameraTrajectory_QSP_indexes.txt", use_index);
 
-    SLAM.SaveTrajectoryTwc(dataset_path + "/CameraTrajectory_Twc_QSP_times.txt");
-    SLAM.SaveTrajectoryTwc(dataset_path + "/CameraTrajectory_Twc_QSP_indexes.txt", use_index);
+    // SLAM.SaveTrajectoryTwc(dataset_path + "/CameraTrajectory_Twc_QSP_times.txt");
+    // SLAM.SaveTrajectoryTwc(dataset_path + "/CameraTrajectory_Twc_QSP_indexes.txt", use_index);
 
 
     SLAM.SaveKeyFrameTrajectoryTUM(dataset_path + "/KeyFrameTrajectory_QSP.txt");
 
+    SLAM.SaveEstimatedObjectsForEvo(dataset_path + "/result/objects.txt");
+
     // Save pointcloud
     bool mbOpenBuilder = Config::Get<int>("Visualization.Builder.Open") == 1;
 
-    // assert(CreateDirIfNotExist(dataset_path_savedir));
+    // assert(CreateDirIfNotExist(save_result_dir));
 
     if(mbOpenBuilder)
         SLAM.getTracker()->SavePointCloudMap(save_map_dir + "/map.pcd");
@@ -531,13 +459,13 @@ int main(int argc, char **argv)
 }
 
 //从关联文件中提取这些需要加载的图像的路径和时间戳
-void LoadImages(const string &strAssociationFilename, vector<string> &vstrImageFilenamesRGB,
+void LoadImages(const string &path_to_association, vector<string> &vstrImageFilenamesRGB,
                 vector<string> &vstrImageFilenamesD, vector<double> &vTimestamps)
 {
     //输入文件流
     ifstream fAssociation;
     //打开关联文件
-    fAssociation.open(strAssociationFilename.c_str());
+    fAssociation.open(path_to_association.c_str());
     //一直读取,知道文件结束
     while(!fAssociation.eof())
     {
@@ -565,4 +493,93 @@ void LoadImages(const string &strAssociationFilename, vector<string> &vstrImageF
     }
 }
 
+bool checkEmpty(const vector<string> str_vec, std::string str1)
+{
+    if(str_vec.empty()){
+        cerr << str1;
+        return true;
+    }
+    else{
+        return false;
+    }
+    
+}
 
+bool checkEqual(int a, int b, string str1)
+{
+    if(a!=b){
+        cerr << str1;
+        return true;
+    }
+    else{
+        return false;
+    }
+}
+
+double GetMemoryUsage(){
+  struct rusage rusage;
+  if (getrusage(RUSAGE_SELF, &rusage) == 0) {
+    return (double)rusage.ru_maxrss / 1024.; // MB
+  } else {
+    return -1.0;
+  }
+}
+
+void ReconstrucScenePointCloud( ORB_SLAM2::System& SLAM, 
+    cv::FileStorage& fSettings, Builder* mp_Builder, string dataset_path,
+    vector<string>& rgbFilenames, vector<string>& depthFilenames,
+    Trajectory& gtTrajVO)
+{
+    std::cout << "Reconstruct by gt_traj" << std::endl;
+
+    /**在标注之前，如果没有现成的数据集点云，首先要使用轨迹真值进行点云重建*/
+
+    float fx = fSettings["Camera.fx"];
+    float fy = fSettings["Camera.fy"];
+    float cx = fSettings["Camera.cx"];
+    float cy = fSettings["Camera.cy"];
+
+    Eigen::Matrix3d mCalib;
+    mCalib << fx,  0, cx,
+                0, fy, cy,
+                0,  0,  1;
+
+    double mCamera_scale = fSettings["Camera.scale"];
+    mp_Builder->setCameraIntrinsic(mCalib, mCamera_scale);
+    double depth_range = Config::ReadValue<double>("EllipsoidExtractor_DEPTH_RANGE");   // Only consider pointcloud within depth_range
+
+    int frame_num = rgbFilenames.size();
+    int gt_traj_num = gtTrajVO.size();
+    cout << "frame_num = " << frame_num << ", gt_traj_num = " << gt_traj_num << std::endl;
+    assert((frame_num == gt_traj_num) && "frame_num should be equal to gt_traj_num");
+    std::cout << std::endl;
+    // std::cout << "set frame_num = 100" << std::endl;
+    // frame_num = 100;
+
+    for (int i_frame = 0; i_frame < frame_num; i_frame++)
+    {
+        std::cout << "frame: " << i_frame << "/" << frame_num \
+                  << ", memory: " << GetMemoryUsage() << "MB" << std::endl;
+
+        cv::Mat rgb_img = cv::imread(dataset_path+"/"+rgbFilenames[i_frame], CV_LOAD_IMAGE_UNCHANGED);
+        
+        cv::Mat depth_img = cv::imread(dataset_path+"/"+depthFilenames[i_frame], CV_LOAD_IMAGE_UNCHANGED);
+
+        // cv::imshow("rgb_img", rgb_img);
+        // // cv::imshow("depth_range", depth_range);
+        // cv::waitKey(20);
+
+        // Tcw: x,y,z,qx,qy,qz,qw
+        Eigen::VectorXd pose = gtTrajVO[i_frame]->pose.toVector();
+
+        mp_Builder->processFrame(rgb_img, depth_img, pose, depth_range);
+        mp_Builder->voxelFilter(0.01);   // Down sample threshold; smaller the finer; depend on the hardware.
+
+        // PointCloudPCL::Ptr pCloudPCL = mp_Builder->getMap();
+        // auto pCloud = pclToQuadricPointCloudPtr(pCloudPCL);
+        // SLAM.getMap()->AddPointCloudList("Builder.GT Global Points", pCloud);
+        // delete pCloudPCL;
+    }
+
+    std::cout << "Hello  " << std::endl << std::endl;
+}

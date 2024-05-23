@@ -42,7 +42,7 @@ bool compare_func_stringasdouble(string &s1, string &s2)
 }
 
 // update : 2020-6-23 , 不考虑文件夹.
-void GetFileNamesUnderDir(string path,vector<string>& filenames)
+void GetFileNamesUnderDir(string path, vector<string>& filenames)
 {
     filenames.clear();
     DIR *pDir;

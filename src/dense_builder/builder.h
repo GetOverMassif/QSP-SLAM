@@ -27,6 +27,8 @@ struct Camera
     double cy;
 };
 
+PointCloudPCL::Ptr VoxelFilterPointCloud(PointCloudPCL::Ptr pointcloud, double grid_size);
+
 class Builder
 {
 public:
@@ -40,6 +42,7 @@ public:
     PointCloudPCL::Ptr getCurrentMap();
     void saveMap(const string& path);
 
+    // void voxelFilter(PointCloudPCL::Ptr pointcloud, double grid_size);
     void voxelFilter(double grid_size);
 
 private:

@@ -25,8 +25,8 @@
 # 需要修改为： time, rgb_img, time, depth_img
 
 
-# PROGRAME_TYPE=run
-PROGRAME_TYPE=evo
+PROGRAME_TYPE=run
+# PROGRAME_TYPE=evo
 
 if [ "$PROGRAME_TYPE" = "run" ]; then
     CMD=./qsp_slam_rgbd
@@ -37,24 +37,24 @@ fi
 
 
 # SCENE_TYPE=office
-SCENE_TYPE=home
-DATA_NUM=2
+# # SCENE_TYPE=home
+# DATA_NUM=2
 
-if [ "$SCENE_TYPE" = "home" ]; then
-    $CMD \
-    Vocabulary/ORBvoc.bin \
-    configs/ICL_NUIM_home.yaml \
-    /media/lj/TOSHIBA/dataset/ICL-NUIM/home/living_room_traj$DATA_NUM\_frei_png \
-    /media/lj/TOSHIBA/dataset/ICL-NUIM/home/living_room_traj$DATA_NUM\_frei_png/associations_adjusted.txt \
-    map/icl_nuim/home/$DATA_NUM
-fi
+$CMD configs/ICL_NUIM_home_2.yaml
+# $CMD configs/ICL_NUIM_office_2.yaml
 
-if [ "$SCENE_TYPE" = "office" ]; then
-    $CMD \
-    Vocabulary/ORBvoc.bin \
-    configs/ICL_NUIM_home.yaml \
-    /media/lj/TOSHIBA/dataset/ICL-NUIM/office/traj$DATA_NUM\_frei_png \
-    /media/lj/TOSHIBA/dataset/ICL-NUIM/office/traj$DATA_NUM\_frei_png/associations_adjusted.txt \
-    map/icl_nuim/office/$DATA_NUM
-fi
+# if [ "$SCENE_TYPE" = "home" ]; then
+#     $CMD \
+#     Vocabulary/ORBvoc.bin \
+#     configs/ICL_NUIM_home.yaml \
+#     /media/lj/TOSHIBA/dataset/ICL-NUIM/home/living_room_traj$DATA_NUM\_frei_png \
+#     map/icl_nuim/home/$DATA_NUM
+# fi
 
+# if [ "$SCENE_TYPE" = "office" ]; then
+#     $CMD \
+#     Vocabulary/ORBvoc.bin \
+#     configs/ICL_NUIM_home.yaml \
+#     /media/lj/TOSHIBA/dataset/ICL-NUIM/office/traj$DATA_NUM\_frei_png \
+#     map/icl_nuim/office/$DATA_NUM
+# fi

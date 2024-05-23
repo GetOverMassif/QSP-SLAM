@@ -338,8 +338,11 @@ double EllipsoidExtractor::NormalVoter(pcl::PointCloud<PointType>::Ptr &pCloudPC
     pcl::search::KdTree<PointType>::Ptr tree(new pcl::search::KdTree<PointType>());
     ne.setSearchMethod(tree);
 
+    std::cout << "Before cloud_normals" << std::endl;
     // Output datasets
-    pcl::PointCloud<pcl::Normal>::Ptr cloud_normals(new pcl::PointCloud<pcl::Normal>);
+    pcl::PointCloud<pcl::Normal>* cloud_normals = new pcl::PointCloud<pcl::Normal>();
+
+    std::cout << "After cloud_normals" << std::endl;
 
     // // Use all neighbors in a sphere of radius 3cm
     // ne.setRadiusSearch (0.03);
@@ -349,11 +352,19 @@ double EllipsoidExtractor::NormalVoter(pcl::PointCloud<PointType>::Ptr &pCloudPC
     // std::cout << "[debug] KSearchNum: " << KSearchNum << std::endl;
     ne.setKSearch(30);
 
+    std::cout << "After setKSearch" << std::endl;
+
     // 计算得到法向量结果，全部投影到xy平面上（可以绘制）
     // 对这些xy向量计算角度，在[-pi,+pi]之间进行投票获得直方图（绘制并显示）
     // 最终选出投票最多的，计算对应的偏航角
     ne.compute(*cloud_normals);
+
+    std::cout << "ne.compute" << std::endl;
+
     int normal_num = cloud_normals->size();
+
+    std::cout << "cloud_normals->size() = " << cloud_normals->size() << std::endl;
+
     std::vector<cv::Point2d> vps;
     vps.resize(normal_num);
     for (int i = 0; i < normal_num; i++) {
@@ -362,6 +373,8 @@ double EllipsoidExtractor::NormalVoter(pcl::PointCloud<PointType>::Ptr &pCloudPC
         cv::Point2d p_xy(pnormal[0], pnormal[1]);
         vps[i] = p_xy;
     }
+
+
     // VisualizeNormals(vps);
 
     // 从vps中获得直方图.
@@ -389,8 +402,9 @@ double EllipsoidExtractor::NormalVoter(pcl::PointCloud<PointType>::Ptr &pCloudPC
         int realValue = int(binValue * hpt / maxValue);
         cv::line(dstImage, cv::Point(i, bin_size - 1), cv::Point(i, bin_size - realValue), cv::Scalar(255));
     }
-    cv::imshow("Hist", dstImage);
-    cv::waitKey(1);
+
+    // cv::imshow("Hist", dstImage);
+    // cv::waitKey(1);
 
     // 从直方图中获得yaw角 [是否要考虑 +- 90deg 的情况? 暂时不考虑得了. ]
 
@@ -398,6 +412,10 @@ double EllipsoidExtractor::NormalVoter(pcl::PointCloud<PointType>::Ptr &pCloudPC
     auto maxIter = max_element(bins_num.begin(), bins_num.end());
     int max_id = distance(bins_num.begin(), maxIter);
     double max_yaw = max_id / 180.0 * CV_PI - CV_PI;
+
+    // cloud_normals.reset();
+    std::cout << "Before return" << std::endl;
+    delete cloud_normals; cloud_normals = NULL;
 
     return max_yaw;
 }
@@ -781,6 +799,7 @@ g2o::ellipsoid EllipsoidExtractor::EstimateLocalEllipsoidUsingMultiPlanes(\
     // 对点云使用法向量投票器，计算偏航角度
     // std::cout << "Computing cloud_normalized" << std::endl;
     double yaw = NormalVoter(pCloudPCLGravity); // 该函数获得一个位于 XY 平面内的, 三维法向量. 可与 Z轴组完整旋转矩阵.
+    std::cout << "yaw = " << yaw << std::endl;
 
     // 通过yaw角度将 Gravity - > normalized
     // 进一步计算规范化变换

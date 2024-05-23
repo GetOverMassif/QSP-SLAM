@@ -5,8 +5,8 @@
         "name": "C++ Launch",
         "type": "cppdbg",
         "request": "launch",
-        // "program": "${workspaceFolder}/qsp_slam_rgbd",
-        "program": "${workspaceFolder}/evo_tool_qsp",
+        "program": "${workspaceFolder}/qsp_slam_rgbd",
+        // "program": "${workspaceFolder}/evo_tool_qsp",
         // "program": "${workspaceFolder}/instanceAnnotation",
         "args": [
             // "Vocabulary/ORBvoc.bin",
@@ -47,11 +47,8 @@
             // "/media/lj/TOSHIBA/dataset/MySimDataset/GroundObjects/associate.txt",
             // "map/self/GroundObjects"
 
-            "Vocabulary/ORBvoc.bin",
-            "configs/ICL_NUIM_home.yaml",
-            "/media/lj/TOSHIBA/dataset/ICL-NUIM/home/living_room_traj2_frei_png",
-            "/media/lj/TOSHIBA/dataset/ICL-NUIM/home/living_room_traj2_frei_png/associations_adjusted.txt",
-            "map/icl_nuim/home/2"
+            // "configs/ICL_NUIM_home.yaml",
+            "configs/ICL_NUIM_office_2.yaml",
 
         ],
         "stopAtEntry": false,

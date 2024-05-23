@@ -707,7 +707,7 @@ void MapDrawer::drawAxis(Eigen::Vector3f Scale)
     glEnd();
 }
 
-void MapDrawer::drawCuboid9Dof(Eigen::Matrix4f Two, Eigen::Vector3f Scale, bool with_mesh)
+void MapDrawer::drawCuboid9Dof(Eigen::Matrix4f Two, Eigen::Vector3f Scale, bool with_mesh, Eigen::Vector3f color)
 {
     const float w = Scale(0) / 2;
     const float h = Scale(1) / 2;
@@ -725,7 +725,11 @@ void MapDrawer::drawCuboid9Dof(Eigen::Matrix4f Two, Eigen::Vector3f Scale, bool 
     
     const float mCuboidLineWidth = 3.0;
     glLineWidth(mCuboidLineWidth);
-    glColor3f(0.0f,1.0f,0.0f);
+
+
+
+    // glColor3f(0.0f,1.0f,0.0f);
+    glColor3f(color(0),color(1),color(2));
     glBegin(GL_LINES);
 
     /**

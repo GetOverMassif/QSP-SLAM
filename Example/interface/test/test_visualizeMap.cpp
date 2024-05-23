@@ -46,7 +46,7 @@ int main(int argc,char* argv[]) {
     pMap->addOneTrajectory(gtTraj, "AlignedGroundtruth");
 
     // LOAD MAP
-    string dataset_path_map = Config::Get<string>("Dataset.Path.Map");
+    string dataset_path_map = Config::Get<string>("Dataset.Path.MapPcd");
     if(dataset_path_map.size()>0)
     {
         if(dataset_path_map[0]=='.')    // 相对路径

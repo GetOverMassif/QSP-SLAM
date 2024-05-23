@@ -155,6 +155,7 @@ public:
     void SaveMapCurrentFrame(const string &dir, int frameId);
     void SaveEntireMap(const string &dir);
     void SaveEstimatedObjects(const string &dir);
+    void SaveEstimatedObjectsForEvo(const string &dir);
 
     // Information from most recent processed frame
     // You can call this right after TrackMonocular (or stereo or RGBD)
@@ -254,6 +255,7 @@ private:
 
     std::vector<double> mTimeList;
     std::vector<Vector7d, Eigen::aligned_allocator<Vector7d>> mTwcList;
+
 };
 
 }// namespace ORB_SLAM

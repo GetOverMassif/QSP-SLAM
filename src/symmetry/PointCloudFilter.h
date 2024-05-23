@@ -34,6 +34,7 @@ PointCloudPCL::Ptr QuadricPointCloudToPcl(ORB_SLAM2::PointCloud &cloud);
 pcl::PointCloud<pcl::PointXYZ>::Ptr QuadricPointCloudToPclXYZ(ORB_SLAM2::PointCloud &cloud);
 
 ORB_SLAM2::PointCloud *pclToQuadricPointCloudPtr(PointCloudPCL::Ptr &pCloud);
+ORB_SLAM2::PointCloud *pclToQuadricPointCloudPtr2(PointCloudPCL* pCloud);
 
 ORB_SLAM2::PointCloud pclXYZToQuadricPointCloud(pcl::PointCloud<pcl::PointXYZ>::Ptr &pCloud);
 ORB_SLAM2::PointCloud *pclXYZToQuadricPointCloudPtr(pcl::PointCloud<pcl::PointXYZ>::Ptr &pCloud);

@@ -56,7 +56,7 @@ int main(int argc,char* argv[]) {
 
     //  path_to_dataset [path_to_map]
     string dataset_path = Config::Get<string>("Dataset.Path.Root");
-    string dataset_path_map = Config::Get<string>("Dataset.Path.Map");
+    string dataset_path_map = Config::Get<string>("Dataset.Path.MapPcd");
     if(dataset_path_map.size()>0)
     {
         if(dataset_path_map[0]=='.')    // 相对路径

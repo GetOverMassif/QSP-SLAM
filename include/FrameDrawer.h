@@ -51,11 +51,28 @@ class FrameDrawer
 public:
     FrameDrawer(Map* pMap);
 
+    void setTracker(Tracking* tracker);
+
     // Update info from the last processed frame.
     void Update(Tracking *pTracker);
 
     // Draw last processed frame.
     cv::Mat DrawFrame();
+
+    cv::Mat drawRGBFrame();
+    cv::Mat drawFrameOnImage(cv::Mat &im);
+
+    cv::Mat drawDepthFrame();
+    cv::Mat drawDepthFrameWithVisualPoints();
+
+    cv::Mat getCurrentFrameImage();
+    cv::Mat getCurrentDepthFrameImage();
+
+private:
+    // cv::Mat drawProjectionOnImage(cv::Mat &im);
+    cv::Mat drawObservationOnImage(cv::Mat &im, bool draw_text = true);
+    // cv::Mat draw3DProjectionOnImage(cv::Mat &im);
+    cv::Mat drawVisualEllipsoidsProjectionOnImage(cv::Mat &im); // ellipsoids for visual
 
 protected:
 
@@ -73,10 +90,14 @@ protected:
     int mState;
 
     Map* mpMap;
+    Tracking* mpTracking;
 
     std::mutex mMutex;
     vector<cv::Mat> mvImObjectMasks;
     vector<vector<int>> mvImObjectBboxs;
+
+    cv::Mat mmRGB;
+    cv::Mat mmDepth;
 };
 
 } //namespace ORB_SLAM

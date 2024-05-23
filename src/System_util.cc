@@ -191,40 +191,45 @@ void System::SaveEstimatedObjects(const string &dir){
     }
     f_obj.close();
 
+}
 
-    // std::string object_code_txt = dir + "/EstimatedObjects.txt";
-    // ofstream f_obj;
-    // f_obj.open(object_txt.c_str());
-    // f_obj << fixed;
+void System::SaveEstimatedObjectsForEvo(const string &filepath){
+    ofstream f_obj;
+    f_obj.open(filepath.c_str());
+    f_obj << fixed;
 
-    // auto mvpMapObjects = mpMap->GetAllMapObjects();
-    // sort(mvpMapObjects.begin(), mvpMapObjects.end(), MapObject::lId);
+    auto mvpMapObjects = mpMap->GetAllMapObjects();
+    sort(mvpMapObjects.begin(), mvpMapObjects.end(), MapObject::lId);
 
-    // // mId, class_id, x, y, z, qx, qy, qz, sx, sy, sz
-    // // 1 8   75 1 0     -1.387770 0.211749 0.785359     0.000000 0.000000 0.000000 1.000000     0.246935 0.246935 0.347301   #vase
-    // for (MapObject *pMO : mvpMapObjects) {
-    //     if (!pMO)
-    //         continue;
-    //     if (pMO->isBad())
-    //         continue;
-    //     if (pMO->GetRenderId() < 0)
-    //         continue;
-    //     if (pMO->isDynamic())
-    //         continue;
+    // mId, class_id, x, y, z, qx, qy, qz, sx, sy, sz
+    // 1 8   75 1 0     -1.387770 0.211749 0.785359     0.000000 0.000000 0.000000 1.000000     0.246935 0.246935 0.347301   #vase
+    for (MapObject *pMO : mvpMapObjects) {
+        if (!pMO)
+            continue;
+        if (pMO->isBad())
+            continue;
+        if (pMO->GetRenderId() < 0)
+            continue;
+        if (pMO->isDynamic())
+            continue;
 
-    //     f_obj << pMO->mnId << endl;
-    //     auto Two = pMO->GetPoseSim3();
-    //     // auto scale = pMO->scale;
-    //     Eigen::Vector3d scale(pMO->w, pMO->h, pMO->l);
-    //     f_obj << setprecision(9) << Two(0, 0) << " " << Two(0, 1) << " " << Two(0, 2) << " " << Two(0, 3) << " " <<
-    //           Two(1, 0) << " " << Two(1, 1) << " " << Two(1, 2) << " " << Two(1, 3) << " " <<
-    //           Two(2, 0) << " " << Two(2, 1) << " " << Two(2, 2) << " " << Two(2, 3) << 
-    //           scale(0) << " " << scale(1) << " " << scale(2) << 
-    //           endl;
-    //     f_obj << setprecision(9) << pMO->GetShapeCode().transpose() << endl;
-    // }
-    // f_obj.close();
+        f_obj << pMO->mnId << " ";
+        // auto Two = pMO->GetPoseSim3();
+        auto Two = pMO->GetPoseSE3();
 
+        Vector6d pose_Two = Converter::toSE3Quat(Two).toMinimalVector();
+
+        // auto scale = pMO->scale;
+        Eigen::Vector3d scale(pMO->w, pMO->h, pMO->l);
+
+        f_obj << setprecision(6) \
+            << pose_Two(0) << " " << pose_Two(1) << " " << pose_Two(2) << " " \
+            << pose_Two(3) << " " << pose_Two(4) << "" << pose_Two(5) << " " \
+            << scale(0) << " " << scale(1) << " " << scale(2) << " "
+            << pMO->label << endl;
+        // f_obj << setprecision(9) << pMO->GetShapeCode().transpose() << endl;
+    }
+    f_obj.close();
 }
 
 void System::OpenDepthEllipsoid()

@@ -146,7 +146,7 @@ public:
 
     void VisualizeManhattanPlanes();
 
-    void LoadPointcloud(const string& strPcdDir, const string& strPointcloud_name, g2o::SE3Quat Ttrans=g2o::SE3Quat());
+    void LoadPointcloud(const string& strPcdDir, const string& strPointcloud_name, g2o::SE3Quat Ttrans=g2o::SE3Quat(), double voxelsize = -1.0);
 
 
     // void TaskRelationship(ORB_SLAM2::Frame* pFrame);

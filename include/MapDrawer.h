@@ -97,7 +97,7 @@ public:
     void drawLine(const Vector3d& start, const Vector3d& end, const Vector3d& color, double width, double alpha = 1.0);
 
     void drawAxis(Eigen::Vector3f Scale = Eigen::Vector3f::Ones());
-    void drawCuboid9Dof(Eigen::Matrix4f Two, Eigen::Vector3f Scale, bool with_mesh);
+    void drawCuboid9Dof(Eigen::Matrix4f Two, Eigen::Vector3f Scale, bool with_mesh, Eigen::Vector3f color);
 
     // void SetTransformTge(const g2o::SE3Quat& Tge);
 

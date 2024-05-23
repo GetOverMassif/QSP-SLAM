@@ -21,7 +21,7 @@ def process_file(input_file, output_file, divide_value):
 ICL_NUIM_PATH = "/media/lj/TOSHIBA/dataset/ICL-NUIM"
 # scene_type = 'home'
 scene_type = 'office'
-data_num = 3
+data_num = 2
 
 if scene_type == 'home':
     dir_path = f"{ICL_NUIM_PATH}/home/living_room_traj{data_num}_frei_png"
@@ -33,7 +33,7 @@ else:
 # 指定输入文件路径
 input_file_path = osp.join(dir_path, "associations.txt")
 # 指定输出文件路径
-output_file_path = osp.join(dir_path, "associations_adjusted.txt")
+output_file_path = osp.join(dir_path, "associate.txt")
 # 指定除数值
 divide_value = 30  # 你可以根据需求调整这个值
 

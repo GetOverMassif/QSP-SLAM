@@ -24,3 +24,13 @@ void printMemoryUsage(){
       std::cerr << "Failed to get memory usage." << std::endl;
   }
 }
+
+// // MB
+// double GetMemoryUsage(){
+//   struct rusage rusage;
+//   if (getrusage(RUSAGE_SELF, &rusage) == 0) {
+//     return (double)rusage.ru_maxrss / 1024.; // MB
+//   } else {
+//     return -1.0;
+//   }
+// }

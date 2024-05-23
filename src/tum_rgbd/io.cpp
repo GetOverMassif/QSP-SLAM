@@ -33,6 +33,7 @@ namespace TUMRGBD
 
         // get all the file names under the directory
         // std::cout << "Load rgb file names..." << std::endl;
+        // 加载图像文件名（path+name）到 mvRGBFileNames中， 并进行排序
         GetFileNamesUnderDir(msRGBDir, mvRGBFileNames);
         sortFileNames(mvRGBFileNames, mvRGBFileNames);
         miTotalNum = mvRGBFileNames.size();
@@ -42,32 +43,33 @@ namespace TUMRGBD
         loadGroundTruthToMap(msGroundtruthPath);
         // std::cout << "2..." << std::endl;
 
-        // generate the index from ID to the timestamps of rgb images
-        generateIndexIdToRGBTimeStamp();      
-        // std::cout << "2/1..." << std::endl;
+        // // generate the index from ID to the timestamps of rgb images
+        // generateIndexIdToRGBTimeStamp();      
+        // // std::cout << "2/1..." << std::endl;
   
-        // generate the associations from rgb Timestamp to depth Timestamp
-        LoadAssociationRGBToDepth(msAssociatePath);
+        // // generate the associations from rgb Timestamp to depth Timestamp
+        // LoadAssociationRGBToDepth(msAssociatePath);
         
-        // std::cout << "3..." << std::endl;
-        if(is_fileExist(msAssociateGroundtruthPath)){
-            // generate the associations from rgb timestamp to the groundtruth
-            LoadAssociationRGBToGroundtruth(msAssociateGroundtruthPath);
-        }
-        else 
-        {
-            std::cout << "Please check associateGroundtruth.txt: \n" << msAssociateGroundtruthPath << std::endl;
-            abort();
+        // // std::cout << "3..." << std::endl;
+        // if(is_fileExist(msAssociateGroundtruthPath)){
+        //     // generate the associations from rgb timestamp to the groundtruth
+        //     LoadAssociationRGBToGroundtruth(msAssociateGroundtruthPath);
+        // }
+        // else 
+        // {
+        //     std::cout << "Please check associateGroundtruth.txt: \n" << msAssociateGroundtruthPath << std::endl;
+        //     abort();
 
-            // 不存在则默认一样的方法感觉不可行，会导致大量帧不满足条件被跳过。
-            // std::cout << " [Rgb->Gt] No associateGroundtruth.txt, keep the same as RGB timestamp." << std::endl;
-            // mvIdToGroundtruthTimeStamp = mvIdToRGBTimeStamp;    // assume rgb,gt timestamps are the same
-        }
+        //     // 不存在则默认一样的方法感觉不可行，会导致大量帧不满足条件被跳过。
+        //     // std::cout << " [Rgb->Gt] No associateGroundtruth.txt, keep the same as RGB timestamp." << std::endl;
+        //     // mvId ToGroundtruthTimeStamp = mvIdT oRGBTimeStamp;    // assume rgb,gt timestamps are the same
+        // }
 
         // get debug file num:
         std::cout << "Load groundtruth poses: " << mmTimeStampToPose.size() << std::endl;
         std::cout << "Images: " << mvIdToRGBTimeStamp.size() << std::endl;
-        // std::cout << "mvIdToGroundtruthTimeStamp: " << mvIdToGroundtruthTimeStamp.size() << std::endl;
+
+        // std::cout << "mvIdTo GroundtruthTimeStamp: " << mvId ToGroundtruthTimeStamp.size() << std::endl;
         
 
         miCurrentID = -1;
@@ -285,9 +287,11 @@ namespace TUMRGBD
     }
 
     void Dataset::loadGroundTruthToMap(string &path){
+        // timestamp, pose 1~7
         std::vector<std::vector<std::string>> strMat = readStringFromFile(path.c_str(), 0);
 
         int totalPose = strMat.size();
+        mvTimestampsForGt.resize(totalPose);
         for(int i=0;i<totalPose; i++)
         {
             std::vector<std::string> strVec = strMat[i];
@@ -298,8 +302,8 @@ namespace TUMRGBD
                 pose(p-1) = stod(strVec[p]);
             
             mmTimeStampToPose.insert(make_pair(timestamp, pose));
+            mvTimestampsForGt[i] = timestamp;
         }
-
     }
 
     void Dataset::LoadAssociationRGBToDepth(string &path)
@@ -350,21 +354,22 @@ namespace TUMRGBD
         std::cout << "TIME COST FOR ASSOCIATING : " << time_cost << " s. " << std::endl;
     }
 
+
     void Dataset::LoadAssociationRGBToGroundtruth(const string &path)
     {
         std::vector<std::vector<std::string>> associateMat = readStringFromFile(path.c_str());
 
         map<string, string> mapRGBToGt;
         int associationNum = associateMat.size();
-        for(int i=0;i<associationNum; i++)
+        for(int i=0; i<associationNum; i++)
         {
             std::vector<std::string> lineVec = associateMat[i];
             string rgbTS = lineVec[0];
             string gtTS = lineVec[2];
 
-            // Considering the precision of the timestamps of the result from the associate.py in TUM-RGB-D dataset,
-            // we need to eliminate two zeros in the tails to make the groundtruth and the association have the same precision
-            gtTS = gtTS.substr(0, gtTS.length()-2);
+            // // Considering the precision of the timestamps of the result from the associate.py in TUM-RGB-D dataset,
+            // // we need to eliminate two zeros in the tails to make the groundtruth and the association have the same precision
+            // gtTS = gtTS.substr(0, gtTS.length()-2);
 
             mapRGBToGt.insert(make_pair(rgbTS, gtTS));
         }
@@ -389,6 +394,7 @@ namespace TUMRGBD
 
     void Dataset::generateIndexIdToRGBTimeStamp(){
         // extract the bare name from a full path
+        //TODO: 这里逻辑存在问题，其他数据集可能存在文件名不是时间戳的情况
         mvIdToRGBTimeStamp.clear();
         for(auto s:mvRGBFileNames)
         {
@@ -416,49 +422,49 @@ namespace TUMRGBD
         mbDetectionLoaded = true;
     }
 
-    // id: -1, currentID; 
-    Eigen::MatrixXd Dataset::getDetectionMat(int id){
-        Eigen::MatrixXd detMat;
-        if(!mbDetectionLoaded){
-            std::cerr << "Detection dir has not loaded yet." << std::endl;
-            return detMat;
-        }
-        // get the RGB timestamp as the name of the object detection file
-        int currentId = id!=-1?id:miCurrentID;
+    // // id: -1, currentID; 
+    // Eigen::MatrixXd Dataset::getDetectionMat(int id){
+    //     Eigen::MatrixXd detMat;
+    //     if(!mbDetectionLoaded){
+    //         std::cerr << "Detection dir has not loaded yet." << std::endl;
+    //         return detMat;
+    //     }
+    //     // get the RGB timestamp as the name of the object detection file
+    //     int currentId = id!=-1?id:miCurrentID;
 
-        string bairName = mvIdToRGBTimeStamp[currentId];
-        string fullPath = msDetectionDir + bairName + ".txt";
+    //     string bairName = mvIdToRGBTimeStamp[currentId];
+    //     string fullPath = msDetectionDir + bairName + ".txt";
 
-        detMat = readDataFromFile(fullPath.c_str());
+    //     detMat = readDataFromFile(fullPath.c_str());
 
-        Eigen::MatrixXd bbox_output;
-        if(mBboxType == BBOX_STORAGE_YOLO)
-        {
-            std::cout << "DEBUG detMat \n " << detMat << std::endl;
-            // calculate x1,y1,x2,y2 from center, width, height
-            // x1
-            Eigen::VectorXd col_center_x = detMat.col(1);
-            Eigen::VectorXd col_center_y = detMat.col(2);
-            Eigen::VectorXd col_w = detMat.col(3);
-            Eigen::VectorXd col_h = detMat.col(4);
+    //     Eigen::MatrixXd bbox_output;
+    //     if(mBboxType == BBOX_STORAGE_YOLO)
+    //     {
+    //         std::cout << "DEBUG detMat \n " << detMat << std::endl;
+    //         // calculate x1,y1,x2,y2 from center, width, height
+    //         // x1
+    //         Eigen::VectorXd col_center_x = detMat.col(1);
+    //         Eigen::VectorXd col_center_y = detMat.col(2);
+    //         Eigen::VectorXd col_w = detMat.col(3);
+    //         Eigen::VectorXd col_h = detMat.col(4);
 
-            Eigen::VectorXd col_x1 = (col_center_x - col_w / 2.0);
-            Eigen::VectorXd col_y1 = (col_center_y - col_h / 2.0);
-            Eigen::VectorXd col_x2 = (col_center_x + col_w / 2.0);
-            Eigen::VectorXd col_y2 = (col_center_y + col_h / 2.0);
+    //         Eigen::VectorXd col_x1 = (col_center_x - col_w / 2.0);
+    //         Eigen::VectorXd col_y1 = (col_center_y - col_h / 2.0);
+    //         Eigen::VectorXd col_x2 = (col_center_x + col_w / 2.0);
+    //         Eigen::VectorXd col_y2 = (col_center_y + col_h / 2.0);
 
-            detMat.col(1) = col_x1;
-            detMat.col(2) = col_y1;
-            detMat.col(3) = col_x2;
-            detMat.col(4) = col_y2;
+    //         detMat.col(1) = col_x1;
+    //         detMat.col(2) = col_y1;
+    //         detMat.col(3) = col_x2;
+    //         detMat.col(4) = col_y2;
 
-            std::cout << "DEBUG detMat \n " << detMat << std::endl;
-        }
+    //         std::cout << "DEBUG detMat \n " << detMat << std::endl;
+    //     }
 
-        bbox_output = detMat;
-        return bbox_output;
+    //     bbox_output = detMat;
+    //     return bbox_output;
         
-    }
+    // }
 
     vector<int> Dataset::generateValidVector(){
         vector<int> validVec;
@@ -515,6 +521,7 @@ namespace TUMRGBD
         return bOdom && bAsso;
     }
 
+    // 设置里程计
     bool Dataset::SetOdometry(const string& dir_odom, bool calibrate){
 
         std::vector<std::vector<std::string>> strMat = readStringFromFile(dir_odom.c_str(), 0);
@@ -670,15 +677,24 @@ namespace TUMRGBD
     MatrixXd* Dataset::GetGroundtruthTrajectory_ptr()
     {
         MatrixXd gtMat;
-        gtMat.resize(mvIdToGroundtruthTimeStamp.size(), 8); // timestamp xyz qx-w
+
+        // int gtMat_size = mvIdToGroundtruthTimeStamp.size();
+
+        int gtMat_size = mvTimestampsForGt.size();
+
+        gtMat.resize(gtMat_size, 8); // timestamp xyz qx-w
         
         // 默认并非按时间戳顺序，而是字符串顺序.
         // map<string, VectorXd> mmTimeStampToPose
 
-        for( int i = 0; i < mvIdToGroundtruthTimeStamp.size(); i++)
-        {
-            string gtTimeStamp = mvIdToGroundtruthTimeStamp[i];
+        for( int i = 0; i < gtMat_size; i++)
+        {   
+            // TO be adjust
+            // string gtTimeStamp = mvIdToGroundtruthTimeStamp[i];
 
+            string gtTimeStamp = mvTimestampsForGt[i];
+
+            // std::cout << "gtTimeStamp = " << gtTimeStamp << std::endl;
             VectorXd pose;
             if(!getPoseFromTimeStamp(gtTimeStamp, pose))
                 continue;

@@ -22,9 +22,23 @@
 # map/self/circle
 
 
-./qsp_slam_rgbd \
-Vocabulary/ORBvoc.bin \
-configs/self_allobject_ground.yaml \
-/media/lj/TOSHIBA/dataset/MySimDataset/GroundObjects \
-/media/lj/TOSHIBA/dataset/MySimDataset/GroundObjects/associate.txt \
-map/self/GroundObjects
+# ./qsp_slam_rgbd \
+# Vocabulary/ORBvoc.bin \
+# configs/self_allobject_ground.yaml \
+# /media/lj/TOSHIBA/dataset/MySimDataset/GroundObjects \
+# /media/lj/TOSHIBA/dataset/MySimDataset/GroundObjects/associate.txt \
+# map/self/GroundObjects
+
+
+PROGRAME_TYPE=run
+# PROGRAME_TYPE=evo
+
+if [ "$PROGRAME_TYPE" = "run" ]; then
+    CMD=./qsp_slam_rgbd
+fi
+if [ "$PROGRAME_TYPE" = "evo" ]; then
+    CMD=./evo_tool_qsp
+fi
+
+
+$CMD configs/self_allobject_ground.yaml

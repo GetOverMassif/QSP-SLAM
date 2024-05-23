@@ -52,7 +52,7 @@ namespace evo
     // Shape: 0 Quadrics, 1 Rectangle
     double MonteCarloIoU(VectorXd &ob1, VectorXd &ob2, int sample_num = 1000, int shape = 1)
     {
-        bool bDebug = true;
+        bool bDebug = false;
 
         // 获得立方体.
         // 取 x,y,z最大值
@@ -843,6 +843,7 @@ namespace evo
         int num = mat.rows();
         std::cout << "VisualizeEllipsoidsInMat, color = " << color.matrix().transpose() << std::endl;
         std::cout << "show_in_observation = " << show_in_observation << std::endl;
+        std::cout << "mat = \n" << mat.matrix() << endl;
         for (int i = 0; i < num; i++)
         {
             VectorXd mat_vec = mat.row(i);

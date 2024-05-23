@@ -132,6 +132,25 @@ ORB_SLAM2::PointCloud *pclToQuadricPointCloudPtr(PointCloudPCL::Ptr &pCloud) {
     return cloudPtr;
 }
 
+ORB_SLAM2::PointCloud *pclToQuadricPointCloudPtr2(PointCloudPCL* pCloud) {
+    ORB_SLAM2::PointCloud *cloudPtr = new ORB_SLAM2::PointCloud;
+    ORB_SLAM2::PointCloud &cloud = *cloudPtr;
+    int num = pCloud->points.size();
+    for (int i = 0; i < num; i++) {
+        ORB_SLAM2::PointXYZRGB p;
+        PointT pT = pCloud->points[i];
+        p.r = pT.r;
+        p.g = pT.g;
+        p.b = pT.b;
+
+        p.x = pT.x;
+        p.y = pT.y;
+        p.z = pT.z;
+        cloud.push_back(p);
+    }
+    return cloudPtr;
+}
+
 PointCloudPCL::Ptr QuadricPointCloudToPcl(ORB_SLAM2::PointCloud &cloud) {
     PointCloudPCL::Ptr pCloud(new PointCloudPCL);
 

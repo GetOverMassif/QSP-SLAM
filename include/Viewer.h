@@ -80,6 +80,8 @@ public:
 
     cv::Mat GetFrame();
 
+    void loadObjGtAnnoData(string& mObjAnnoGtTxt);
+
 private:
 
     bool Stop();
@@ -134,6 +136,10 @@ private:
     vector<AnnoObj*> AnnoObjs;
     AnnoObj* cur_AnnoObj;
     AnnoObj* prev_AnnoObj;
+    string mObjAnnoGtTxt;
+
+    int miRows;
+    int miCols;
 
 };
 

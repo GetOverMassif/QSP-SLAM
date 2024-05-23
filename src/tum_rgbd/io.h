@@ -53,7 +53,7 @@ public:
 
     // load object detections
     bool loadDetectionDir(string &path);
-    Eigen::MatrixXd getDetectionMat(int id = -1);
+    // Eigen::MatrixXd getDetectionMat(int id = -1);
 
     bool empty();
 
@@ -131,6 +131,9 @@ private:
     vector<string> mvIdToRGBTimeStamp;
 
     map<string, VectorXd> mmTimeStampToPose;
+    vector<string> mvTimestampsForGt;
+
+
     map<string, VectorXd> mmOdomRGBStampToPose;
 
     bool mbDetectionLoaded;
