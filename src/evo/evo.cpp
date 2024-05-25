@@ -1251,6 +1251,7 @@ namespace evo
 
         if(refNum < 1 || estNum < 1)
         {
+            std::cout << "refNum = " << refNum << ", estNum = " << estNum << std::endl;
             std::cout << "Error in RefMat or EstMat, Please check your file exsist." << std::endl;
             return false;
         }
@@ -1263,9 +1264,14 @@ namespace evo
         std::cout << "Tre.toMinimalVector() = ";
         std::cout << Tre.toMinimalVector().transpose() << std::endl;
 
+        g2o::SE3Quat Tre2;
+
         // TODO: 可视化轨迹对齐情况
         Trajectory gtTraj = MatToTraj(gtTrajMat);
-        Trajectory estTrajInGt = MatToTraj(estTrajMat, Tre);
+        // Trajectory estTrajInGt = MatToTraj(estTrajMat, Tre);
+        Trajectory estTrajInGt = MatToTraj(estTrajMat, Tre2);
+
+        std::cout << "check not Tre";
 
         bool bVisualize = (pMap != NULL);
         if (bVisualize)
@@ -1274,7 +1280,10 @@ namespace evo
             pMap->addOneTrajectory(gtTraj, "AlignedGroundtruth");
         }
 
-        MatrixXd estObjMatInRef = transformObjMat(estObjMat, Tre);
+        // MatrixXd estObjMatInRef = transformObjMat(estObjMat, Tre);
+        MatrixXd estObjMatInRef = transformObjMat(estObjMat, Tre2);
+
+
         // std::vector<int> vAlignEstToRef = AlignEllipsoids(estObjMatInRef, refObjMat);
 
         // testing...

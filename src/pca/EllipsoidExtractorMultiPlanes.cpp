@@ -338,11 +338,11 @@ double EllipsoidExtractor::NormalVoter(pcl::PointCloud<PointType>::Ptr &pCloudPC
     pcl::search::KdTree<PointType>::Ptr tree(new pcl::search::KdTree<PointType>());
     ne.setSearchMethod(tree);
 
-    std::cout << "Before cloud_normals" << std::endl;
+    // std::cout << "Before cloud_normals" << std::endl;
     // Output datasets
     pcl::PointCloud<pcl::Normal>* cloud_normals = new pcl::PointCloud<pcl::Normal>();
 
-    std::cout << "After cloud_normals" << std::endl;
+    // std::cout << "After cloud_normals" << std::endl;
 
     // // Use all neighbors in a sphere of radius 3cm
     // ne.setRadiusSearch (0.03);
@@ -352,18 +352,18 @@ double EllipsoidExtractor::NormalVoter(pcl::PointCloud<PointType>::Ptr &pCloudPC
     // std::cout << "[debug] KSearchNum: " << KSearchNum << std::endl;
     ne.setKSearch(30);
 
-    std::cout << "After setKSearch" << std::endl;
+    // std::cout << "After setKSearch" << std::endl;
 
     // 计算得到法向量结果，全部投影到xy平面上（可以绘制）
     // 对这些xy向量计算角度，在[-pi,+pi]之间进行投票获得直方图（绘制并显示）
     // 最终选出投票最多的，计算对应的偏航角
     ne.compute(*cloud_normals);
 
-    std::cout << "ne.compute" << std::endl;
+    // std::cout << "ne.compute" << std::endl;
 
     int normal_num = cloud_normals->size();
 
-    std::cout << "cloud_normals->size() = " << cloud_normals->size() << std::endl;
+    // std::cout << "cloud_normals->size() = " << cloud_normals->size() << std::endl;
 
     std::vector<cv::Point2d> vps;
     vps.resize(normal_num);
@@ -414,7 +414,7 @@ double EllipsoidExtractor::NormalVoter(pcl::PointCloud<PointType>::Ptr &pCloudPC
     double max_yaw = max_id / 180.0 * CV_PI - CV_PI;
 
     // cloud_normals.reset();
-    std::cout << "Before return" << std::endl;
+    // std::cout << "Before return" << std::endl;
     delete cloud_normals; cloud_normals = NULL;
 
     return max_yaw;

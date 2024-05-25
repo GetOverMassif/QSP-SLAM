@@ -8,8 +8,7 @@ LocalMapping.KeepRawPose: 0
 Tracking.AddSuffixToPcd: 0
 Tracking.AssociateObjectWithEllipsold: 1
 Tracking.AssociateDebug: 0
-Tracking.AddDepthPcdToMapObject: 1
-Tracking.UseDepthPcdToReconstruct: 1
+
 
 LocalMapping.MinValidPoints: 50
 LocalMapping.MinValidRays: 1
@@ -20,10 +19,13 @@ Tracking.MinimumPtNumToJudgeGood: 5  # default 20
 
 LocalMapping.DistFiltParam: 0.1
 
-Tracking.IgnoreObject: 0
+Tracking.IgnoreObject: 1
+Tracking.AddDepthPcdToMapObject: 0
+Tracking.UseDepthPcdToReconstruct: 0
 
 
 QSPSLAM.VoxelSize: 0.025
+QSPSLAM.NeedDatasetPointCloud: 0
 
 
 # -------------------------
@@ -43,7 +45,7 @@ Plane.Groundplane.param: !!opencv-matrix
 
 # when >0, filter using dis to groundplane
 Visualization.Map.Filter.DisThresh: 2.3
-Visualization.Map.Filter.DisThresh2: 0.1
+Visualization.Map.Filter.DisThresh2: -0.1
 
 
 # Visualization
@@ -75,23 +77,24 @@ Result.TrajectoryEstimate: /result/traj.txt
 
 #--------------------------------------------------------------------------------------------
 # yolo
-#         "person人类",  //0
-#        "bicycle自行车", "car汽车", "motorcycle", "airplane", "bus",   //1
-#        "train", "truck", "boat", "traffic light",   "fire hydrant", //6
-#        "stop sign停止标", "parking meter", "bench", "bird", "cat", //11
-#        "dog", "horse", "sheep", "cow",  "elephant", //16
-#        "bear", "zebra", "giraffe", "backpack背包", "umbrella雨伞", //21
-#        "handbag手提包", "tie领带", "suitcase手提箱", "frisbee",  "skis", //26
-#        "snowboard", "sports ball", "kite", "baseball bat", "baseball glove", //31
-#        "skateboard", "surfboard",  "tennis racket", "bottle瓶子", "wine glass酒杯", //36
-#        "cup杯子", "fork", "knife", "spoon", "bowl碗", //41
-#        "banana香蕉", "apple苹果",   "sandwich三明治", "orange橙子", "broccoli", //46
-#        "carrot", "hot dog热狗", "pizza", "donut", "cake蛋糕", //51
-#        "chair椅子", "couch沙发",  "potted plant盆栽", "bed床", "dining table餐桌",//56
-#        "toilet", "tv电视", "laptop笔记本电脑", "mouse鼠标", "remote遥控器", //61
-#        "keyboard键盘", "cell phone手机",  "microwave微波炉", "oven烤箱", "toaster烤面包机", //66
-#        "sink水槽", "refrigerator冰箱", "book书", "clock钟", "vase花瓶", //71
-#        "scissors", "teddy bear泰迪熊",  "hair drier", "toothbrush"};//76
+# 0-人类-person
+# 1-自行车-bicycle,  2-汽车-car,    3-摩托车-motorcycle,  4-飞机-airplane,              5-公交车-bus, 
+# 6-火车-train,      7-卡车-truck,  8-船-boat,           9-交通信号灯-traffic light,   10-消防栓-fire hydrant, 
+# 11-停止标志-stop sign, 12-停车收费表-parking meter, 13-长椅-bench, 
+# 14-鸟-bird, 15-猫-cat, 16-狗-dog, 17-马-horse, 18-羊-sheep, 19-牛-cow, 
+# 20-大象-elephant, 21-熊-bear, 22-斑马-zebra, 23-长颈鹿-giraffe, 
+# 24-背包-backpack, 25-雨伞-umbrella, 26-手提包-handbag, 27-领带-tie, 28-手提箱-suitcase, 29-飞盘-frisbee, 30-滑雪板-skis, 
+# 31-单板滑雪-snowboard, 32-运动球-sports ball, 33-风筝-kite, 34-棒球棒-baseball bat, 35-棒球手套-baseball glove, 
+# 36-滑板-skateboard, 37-冲浪板-surfboard, 38-网球拍-tennis racket, 39-瓶子-bottle, 40-酒杯-wine glass, 
+# 41-杯子-cup, 42-叉子-fork, 43-刀-knife, 44-勺子-spoon, 45-碗-bowl, 
+# 46-香蕉-banana, 47-苹果-apple, 48-三明治-sandwich, 49-橙子-orange, 50-西兰花-broccoli, 
+# 51-胡萝卜-carrot, 52-热狗-hot dog, 53-披萨-pizza, 54-甜甜圈-donut, 55-蛋糕-cake, 
+# 56-椅子-chair, 57-沙发-couch, 58-盆栽-potted plant, 59-床-bed, 60-餐桌-dining table, 
+# 61-马桶-toilet, 62-电视-tv, 63-笔记本电脑-laptop, 64-鼠标-mouse, 65-遥控器-remote, 
+# 66-键盘-keyboard, 67-手机-cell phone, 68-微波炉-microwave, 69-烤箱-oven, 70-烤面包机-toaster, 
+# 71-水槽-sink, 72-冰箱-refrigerator, 73-书-book, 74-钟-clock, 75-花瓶-vase, 
+# 76-剪刀-scissors, 77-泰迪熊-teddy bear, 78-吹风机-hair drier, 79-牙刷-toothbrush
+
 #--------------------------------------------------------------------------------------------
 #yolo_class: [24, 28, 39, 56, 57, 58, 59, 60, 62, 63, 66, 67, 73, 72, 11]
 #yolo_class: [24, 28, 39, 56, 57, 58, 59, 60, 62, 63, 66, 67, 73, 72, 11]
@@ -106,31 +109,19 @@ Result.TrajectoryEstimate: /result/traj.txt
 #66,  #键盘
 #41   #杯子
 
-# keyboard, laptop, bottle, bowl, 
 
-# yolo_class: [77, 73, 39, 63, 75, 66, 41, 64]   #先去掉笔记本电脑 63
+# On ground: chair-56, couch-57, dining table-60, bed-59, tv-62， vase-75
 
-# On table: laptop-63, book-73, vase-75, bottle-39, keyboard-66, cup-41
-# YoloClasses: [63, 73, 75, 39, 66, 41]
-# # 是否能读字符串列表
-
-# DecoderPaths: ["weights/deepsdf/laptops_64", 
-#                "weights/deepsdf/books_64_c",
-#                "weights/deepsdf/vases_64_c",
-#                "weights/deepsdf/bottles_64",
-#                "weights/deepsdf/keyboards_64",
-#                "weights/deepsdf/cups_64_c"]
-
-
-# On ground: chair-56, couch-57, dining table-60, bed-59, bookshelf-
-
-YoloClasses: [56, 57, 60, 59]
+YoloClasses: [56, 57, 60, 59, 62, 75]
 # 是否能读字符串列表
 
 DecoderPaths: ["weights/deepsdf/chairs_64", 
                "weights/deepsdf/sofas_64",
                "weights/deepsdf/tables_64",
-               "weights/deepsdf/beds_64"]
+               "weights/deepsdf/beds_64",
+               "weights/deepsdf/displays_64",
+               "weights/deepsdf/bottles_64"
+              ]
 
 
 frame_by_frame: 1  # 1: True, 0: False
@@ -195,7 +186,7 @@ Camera.scale: 5000
 # Parameters used for Object SLAM
 #--------------------------------------------------------------------------------------------
 # Config path for Python detectors
-DetectorConfigPath: configs/config_self_allobject_ground.json
+DetectorConfigPath: configs/config_ICL_NUIM_home.json
 EllipObjects.maskErrosion: 5
 
 

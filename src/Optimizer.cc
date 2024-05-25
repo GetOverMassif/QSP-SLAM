@@ -279,7 +279,7 @@ int Optimizer::PoseOptimization(Frame *pFrame)
     const float deltaMono = sqrt(5.991);
     const float deltaStereo = sqrt(7.815);
 
-
+    std::cout << "Debug: before Mappoint scan" << std::endl;
     {
     unique_lock<mutex> lock(MapPoint::mGlobalMutex);
 
@@ -367,6 +367,10 @@ int Optimizer::PoseOptimization(Frame *pFrame)
     }
 
 
+    std::cout << "Debug: before check nInitialCorrespondences" << std::endl;
+
+    std::cout << "Debug: nInitialCorrespondences = " << nInitialCorrespondences << std::endl;
+
     if(nInitialCorrespondences<3)
         return 0;
 
@@ -379,10 +383,13 @@ int Optimizer::PoseOptimization(Frame *pFrame)
     int nBad=0;
     for(size_t it=0; it<4; it++)
     {
-
+        std::cout << "Debug: before set setEstimate" << std::endl;
         vSE3->setEstimate(Converter::toSE3Quat(pFrame->mTcw));
+        std::cout << "Debug: before initializeOptimization" << std::endl;
         optimizer.initializeOptimization(0);
+        std::cout << "Debug: before optimize" << std::endl;
         optimizer.optimize(its[it]);
+        std::cout << "Debug: after optimize" << std::endl;
 
         nBad=0;
         for(size_t i=0, iend=vpEdgesMono.size(); i<iend; i++)
@@ -446,6 +453,8 @@ int Optimizer::PoseOptimization(Frame *pFrame)
         if(optimizer.edges().size()<10)
             break;
     }    
+
+    std::cout << "Debug: before pose recover" << std::endl;
 
     // Recover optimized pose and return number of inliers
     g2o::VertexSE3Expmap* vSE3_recov = static_cast<g2o::VertexSE3Expmap*>(optimizer.vertex(0));

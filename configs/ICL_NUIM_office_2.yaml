@@ -22,6 +22,28 @@ LocalMapping.DistFiltParam: 0.1
 
 Tracking.IgnoreObject: 1
 
+
+QSPSLAM.VoxelSize: 0.025
+
+# -------------------------
+# 地平面提取参数： Ground Plane Extraction
+# -------------------------
+Plane.MinSize: 1000
+Plane.AngleThreshold: 3.0
+Plane.DistanceThreshold: 0.05
+Plane.MannualCheck.Open: 1
+
+# Mannual set
+Plane.Groundplane.param: !!opencv-matrix
+  rows: 1
+  cols: 4
+  dt: d
+  data: [0,   -1, 0,   -1.5]
+
+# when >0, filter using dis to groundplane
+Visualization.Map.Filter.DisThresh: 2.3
+Visualization.Map.Filter.DisThresh2: -1
+
 # Visualization
 Visualization.Builder.Open: 1
 Visualization.Builder.Global.Open: 0
@@ -265,20 +287,7 @@ SymmetrySolver.Sigma: 0.1
 # EllipsoidExtractor::LoadSymmetryPrior()
 
 
-# -------------------------
-# 地平面提取参数： Ground Plane Extraction
-# -------------------------
-Plane.MinSize: 1000
-Plane.AngleThreshold: 3.0
-Plane.DistanceThreshold: 0.05
-Plane.MannualCheck.Open: 1
 
-# Mannual set
-Plane.Groundplane.param: !!opencv-matrix
-  rows: 1
-  cols: 4
-  dt: d
-  data: [-0.00144757,   0.999998, -0.00141902,     -1.2]
 
 # Whether use the normal of the groundplane to constrain the ellipsoid
 Optimizer.Edges.GravityPrior.Open: 1
@@ -299,8 +308,6 @@ Measurement.Probability.Thresh: 0
 # Close it to consider every observations.
 Tracking.KeyFrameCheck.Close: 1
 
-# when >0, filter using dis to groundplane
-Visualization.Map.Filter.DisThresh: 2.3
 
 #------------------
 # ORB相关参数： ORB Parameters

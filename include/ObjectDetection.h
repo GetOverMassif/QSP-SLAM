@@ -43,6 +43,7 @@ public:
     int NumberOfPoints();
 
     void setPcdPtr(pcl::PointCloud<PointType>::Ptr& pcd_ptr_);
+    void SetBadFlag();
 
 public:
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW

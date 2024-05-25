@@ -90,6 +90,7 @@ int main(int argc,char* argv[]) {
 
 
     std::cout << "Load background pointcloud from " << pcd_filepath << "..." << std::endl;
+
     pSLAM->getTracker()->LoadPointcloud(pcd_filepath, "background_world");
     std::cout << "ok." << std::endl;
 

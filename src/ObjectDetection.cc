@@ -43,7 +43,7 @@ ObjectDetection::ObjectDetection(const Eigen::Matrix4f &T, const Eigen::MatrixXf
     nRays = (int) RayDirections.size() / 3;
     isNew = true;
     isGood = true;
-    isValidPcd = true;
+    isValidPcd = false;
 }
 
 ObjectDetection::ObjectDetection() : isNew(true), isGood(true)
@@ -87,6 +87,7 @@ void ObjectDetection::setPcdPtr(pcl::PointCloud<PointType>::Ptr& pcd_ptr_)
     if (pcd_ptr_ == NULL){
         pcd_ptr==nullptr;
         isGood = true;
+        isValidPcd = false;
         return;
     }
     std::unique_lock<std::mutex> lock(mMutexFeatures);
@@ -94,6 +95,14 @@ void ObjectDetection::setPcdPtr(pcl::PointCloud<PointType>::Ptr& pcd_ptr_)
         pcd_ptr = pcl::PointCloud<PointType>::Ptr(new pcl::PointCloud<PointType>);
     }
     *pcd_ptr = *pcd_ptr_;
+    isValidPcd = true;
+    std::cout << "ObjectDetection::setPcdPtr" << std::endl;
+    // std::cout << "ObjectDetection::setPcdPtr, size = " << pcd_ptr.size() << std::endl;
+}
+
+void ObjectDetection::SetBadFlag()
+{
+    isGood = false;
 }
 
 void ObjectDetection::SetPoseMeasurementSim3(const Eigen::Matrix4f &T) {

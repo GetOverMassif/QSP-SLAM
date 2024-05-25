@@ -73,8 +73,9 @@ int main(int argc, char **argv)
         cerr << endl << "Usage: ./qsp_slam_rgbd path_to_settings" << endl;
         return 1;
     }
-
+    
     std::string settings_path = std::string(argv[1]);
+    std::cout << "path_to_settings = " << settings_path << std::endl;
     cv::FileStorage fSettings(settings_path, cv::FileStorage::READ);
 
     std::string vocabulary_path = fSettings["Vocabulary.Path"];
@@ -94,6 +95,11 @@ int main(int argc, char **argv)
 
     string save_result_dir = dataset_path + "/result/";
     string strDetectionDir = dataset_path + "/bbox/";
+
+    std::cout << "dataset_path = " << dataset_path << std::endl;
+    std::cout << "save_map_dir = " << save_map_dir << std::endl;
+    std::cout << "save_result_dir = " << save_result_dir << std::endl;
+    std::cout << "strDetectionDir = " << strDetectionDir << std::endl;
 
     assert(CreateDirIfNotExist(save_map_dir));
     assert(CreateDirIfNotExist(save_result_dir));
@@ -126,7 +132,10 @@ int main(int argc, char **argv)
     //! 加载数据集数据
     TUMRGBD::Dataset loader;
     loader.loadDataset(dataset_path);
-    // loader.loadDetectionDir(strDetectionDir);
+    loader.loadDetectionDir(strDetectionDir);
+ 
+    std::cout << "Finish loadDetectionDir" << std::endl;
+
     if(loader.empty())
     {
         std::cout << "Fail to load the dataset. Please check the path." << std::endl;
@@ -236,46 +245,50 @@ int main(int argc, char **argv)
     //! 处理场景点云真值，如果有，直接进入真值标注环节
     //! 否则使用 traj_gt 和 depth,rgb 进行场景点云重建
 
-    PointCloudPCL::Ptr pCloudPCL(new PointCloudPCL);
-    bool valid_pcd = true;
+    //! 添加点云真值
+    bool need_bg_pointcloud = Config::Get<int>("QSPSLAM.NeedDatasetPointCloud");;
 
-    std::cout << "pcd_filepath = " << pcd_filepath << std::endl;
+    if (need_bg_pointcloud) {
+        PointCloudPCL::Ptr pCloudPCL(new PointCloudPCL);
+        bool valid_pcd = true;
 
-    // 读取.pcd文件到 PointCloudPCL 中
-    if (pcl::io::loadPCDFile<PointT>(pcd_filepath, *pCloudPCL) == -1) {
-        cout << "Couldn't read pcd file: " << pcd_filepath << std::endl;
-        valid_pcd = false;
+        std::cout << "pcd_filepath = " << pcd_filepath << std::endl;
 
-        Builder* mp_Builder = new Builder();
-
-        ReconstrucScenePointCloud(SLAM, fSettings, mp_Builder, dataset_path,
-            vstrImageFilenamesRGB_all, vstrImageFilenamesD_all, gtTrajVO);
-
-        std::cout << "Save pointcloud Map to : " << pcd_filepath << std::endl;
-        mp_Builder->saveMap(pcd_filepath);
-
+        // 读取.pcd文件到 PointCloudPCL 中
         if (pcl::io::loadPCDFile<PointT>(pcd_filepath, *pCloudPCL) == -1) {
-            cout << "Couldn't read file again: " << pcd_filepath << std::endl;
+            cout << "Couldn't read pcd file: " << pcd_filepath << std::endl;
             valid_pcd = false;
-            return -1;
-        }
-        else{
-            valid_pcd = true;
-        }
-    }
-    std::cout << "Finish dataset.pcd generation." << std::endl;
 
-    printMemoryUsage();
+            Builder* mp_Builder = new Builder();
 
-    if (valid_pcd) {
-        SLAM.getTracker()->LoadPointcloud(pcd_filepath, "Dataset PointCloud");
+            ReconstrucScenePointCloud(SLAM, fSettings, mp_Builder, dataset_path,
+                vstrImageFilenamesRGB_all, vstrImageFilenamesD_all, gtTrajVO);
+
+            std::cout << "Save pointcloud Map to : " << pcd_filepath << std::endl;
+            mp_Builder->saveMap(pcd_filepath);
+
+            if (pcl::io::loadPCDFile<PointT>(pcd_filepath, *pCloudPCL) == -1) {
+                cout << "Couldn't read file again: " << pcd_filepath << std::endl;
+                valid_pcd = false;
+                return -1;
+            }
+            else{
+                valid_pcd = true;
+            }
+        }
+        std::cout << "Finish dataset.pcd generation." << std::endl;
+
+        printMemoryUsage();
+
+        if (valid_pcd) {
+            SLAM.getTracker()->LoadPointcloud(pcd_filepath, "Dataset PointCloud");
+        }
     }
 
     // SLAM.getMap()->addOneTrajectory(gtTrajInEst, "AlignedGroundtruth");
 
     // Vector for tracking time statistics
-    vector<float> vTimesTrack;
-    vTimesTrack.resize(nImages);
+    vector<float> vTimesTrack(nImages);
 
     bool frame_by_frame = fSettings["frame_by_frame"].isNamed();
 
@@ -301,6 +314,11 @@ int main(int argc, char **argv)
     {
         int goal_id = indexes[ni];
         loader.SetCurrentID(goal_id);
+
+        Eigen::MatrixXd* p_detMat = loader.getDetectionMatPointer(goal_id);
+
+        std::cout << "p_detMat = " << p_detMat->matrix() << std::endl;
+
         std::cout << "Set current ID to : " << goal_id << std::endl;
         
         std::cout << "\n========================================" << std::endl;
@@ -312,6 +330,8 @@ int main(int argc, char **argv)
         //! 读取图像
         imRGB = cv::imread(dataset_path+"/"+vstrImageFilenamesRGB[ni], CV_LOAD_IMAGE_UNCHANGED);
         imD = cv::imread(dataset_path+"/"+vstrImageFilenamesD[ni], CV_LOAD_IMAGE_UNCHANGED);
+
+        std::cout << "Read imRGB and imD" <<std::endl;
 
         std::chrono::steady_clock::time_point t2_read = std::chrono::steady_clock::now();
         double t_read = std::chrono::duration_cast<std::chrono::duration<double> >(t2_read - t1_read).count();
@@ -332,6 +352,8 @@ int main(int argc, char **argv)
         assert(imRGB.type()==16);
         assert(imD.type()==2);
 
+        std::cout << "Send into TrackRGBD" <<std::endl;
+
         if (msensor == ORB_SLAM2::System::RGBD)
             SLAM.TrackRGBD(imRGB, imD, tframe);
         else if(msensor == ORB_SLAM2::System::MONOCULAR)
@@ -339,6 +361,7 @@ int main(int argc, char **argv)
         else
             printf("暂时不支持这个模式\n");
 
+        std::cout << "Debug: get out of SLAM.TrackRGBD" << std::endl;
 
         // FIXME: 如有必要，将内存使用的变化情况存储下来检查一下
         if (getrusage(RUSAGE_SELF, &rusage) == 0) {

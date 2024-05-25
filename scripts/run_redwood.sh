@@ -45,10 +45,13 @@ DATASET_PATH=/home/lj/Documents/dataset
 # REDWOOD_SCAN_ID=09374
 
 REDWOOD_SCAN_ID=01053
-./qsp_slam_rgbd Vocabulary/ORBvoc.bin configs/redwood_chair_01053.yaml \
-$DATASET_PATH/RedwoodOS/data/rgbd/$REDWOOD_SCAN_ID  \
-$DATASET_PATH/RedwoodOS/data/rgbd/$REDWOOD_SCAN_ID/associate.txt \
-map/redwood/$REDWOOD_SCAN_ID
+# ./qsp_slam_rgbd Vocabulary/ORBvoc.bin configs/redwood_chair_01053.yaml \
+# $DATASET_PATH/RedwoodOS/data/rgbd/$REDWOOD_SCAN_ID  \
+# $DATASET_PATH/RedwoodOS/data/rgbd/$REDWOOD_SCAN_ID/associate.txt \
+# map/redwood/$REDWOOD_SCAN_ID
+
+
+./qsp_slam_rgbd configs/Redwood_chair_03815.yaml
 
 # REDWOOD_SCAN_ID=01041
 # ./qsp_slam_rgbd Vocabulary/ORBvoc.bin configs/redwood_monitor_01041.yaml \

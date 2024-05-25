@@ -27,29 +27,29 @@ void Builder::processFrame(cv::Mat &rgb, cv::Mat &depth, Eigen::VectorXd &pose, 
     }
 
     PointCloudPCL::Ptr pLocalPointCloud = image2PointCloud(rgb, depth, depth_thresh);
-    cout << "  - processFrame: create pLocalPointCloud ";
-    printMemoryUsage();
+    // cout << "  - processFrame: create pLocalPointCloud ";
+    // printMemoryUsage();
 
     PointCloudPCL::Ptr pGlobalPointCloud = transformToWolrd(pLocalPointCloud, pose);   // pose: Twc
     pLocalPointCloud.reset();
-    cout << "  - processFrame: create pGlobalPointCloud and reset pLocalPointCloud";
-    printMemoryUsage();
+    // cout << "  - processFrame: create pGlobalPointCloud and reset pLocalPointCloud";
+    // printMemoryUsage();
 
     mpCurrentMap.reset();
-    cout << "  - processFrame: mpCurrentMap.reset ";
-    printMemoryUsage();
+    // cout << "  - processFrame: mpCurrentMap.reset ";
+    // printMemoryUsage();
 
     mpCurrentMap = pGlobalPointCloud;
 
-    cout << "  - processFrame: set equal ";
-    printMemoryUsage();
+    // cout << "  - processFrame: set equal ";
+    // printMemoryUsage();
 
     // add to map
     bool bGlobalMap = ORB_SLAM2::Config::Get<int>("Visualization.Builder.Global.Open") == 1;
     if(bGlobalMap){
         addPointCloudToMap(pGlobalPointCloud);
-        cout << "  - processFrame: after addPointCloudToMap ";
-        printMemoryUsage();
+        // cout << "  - processFrame: after addPointCloudToMap ";
+        // printMemoryUsage();
     }
     pGlobalPointCloud.reset();
     return;

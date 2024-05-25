@@ -97,6 +97,7 @@ void alignTrajectory(MatrixXd& estMat, MatrixXd& gtMat, g2o::SE3Quat& transform,
     // std::cout << "estPointMat : " << std::endl << estPointMat.topRows(5) << std::endl;
 
     // 开始求解 : 要求输入的点是一列一个.
+    // 求解点对应关系矩阵
     MatrixXd result = Eigen::umeyama(estPointMat.transpose(), gtPointMat.transpose(), false);
     // std::cout << " ----- Umeyama result ---- " << std::endl;
     // std::cout << result << std::endl;

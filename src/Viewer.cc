@@ -101,7 +101,7 @@ void Viewer::Run()
     mvMenuStruct[7] = new MenuStruct(" - Wid (green)", 0.5,0.001,3);
     mvMenuStruct[8] = new MenuStruct(" - H (blue)", 0.5,0.001,3);
 
-    pangolin::Var<bool> menuShowAnnoObj("menu.Show AnnoObj",true,true);
+    pangolin::Var<bool> menuShowAnnoObj("menu.Show AnnoObj",false,true);
     pangolin::Var<bool> menuAddAnnoObj("menu.AddAnnoObj",false,false);
     pangolin::Var<bool> menuSaveAnnoObj("menu.SaveAnnoObj",false,false);
     // pangolin::Var<int> menuAnnoIndex("menu.AnnoIndex",cur_AnnoIndex,-1,AnnoNum);

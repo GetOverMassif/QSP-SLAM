@@ -22,7 +22,7 @@ import torch
 from reconstruct.loss_utils import get_rays, get_time
 from reconstruct.utils import ForceKeyErrorDict
 from reconstruct import get_detectors
-from contents import object_classes, object_classes_on_ground, object_classes_on_table
+from contents import object_classes, object_classes_on_ground, object_classes_on_table, object_classes_icl_nuim, object_classes_redwood, object_classes_freiburg
 
 from reconstruct.tools import show_cuda_memory
 
@@ -55,16 +55,20 @@ class Frame:
 
         self.data_type = sequence.data_type
 
+# object_classes_redwood, object_classes_freiburg
+
         if sequence.data_type == "Redwood":
-            self.object_class = ["chairs"]
+            self.object_class = object_classes_redwood
         elif sequence.data_type == "Freiburg":
-            self.object_class = ["cars"]
+            self.object_class = object_classes_freiburg
         elif sequence.data_type == "MultiObject":
             self.object_class = ["tv_monitor"]
         elif sequence.data_type == "AllObjectsOnTable":
             self.object_class = object_classes_on_table
         elif sequence.data_type == "AllObjectsOnGround":
             self.object_class = object_classes_on_ground
+        elif sequence.data_type == "ICL-NUIM":
+            self.object_class = object_classes_icl_nuim
         
         # elif sequence.data_type=='Tum':
         #     self.object_class = "monitor"
@@ -187,7 +191,7 @@ class Frame:
                 self.instances.append(instance)
 
 
-valid_data_types = ["Redwood", "Freiburg", "MultiObject", "AllObjectsOnTable", "AllObjectsOnGround"]
+valid_data_types = ["Redwood", "Freiburg", "MultiObject", "AllObjectsOnTable", "AllObjectsOnGround","ICL-NUIM"]
 
 class MonoSequence:
     def __init__(self, data_dir, configs):

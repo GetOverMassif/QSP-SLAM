@@ -416,9 +416,10 @@ namespace TUMRGBD
         return miTotalNum;
     }
 
-    bool Dataset::loadDetectionDir(string &path)
+    void Dataset::loadDetectionDir(string &path)
     {
         msDetectionDir = path;
+        // std::cout << "loadDetectionDir, path = " << path << std::endl;
         mbDetectionLoaded = true;
     }
 
@@ -465,6 +466,56 @@ namespace TUMRGBD
     //     return bbox_output;
         
     // }
+
+    MatrixXd* Dataset::getDetectionMatPointer(int id){
+        Eigen::MatrixXd detMat;
+        Eigen::MatrixXd* bbox_output;
+
+        if(!mbDetectionLoaded){
+            std::cerr << "Detection dir has not loaded yet." << std::endl;
+            return bbox_output;
+        }
+
+        // get the RGB timestamp as the name of the object detection file
+        int currentId = id!=-1?id:miCurrentID;
+
+        // string bairName = mvIdToRGBTimeStamp[currentId];
+        // string fullPath = msDetectionDir + bairName + ".txt";
+
+        // string bairName = mvIdToRGBTimeStamp[currentId];
+        string fullPath = msDetectionDir + std::to_string(currentId) + ".txt";
+
+        // TODO: 判断 bbox 的 txt文件不存在
+        // std::cout << "fullPath = " << fullPath << std::endl;
+
+        detMat = readDataFromFile(fullPath.c_str());
+
+        if(mBboxType == BBOX_STORAGE_YOLO)
+        {
+            std::cout << "DEBUG detMat \n " << detMat << std::endl;
+            // calculate x1,y1,x2,y2 from center, width, height
+            // x1
+            Eigen::VectorXd col_center_x = detMat.col(1);
+            Eigen::VectorXd col_center_y = detMat.col(2);
+            Eigen::VectorXd col_w = detMat.col(3);
+            Eigen::VectorXd col_h = detMat.col(4);
+
+            Eigen::VectorXd col_x1 = (col_center_x - col_w / 2.0);
+            Eigen::VectorXd col_y1 = (col_center_y - col_h / 2.0);
+            Eigen::VectorXd col_x2 = (col_center_x + col_w / 2.0);
+            Eigen::VectorXd col_y2 = (col_center_y + col_h / 2.0);
+
+            detMat.col(1) = col_x1;
+            detMat.col(2) = col_y1;
+            detMat.col(3) = col_x2;
+            detMat.col(4) = col_y2;
+
+            std::cout << "DEBUG detMat \n " << detMat << std::endl;
+        }
+
+        bbox_output = new Eigen::MatrixXd(detMat);
+        return bbox_output;
+    }
 
     vector<int> Dataset::generateValidVector(){
         vector<int> validVec;

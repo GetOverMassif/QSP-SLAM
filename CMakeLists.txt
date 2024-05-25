@@ -22,7 +22,6 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -O3 -march=native")
 
 LIST(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake_modules)
 
-
 set(OpenCV_DIR "/usr/local/opencv-3.4/share/OpenCV")
 
 # # find_package(OpenCV 3.2 REQUIRED)

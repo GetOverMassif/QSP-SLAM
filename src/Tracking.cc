@@ -307,18 +307,22 @@ cv::Mat Tracking::GrabImageRGBD(const cv::Mat &imRGB,const cv::Mat &imD, const d
     // clock_t time_0_start = clock();
     // auto testmCurrentFrame = Frame(mImGray,imDepth,timestamp,mpORBextractorLeft,mpORBVocabulary,mK,mDistCoef,mbf,mThDepth,imRGB,imD);
 
+
     mCurrentFrame = new Frame(mImGray,imDepth,timestamp,mpORBextractorLeft,mpORBVocabulary,mK,mDistCoef,mbf,mThDepth,imRGB,imD);
+
+    std::cout << "Debug: Finish  mCurrentFrame create" <<std::endl;
 
     // clock_t time_frame_creation = clock();
     // cout << " -- time_frame_creation: " <<(double)(time_frame_creation - time_0_start) / CLOCKS_PER_SEC << "s" << endl;
     Track();
+    std::cout << "Debug: get out of Track()" << std::endl;
 
     // clock_t time_track = clock();
     // cout << " -- time_track: " <<(double)(time_track - time_frame_creation) / CLOCKS_PER_SEC << "s" << endl;
 
     // [A visualization tool] When Builder is opened, it generates local pointcloud from depth and rgb images of current frame,
     // and global pointcloud by simply adding local pointcloud in world coordinate and then downsampling them for visualization.
-
+    
     return mCurrentFrame->mTcw.clone();
 }
 
@@ -334,17 +338,17 @@ void Tracking::DenseBuild()
             // cv::imshow("mCurrentFrame->rgb_img", mCurrentFrame->rgb_img);
             cv::waitKey(20);
 
-            cout << "DenseBuild: before processFrame ";
-            printMemoryUsage();
+            // cout << "DenseBuild: before processFrame ";
+            // printMemoryUsage();
 
             // TODO： 下面这一步产生了较大的内存使用
             mpBuilder->processFrame(mCurrentFrame->rgb_img, mCurrentFrame->frame_img, pose, depth_range);
-            cout << "DenseBuild: after processFrame ";
-            printMemoryUsage();
+            // cout << "DenseBuild: after processFrame ";
+            // printMemoryUsage();
 
             mpBuilder->voxelFilter(0.01);   // Down sample threshold; smaller the finer; depend on the hardware.
-            cout << "DenseBuild: after voxelFilter ";
-            printMemoryUsage();
+            // cout << "DenseBuild: after voxelFilter ";
+            // printMemoryUsage();
 
             PointCloudPCL::Ptr pCurrentCloudPCL = mpBuilder->getCurrentMap();
             // cout << "DenseBuild: after getCurrentMap ";
@@ -406,6 +410,8 @@ cv::Mat Tracking::GrabImageMonocular(const cv::Mat &im, const double &timestamp)
 
 void Tracking::Track()
 {
+
+    std::cout << "Debug: Tracking::Track" <<std::endl;
     if(mState==NO_IMAGES_YET)
     {
         mState = NOT_INITIALIZED;
@@ -416,8 +422,11 @@ void Tracking::Track()
     // Get Map Mutex -> Map cannot be changed
     unique_lock<mutex> lock(mpMap->mMutexMapUpdate);
 
+    std::cout << "Debug: lock(mpMap->mMutexMapUpdate)" <<std::endl;
+
     if(mState==NOT_INITIALIZED)
     {
+        std::cout << "Debug: mState==NOT_INITIALIZED" <<std::endl;
         if(mSensor==System::STEREO || mSensor==System::RGBD)
             StereoInitialization();
         else
@@ -430,12 +439,17 @@ void Tracking::Track()
     }
     else
     {
+
+        std::cout << "Debug: mState INITIALIZED" <<std::endl;
+
         // System is initialized. Track Frame.
         bool bOK;
 
         // Initial camera pose estimation using motion model or relocalization (if tracking is lost)
         if(!mbOnlyTracking)
         {
+            std::cout << "Debug: !mbOnlyTracking" <<std::endl;
+
             // Local Mapping is activated. This is the normal behaviour, unless
             // you explicitly activate the "only tracking" mode.
 
@@ -462,10 +476,12 @@ void Tracking::Track()
         }
         else
         {
+            std::cout << "Debug: mbOnlyTracking" <<std::endl;
             // Localization Mode: Local Mapping is deactivated
 
             if(mState==LOST)
             {
+                std::cout << "Debug: mState==LOST" <<std::endl;
                 bOK = Relocalization();
             }
             else
@@ -531,28 +547,39 @@ void Tracking::Track()
                 }
             }
         }
-
+        std::cout << "Debug: set mpReferenceKF" <<std::endl;
         mCurrentFrame->mpReferenceKF = mpReferenceKF;
+
+        std::cout << "Debug: after set mpReferenceKF" <<std::endl;
 
         // If we have an initial estimation of the camera pose and matching. Track the local map.
         if(!mbOnlyTracking)
         {
-            if(bOK)
+            std::cout << "Debug: !mbOnlyTracking" <<std::endl;
+            if(bOK){
+                std::cout << "Debug: before TrackLocalMap" <<std::endl;
                 bOK = TrackLocalMap();
+                std::cout << "Debug: after TrackLocalMap" <<std::endl;
+            }
         }
         else
         {
             // mbVO true means that there are few matches to MapPoints in the map. We cannot retrieve
             // a local map and therefore we do not perform TrackLocalMap(). Once the system relocalizes
             // the camera we will use the local map again.
+            std::cout << "Debug: mbOnlyTracking" <<std::endl;
             if(bOK && !mbVO)
                 bOK = TrackLocalMap();
         }
+
+        std::cout << "Debug: before set mState" <<std::endl;
 
         if(bOK)
             mState = OK;
         else
             mState=LOST;
+
+        std::cout << "Debug: mpFrameDrawer->Update" <<std::endl;
 
         // Update drawer
         mpFrameDrawer->Update(this);
@@ -560,6 +587,7 @@ void Tracking::Track()
         // If tracking were good, check if we insert a keyframe
         if(bOK)
         {
+            std::cout << "Debug: bOK 1" <<std::endl;
             // Update motion model
             if(!mLastFrame->mTcw.empty())
             {
@@ -571,7 +599,11 @@ void Tracking::Track()
             else
                 mVelocity = cv::Mat();
 
+            std::cout << "Debug: bOK 2" <<std::endl;
+
             mpMapDrawer->SetCurrentCameraPose(mCurrentFrame->mTcw);
+
+            std::cout << "Debug: bOK 3" <<std::endl;
 
             // Clean VO matches
             for(int i=0; i<mCurrentFrame->N; i++)
@@ -585,6 +617,7 @@ void Tracking::Track()
                     }
             }
 
+            std::cout << "Debug: bOK 4" <<std::endl;
             // Delete temporal MapPoints
             for(list<MapPoint*>::iterator lit = mlpTemporalPoints.begin(), lend =  mlpTemporalPoints.end(); lit!=lend; lit++)
             {
@@ -595,19 +628,14 @@ void Tracking::Track()
 
             // Check if we need to insert a new keyframe
             // 只在关键帧中进行物体检测
+
+            std::cout << "Judge NeedNewKeyFrame" << std::endl;
             if(NeedNewKeyFrame())
             {
                 cout << "New Keyframe" << endl;
                 CreateNewKeyFrame();
-
-                // cout << "[ After CreateNewKeyFrame, mvpFrames size = " << mvpFrames.size() << endl;
-                // for (auto& pF: mvpFrames){
-                //     cout << pF->frame_seq_id << ",  " << pF->mnId << ","
-                //         << &pF << endl;
-                // }
-                // cout << endl;
-
             }
+            std::cout << "End Judge NeedNewKeyFrame" << std::endl;
 
             // We allow points with high innovation (considererd outliers by the Huber Function)
             // pass to the new keyframe, so that bundle adjustment will finally decide
@@ -637,6 +665,8 @@ void Tracking::Track()
         // mLastFrame = Frame(mCurrentFrame);
         mLastFrame = mCurrentFrame;
 
+        std::cout << "Debug: mLastFrame = mCurrentFrame" << std::endl;
+
         // cout << "[ After mLastFrame set, mvpFrames size = " << mvpFrames.size() << endl;
         // for (auto& pF: mvpFrames){
         //     cout << pF->frame_seq_id << ",  " << pF->mnId << ","
@@ -663,6 +693,7 @@ void Tracking::Track()
         mlbLost.push_back(mState==LOST);
     }
 
+    std::cout << "Debug: before Track return" << std::endl;
 }
 
 void Tracking::StereoInitialization()
@@ -1111,11 +1142,15 @@ bool Tracking::TrackLocalMap()
     // We retrieve the local map and try to find matches to points in the local map.
 
     UpdateLocalMap();
+    std::cout << "Debug: after UpdateLocalMap" << std::endl;
 
     SearchLocalPoints();
 
+    std::cout << "Debug: after SearchLocalPoints" << std::endl;
+
     // Optimize Pose
     Optimizer::PoseOptimization(mCurrentFrame);
+    std::cout << "Debug: after PoseOptimization" << std::endl;
     mnMatchesInliers = 0;
 
     // Update MapPoints Statistics
@@ -1142,8 +1177,13 @@ bool Tracking::TrackLocalMap()
 
     // Decide if the tracking was succesful
     // More restrictive if there was a relocalization recently
-    if(mCurrentFrame->mnId<mnLastRelocFrameId+mMaxFrames && mnMatchesInliers<50)
+    if(mCurrentFrame->mnId<mnLastRelocFrameId+mMaxFrames && mnMatchesInliers<50){
+        std::cout << "Debug: before TrackLocalMap return" << std::endl;
         return false;
+    }
+
+    std::cout << "mnMatchesInliers = " << mnMatchesInliers << std::endl;
+    std::cout << "Debug: before TrackLocalMap return" << std::endl;
 
     if(mnMatchesInliers<30)
         return false;
@@ -1282,11 +1322,7 @@ void Tracking::CreateNewKeyFrame()
     {
         std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
 
-        // cout << "[Tracking mvpFrames push_back frame] : " << mCurrentFrame->frame_seq_id << endl;
-
-        // if (ignore_object) {
-
-        // }
+        std::cout << "Debug: before AddFrameWithKeyframe" << std::endl;
 
         AddFrameWithKeyframe(mCurrentFrame);
 

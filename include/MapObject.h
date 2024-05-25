@@ -81,7 +81,7 @@ public:
     g2o::ellipsoid* GetEllipsold();
     void SetPoseByEllipsold(g2o::ellipsoid* e);
 
-    bool AddDepthPointCloudFromObjectDetection(ObjectDetection* det);
+    void AddDepthPointCloudFromObjectDetection(ObjectDetection* det);
 
 public:
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW

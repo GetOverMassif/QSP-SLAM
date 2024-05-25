@@ -52,8 +52,10 @@ public:
     void SetBboxStorage(int type);
 
     // load object detections
-    bool loadDetectionDir(string &path);
+    void loadDetectionDir(string &path);
     // Eigen::MatrixXd getDetectionMat(int id = -1);
+
+    MatrixXd* getDetectionMatPointer(int id = -1);
 
     bool empty();
 

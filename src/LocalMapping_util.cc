@@ -320,7 +320,7 @@ void LocalMapping::CreateNewObjectsFromDetections()
         }
         
         if (!det->isGood && !add_depth_pcd_to_map_object) {
-            std::cout << "continue because !det->isGood && !add_depth_pcd_to_map_object" << std::endl;
+            std::cout << "continue because !det->isGood && !add depth_pcd_to_map_object" << std::endl;
             continue;
         }
 
@@ -432,12 +432,14 @@ void LocalMapping::ProcessDetectedObjects()
 
         // 这里的中间判据有待改进
         if (!det->isGood && !add_depth_pcd_to_map_object ) {
-            std::cout << "  Conitinue because !det->isGood && !add_depth_pcd_to_map_object" << std::endl;
+            std::cout << "  Conitinue because !det->isGood && !add depth_pcd_to_map_object" << std::endl;
             continue;
         }
 
         if (!det->isValidPcd && add_depth_pcd_to_map_object) {
-            std::cout << "  Conitinue because !det->isValidPcd && add_depth_pcd_to_map_object" << std::endl;
+            cout << "det->isValidPcd = " << det->isValidPcd << std::endl;
+            cout << "add_depth_pcd_to_map_object = " << add_depth_pcd_to_map_object << std::endl;
+            std::cout << "  Conitinue because !det->isValidPcd && add depth_pcd_to_map_object" << std::endl;
             continue;
         }
 
@@ -493,7 +495,8 @@ void LocalMapping::ProcessDetectedObjects()
             else{
                 if (mvpGlobalEllipsolds[det_i] == NULL) {
                     cout << "mvpGlobalEllipsolds[" << det_i << "] == NULL" << endl;
-                    // pMO->SetBadFlag();
+                    continue;
+                    pMO->SetBadFlag();
                     // continue;
                 }
                 else{
@@ -860,7 +863,11 @@ void LocalMapping::ProcessDetectedObjects()
         if (!pMO) {
             continue;
         }
+        // FIXME 此处未来可能需要修改
         if (!pMO->mbValidEllipsoldFlag || !pMO->mbValidPointCloudFlag){
+            std::cout << "Valid Ellipsold/Pointcloud : " \
+                << pMO->mbValidEllipsoldFlag << "/" 
+                << pMO->mbValidPointCloudFlag << std::endl;
             mpMap->EraseMapObject(pMO);
         }
     }

@@ -560,27 +560,37 @@ void MapObject::SetPoseByEllipsold(g2o::ellipsoid* e)
     SetObjectPoseSim3(Two); // Two
 }
 
-bool MapObject::AddDepthPointCloudFromObjectDetection(ObjectDetection* det)
+void MapObject::AddDepthPointCloudFromObjectDetection(ObjectDetection* det)
 {
+    std::cout << "AddDepthPointCloudFromObjectDetection" << std::endl;
     // // 这里可能还需要一次降采样操作
     unique_lock<mutex> lock(mMutexPointCloud);
 
     // std::cout << "mnId = " << mnId << std::endl;
+    if (det->pcd_ptr == nullptr) {
+        std::cout << "det->pcd_ptr = nullptr" << std::endl;
+        return;
+    }
     
-    if (pcd_ptr == nullptr) {
-        // std::cout << "pcd_ptr = nullptr" << std::endl;
+    if (pcd_ptr == nullptr) 
+    {
+        std::cout << "pcd_ptr = nullptr" << std::endl;
         pcd_ptr = pcl::PointCloud<PointType>::Ptr(new pcl::PointCloud<PointType>);
+        std::cout << "error in 1" << std::endl;
         *pcd_ptr = *(det->pcd_ptr);
-        // mbValidPointCloudFlag = true;
+        mbValidPointCloudFlag = true;
     }
     else{
-        // std::cout << "Merging .. " << std::endl;
+        std::cout << "Merging .. " << std::endl;
         pcl::PointCloud<PointType>::Ptr mergedCloud(new pcl::PointCloud<PointType>);
         pcl::concatenate(*(det->pcd_ptr), *pcd_ptr, *mergedCloud);
         pcd_ptr->clear();
         det->pcd_ptr->clear();
         *pcd_ptr = *mergedCloud;
+        mbValidPointCloudFlag = true;
     }
+
+    std::cout << "error in 2" << std::endl;
     
     // 打印合并后的点云的大小
     std::cout << "Merged Cloud Size: " << pcd_ptr->size() << std::endl;
@@ -593,7 +603,7 @@ bool MapObject::AddDepthPointCloudFromObjectDetection(ObjectDetection* det)
 
     mPoints = std::make_shared<PointCloud>(pclXYZToQuadricPointCloud(pcd_ptr));
 
-    return true;
+    // return true;
 }
 
 std::shared_ptr<PointCloud> MapObject::GetPointCloud()

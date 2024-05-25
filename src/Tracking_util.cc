@@ -309,13 +309,16 @@ void Tracking::GetObjectDetectionsRGBD(KeyFrame *pKF)
 
     py::list detections;
 
-    if (!ignoreObjFlag){
-        detections = mpSystem->pySequence.attr("get_frame_by_name")(pKF->mnFrameId, frame_name);
-    }
-    else {
-        detections = py::list(0);
-        cout << "Size detections = " << detections.size() << endl;
-    }
+    detections = mpSystem->pySequence.attr("get_frame_by_name")(pKF->mnFrameId, frame_name);
+
+    // if (!ignoreObjFlag){
+    //     detections = mpSystem->pySequence.attr("get_frame_by_name")(pKF->mnFrameId, frame_name);
+    //     // background_rays, mask, bbox, label, prob
+    // }
+    // else {
+    //     detections = py::list(0);
+    //     cout << "Size detections = " << detections.size() << endl;
+    // }
 
     // cout << "sizeof (detections) = " << sizeof(detections) << " bytes" << endl;
 
@@ -374,10 +377,9 @@ void Tracking::GetObjectDetectionsRGBD(KeyFrame *pKF)
             det->isGood = false;
         }
 
-        pKF->mvpDetectedObjects.push_back(det);
-
-        // cout << "Finish detection " << detected_idx << endl;
-        // printMemoryUsage();
+        if(!ignoreObjFlag) {
+            pKF->mvpDetectedObjects.push_back(det);
+        }
     }
 
     // 将det结果保存到矩阵mmObservations中
@@ -923,15 +925,15 @@ void Tracking::UpdateDepthEllipsoidEstimation(ORB_SLAM2::Frame* pFrame, KeyFrame
 
         // FIXME: 这里涉及到对观测框靠近边界的物体观测如何处理的问题：暂时在python检测中去除靠近边界的检测
 
-        if (is_border) {
-            cout << ">> [is_border] " 
-                 << "measure: " << measurement.transpose().matrix()
-                 << ", row: " << mRows << ", col: " << mCols 
-                 << ", length_limit: " << Config::Get<int>("Measurement.Border.Pixels")
-                 << endl;
-            cout << "Press enter to continue: " << endl;
-            getchar();
-        }
+        // if (is_border) {
+        //     cout << ">> [is_border] " 
+        //          << "measure: " << measurement.transpose().matrix()
+        //          << ", row: " << mRows << ", col: " << mCols 
+        //          << ", length_limit: " << Config::Get<int>("Measurement.Border.Pixels")
+        //          << endl;
+        //     cout << "Press enter to continue: " << endl;
+        //     getchar();
+        // }
         
         double prob_thresh = Config::Get<double>("Measurement.Probability.Thresh");
 
@@ -1007,8 +1009,12 @@ void Tracking::UpdateDepthEllipsoidEstimation(ORB_SLAM2::Frame* pFrame, KeyFrame
                 det->isValidPcd = false;
                 // continue;
             }
+            else{
+                det->isValidPcd = true;
+            }
 
             if (add_depth_pcd_to_map_object && pcd_ptr!=NULL) {
+                std::cout << "!!! det->setPcdPtr(pcd_ptr);" << std::endl;
                 det->setPcdPtr(pcd_ptr);
             }
             
@@ -1090,8 +1096,10 @@ void Tracking::UpdateDepthEllipsoidEstimation(ORB_SLAM2::Frame* pFrame, KeyFrame
         pKF->mpLocalEllipsolds.push_back(pLocalEllipsoidThisObservation);
         // cout << "ellipsold add 3" << endl;
 
+        // TODO: 应当在完整观测模型无效时进入局部观测模型
         if (pGlobalEllipsoidThisObservation==NULL){
             cout << "pGlobalEllipsoidThisObservation==NULL" << endl;
+            det->SetBadFlag();
         }
         else{
             cout << "pGlobalEllipsoidThisObservation->prob = " << pGlobalEllipsoidThisObservation->prob << endl;
@@ -1192,6 +1200,8 @@ void Tracking::RefineObjectsWithRelations(ORB_SLAM2::Frame *pFrame)
                 // 此处设定 Refine 一定优先.
                 (*pFrame->mpLocalObjects[obj_id]) = e;                    
                 success_num++;
+
+                std::cout << "success_num++ " << std::endl;
             }
         }
     }
@@ -1365,7 +1375,7 @@ void Tracking::LoadPointcloud(const string& strPcdDir, const string& strPointclo
     double voxel_size = Config::Get<double>("QSPSLAM.VoxelSize");
 
     if (voxel_size > 0) {
-        std::cout << "voxelsize = " << voxelsize << std::endl;
+        std::cout << "voxel_size = " << voxel_size << std::endl;
         cloud = VoxelFilterPointCloud(cloud, voxel_size);
     }
 

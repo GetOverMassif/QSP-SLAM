@@ -6,7 +6,7 @@
     "config_path": "configs/config_maskrcnn.py",
     "weight_path": "weights/maskrcnn/model.pth"
   },
-  "slam_config_path": "configs/redwood_09374.yaml",
+  "slam_config_path": "configs/Redwood_chair_03815.yaml",
   "min_bb_area": 1600,
   "min_mask_area": 1000,
   "downsample_ratio": 4.0,
@@ -32,5 +32,10 @@
     "distance": 10,
     "tilt": 30,
     "frame_size": 0.5
+  },
+  "image": {
+    "mRow": 480,
+    "mCol": 640,
+    "mEdge": 1
   }
 }
