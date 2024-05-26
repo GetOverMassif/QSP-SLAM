@@ -81,9 +81,8 @@ int main(int argc, char **argv)
     std::string vocabulary_path = fSettings["Vocabulary.Path"];
     std::string dataset_path = fSettings["Dataset.Path.Root"];
     std::string save_map_dir = fSettings["Dataset.Path.Save"];
-    std::string strAssociationFilename = dataset_path + "/associate.txt";
-
-    // string pcd_filepath = dataset_path + "./dataset.pcd";
+    std::string associate_file = fSettings["Dataset.Path.AssociateFile"];
+    std::string strAssociationFilename = dataset_path + associate_file;
 
     std::string pcd_filepath = fSettings["Dataset.Path.MapPcd"];
 
@@ -142,6 +141,7 @@ int main(int argc, char **argv)
         abort();
     }
 
+    
     LoadImages(strAssociationFilename, vstrImageFilenamesRGB, vstrImageFilenamesD, vTimestamps);
 
     std::vector<std::string> vstrImageFilenamesRGB_all(vstrImageFilenamesRGB);
@@ -438,6 +438,7 @@ int main(int argc, char **argv)
     SLAM.SaveKeyFrameTrajectoryTUM(dataset_path + "/KeyFrameTrajectory_QSP.txt");
 
     SLAM.SaveEstimatedObjectsForEvo(dataset_path + "/result/objects.txt");
+    SLAM.SaveEstimatedTrajForEvo(dataset_path + "/result/traj.txt");
 
     // Save pointcloud
     bool mbOpenBuilder = Config::Get<int>("Visualization.Builder.Open") == 1;
@@ -574,7 +575,8 @@ void ReconstrucScenePointCloud( ORB_SLAM2::System& SLAM,
     int frame_num = rgbFilenames.size();
     int gt_traj_num = gtTrajVO.size();
     cout << "frame_num = " << frame_num << ", gt_traj_num = " << gt_traj_num << std::endl;
-    assert((frame_num == gt_traj_num) && "frame_num should be equal to gt_traj_num");
+    assert((frame_num <= gt_traj_num) && "frame_num should be equal to gt_traj_num");
+
     std::cout << std::endl;
     // std::cout << "set frame_num = 100" << std::endl;
     // frame_num = 100;
@@ -585,17 +587,22 @@ void ReconstrucScenePointCloud( ORB_SLAM2::System& SLAM,
                   << ", memory: " << GetMemoryUsage() << "MB" << std::endl;
 
         cv::Mat rgb_img = cv::imread(dataset_path+"/"+rgbFilenames[i_frame], CV_LOAD_IMAGE_UNCHANGED);
-        
         cv::Mat depth_img = cv::imread(dataset_path+"/"+depthFilenames[i_frame], CV_LOAD_IMAGE_UNCHANGED);
 
-        // cv::imshow("rgb_img", rgb_img);
-        // // cv::imshow("depth_range", depth_range);
-        // cv::waitKey(20);
+        cv::imshow("rgb_img", rgb_img);
+        // cv::imshow("depth_range", depth_range);
+        cv::waitKey(0);
+
+        cv::imshow("depth_img", depth_img);
+        // cv::imshow("depth_range", depth_range);
+        cv::waitKey(0);
 
         // Tcw: x,y,z,qx,qy,qz,qw
         Eigen::VectorXd pose = gtTrajVO[i_frame]->pose.toVector();
 
         mp_Builder->processFrame(rgb_img, depth_img, pose, depth_range);
+
+
         mp_Builder->voxelFilter(0.01);   // Down sample threshold; smaller the finer; depend on the hardware.
 
         // PointCloudPCL::Ptr pCloudPCL = mp_Builder->getMap();

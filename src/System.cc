@@ -226,7 +226,7 @@ System::System(const string &strVocFile, const string &strSettingsFile, const st
         mpLoopCloser->SetLocalMapper(mpLocalMapper);
     }
 
-    OpenDepthEllipsoid();
+    OpenDepthEllipsoid();  // Open Single-Frame Ellipsoid Extraction
 
     mpTracker->OpenGroundPlaneEstimation();     // Open Groundplane Estimation.
 

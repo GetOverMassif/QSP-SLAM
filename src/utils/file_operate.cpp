@@ -25,6 +25,15 @@ void printMemoryUsage(){
   }
 }
 
+double GetMemoryUsage(){
+  struct rusage rusage;
+  if (getrusage(RUSAGE_SELF, &rusage) == 0) {
+      return (double)rusage.ru_maxrss / 1024.;
+  } else {
+      return -1;
+  }
+}
+
 // // MB
 // double GetMemoryUsage(){
 //   struct rusage rusage;

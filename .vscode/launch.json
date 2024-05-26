@@ -47,7 +47,8 @@
             // "/media/lj/TOSHIBA/dataset/MySimDataset/GroundObjects/associate.txt",
             // "map/self/GroundObjects"
 
-            "configs/ICL_NUIM_home_2.yaml",
+            // "configs/ICL_NUIM_home_2.yaml",
+            "configs/Redwood_chair_01053.yaml"
             // "configs/ICL_NUIM_office_2.yaml",
 
         ],

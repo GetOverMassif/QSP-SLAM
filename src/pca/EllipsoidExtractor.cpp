@@ -230,7 +230,7 @@ pcl::PointCloud<PointType>::Ptr EllipsoidExtractor::ExtractPointCloud(cv::Mat &d
         std::cout << "[Pointcloud Extraction] Can't Find Center. Bbox: " << bbox.transpose() << std::endl;
         cout << "Press Enter to continue" << endl;
         // getchar();
-        return clear_cloud_ptr;
+        return NULL;
     }
     clock_t time_5_GetCenter = clock();
     // std::cout << "center = " << center.transpose().matrix() << std::endl;
@@ -241,13 +241,19 @@ pcl::PointCloud<PointType>::Ptr EllipsoidExtractor::ExtractPointCloud(cv::Mat &d
     // delete pPoints_sampled; pPoints_sampled = NULL;
 
     if (miEuclideanFilterState > 0) {
-        std::cout << "Fail to filter by EuclideanFilter." << std::endl;
+        std::cout << "Fail to filter by EuclideanFilter." << std::endl;  // 未能成功聚类中间点云
         miSystemState = 2; // fail to filter
         return NULL;
     }
     clock_t time_6_ApplyEuclideanFilter = clock();
 
     std::cout << "pPointsEuFiltered.size() = " << pPointsEuFiltered->size() << std::endl;
+
+    if (pPointsEuFiltered->size() < 1) {
+        std::cout << "No enough point cloud after ApplyEuclideanFilter:  " << pPointsEuFiltered->size() << std::endl;
+        miSystemState = 3;
+        return NULL;
+    }
 
     // we have gotten the object points in the world coordinate
     // pcl::PointCloud<PointType>::Ptr clear_cloud_ptr = QuadricPointCloudToPclXYZ(*pPointsEuFiltered);

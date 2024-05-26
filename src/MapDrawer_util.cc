@@ -110,11 +110,52 @@ namespace ORB_SLAM2
     }
 
     // draw external cubes.
-    bool MapDrawer::drawEllipCuboids(double prob_thresh) {
+    bool MapDrawer::drawEllipCuboidsGt(double prob_thresh) {
         std::vector<ellipsoid*> ellipsoids = mpMap->GetAllEllipsoids();
 
         std::vector<ellipsoid*> ellipsoidsVisual = mpMap->GetAllEllipsoidsVisual();
         ellipsoids.insert(ellipsoids.end(), ellipsoidsVisual.begin(), ellipsoidsVisual.end());
+
+        std::vector<ellipsoid*> vec_pointmodel_ellipsoids;
+        for( size_t i=0; i<ellipsoids.size(); i++)
+        {
+            g2o::ellipsoid* pE = ellipsoids[i];
+            if(pE->prob < prob_thresh) continue;
+
+            // 对于点模型不显示
+            Vector3d scale = pE->scale;
+            // bool bPointModel = scale[0] < 0.15 && scale[1] < 0.15 && scale[2] < 0.15;
+            double size_point = 0.1;
+            bool bPointModel = scale[0] == size_point && scale[1] == size_point && scale[2] == size_point;
+            if(bPointModel)
+            {
+                vec_pointmodel_ellipsoids.push_back(pE);
+                continue;
+            }
+
+            g2o::ellipsoid e_forshow = *pE;
+            if(mbOpenTransform)
+                e_forshow = e_forshow.transform_from(mTge);
+
+            // Eigen::Matrix3Xd corners = e_forshow.compute3D_BoxCorner();
+            Eigen::Matrix3Xd* corners = e_forshow.compute3D_BoxCorner_ptr();
+            Vector3d color;
+            if(ellipsoids[i]->isColorSet()){
+                color = ellipsoids[i]->getColor();
+            }
+            else
+                color = Vector3d(0, 0, 1.0);
+            drawOneBoundingbox(*corners, color, 1.0);
+        }
+
+        drawAllEllipsoidsInVector(vec_pointmodel_ellipsoids);
+
+        return true;
+    }
+
+    // draw external cubes.
+    bool MapDrawer::drawEllipCuboidsEst(double prob_thresh) {
+        std::vector<ellipsoid*> ellipsoids = mpMap->GetAllEllipsoids();
 
         std::vector<ellipsoid*> ellipsoidsObs = mpMap->GetObservationEllipsoids();
         ellipsoids.insert(ellipsoids.end(), ellipsoidsObs.begin(), ellipsoidsObs.end());

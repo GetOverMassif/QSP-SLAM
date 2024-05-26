@@ -65,9 +65,18 @@ Config.StandardParamFile: configs/ICL_NUIM_home.yaml
 
 
 Dataset.Type: "Redwood"
-Dataset.Path.Root: /media/lj/TOSHIBA/dataset/RedwoodOS/forQSPSLAM/01053
-Dataset.Path.Save: map/redwood_new/01053
+# Dataset.Path.Root: /media/lj/TOSHIBA/dataset/RedwoodOS/forQSPSLAM/01053
+# Dataset.Path.Save: map/redwood_new/01053
+# Dataset.Path.Root: /media/lj/TOSHIBA/dataset/RedwoodOS/forQSPSLAM/03815
+# Dataset.Path.Save: map/redwood_new/03815
+# Dataset.Path.Root: /media/lj/TOSHIBA/dataset/RedwoodOS/forQSPSLAM/00033
+# Dataset.Path.Save: map/redwood_new/00033
+Dataset.Path.Root: /media/lj/TOSHIBA/dataset/RedwoodOS/forQSPSLAM/09374
+Dataset.Path.Save: map/redwood_new/09374
+
 Dataset.Path.MapPcd: "./dataset.pcd"
+Dataset.Path.AssociateFile: /associate.txt
+MapObject.PointCloudVoxelSize: 0.03
 
 Dataset.Path.ObjectGT: /objects_gt.txt
 Dataset.Path.ObjectGroundGT:  /objects_gt.txt

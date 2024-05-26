@@ -726,6 +726,8 @@ cv::Mat Frame::UnprojectStereo(const int &i)
 }
 
 bool Frame::SetObservations(KeyFrame* pKF){
+    // FIXME: 这里可能需要设置与KF相关的锁
+    std::cout << "Debug: Frame::SetObservations" << std::endl;
     std::vector<ObjectDetection*> obj_dets = pKF->GetObjectDetections();
     int num_det = obj_dets.size();
     std::cout << "num_det = " << num_det << std::endl;

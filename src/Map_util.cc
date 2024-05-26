@@ -263,6 +263,7 @@ PointCloud Map::GetPointCloudInList(const string &name) {
         return PointCloud(); // 空
 }
 
+// 添加真值/地图实际
 void Map::addEllipsoidVisual(ellipsoid *pObj) {
     unique_lock<mutex> lock(mMutexMap);
     mspEllipsoidsVisual.push_back(pObj);

@@ -232,6 +232,47 @@ void System::SaveEstimatedObjectsForEvo(const string &filepath){
     f_obj.close();
 }
 
+void System::SaveEstimatedTrajForEvo(const string &filepath)
+{
+    System::SaveTrajectoryTUM(filepath);
+    // ofstream f_traj;
+    // f_traj.open(filepath.c_str());
+    // f_traj << fixed;
+
+    // auto mvpMapObjects = mpMap->GetAllMapObjects();
+    // sort(mvpMapObjects.begin(), mvpMapObjects.end(), MapObject::lId);
+
+    // // mId, class_id, x, y, z, qx, qy, qz, sx, sy, sz
+    // // 1 8   75 1 0     -1.387770 0.211749 0.785359     0.000000 0.000000 0.000000 1.000000     0.246935 0.246935 0.347301   #vase
+    // for (MapObject *pMO : mvpMapObjects) {
+    //     if (!pMO)
+    //         continue;
+    //     if (pMO->isBad())
+    //         continue;
+    //     if (pMO->GetRenderId() < 0)
+    //         continue;
+    //     if (pMO->isDynamic())
+    //         continue;
+
+    //     f_obj << pMO->mnId << " ";
+    //     // auto Two = pMO->GetPoseSim3();
+    //     auto Two = pMO->GetPoseSE3();
+
+    //     Vector6d pose_Two = Converter::toSE3Quat(Two).toMinimalVector();
+
+    //     // auto scale = pMO->scale;
+    //     Eigen::Vector3d scale(pMO->w, pMO->h, pMO->l);
+
+    //     f_obj << setprecision(6) \
+    //         << pose_Two(0) << " " << pose_Two(1) << " " << pose_Two(2) << " " \
+    //         << pose_Two(3) << " " << pose_Two(4) << "" << pose_Two(5) << " " \
+    //         << scale(0) << " " << scale(1) << " " << scale(2) << " "
+    //         << pMO->label << endl;
+    //     // f_obj << setprecision(9) << pMO->GetShapeCode().transpose() << endl;
+    // }
+    // f_traj.close();
+}
+
 void System::OpenDepthEllipsoid()
 {
     mpTracker->OpenDepthEllipsoid();

@@ -154,7 +154,7 @@ public:
 
     // void Update3DObservationDataAssociation(ORB_SLAM2::Frame* pFrame, std::vector<int>& associations, std::vector<bool>& KeyFrameChecks);
     void UpdateDepthEllipsoidEstimation(ORB_SLAM2::Frame* pFrame, KeyFrame* pKF, bool withAssociation);
-    // void UpdateDepthEllipsoidUsingPointModel(ORB_SLAM2::Frame* pFrame);
+    void UpdateDepthEllipsoidUsingPointModel(ORB_SLAM2::Frame* pFrame);
 
     Builder* GetBuilder();
     bool SavePointCloudMap(const string& path);
@@ -371,6 +371,8 @@ protected:
     bool ignoreObjFlag;
 
     bool keyFrameFlagForPause;
+
+    KeyFrame* cur_pKF;
 
 };
 

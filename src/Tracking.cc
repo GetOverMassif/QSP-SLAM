@@ -1286,6 +1286,7 @@ void Tracking::CreateNewKeyFrame()
         return;
 
     KeyFrame* pKF = new KeyFrame(*mCurrentFrame,mpMap,mpKeyFrameDB);
+    cur_pKF = pKF;
 
     // 双目模式： 双目+激光雷达点云
     if (mSensor == System::STEREO)
@@ -1359,6 +1360,8 @@ void Tracking::CreateNewKeyFrame()
          *  包括地面提取、深度图椭球估计、关联曼哈顿平面估计、
         */
         std::cout << " \n[ UpdateObjectObservation ] " << std::endl;
+
+        // 对物体观测进行椭球体建模
         UpdateObjectObservation(mCurrentFrame, pKF, withAssociation);
 
         // printMemoryUsage();
@@ -1381,8 +1384,6 @@ void Tracking::CreateNewKeyFrame()
         // printMemoryUsage();
 
         ManageMemory();
-
-        // printMemoryUsage();
 
         std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
 

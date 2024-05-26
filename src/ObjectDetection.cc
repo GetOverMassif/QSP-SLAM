@@ -80,13 +80,13 @@ int ObjectDetection::NumberOfPoints()
     return mvKeysIndices.size();
 }
 
-
+// FIXME: 有待进一步完善，如删除点云
 void ObjectDetection::setPcdPtr(pcl::PointCloud<PointType>::Ptr& pcd_ptr_)
 {
     // 这里有待考虑是否单独设置锁更合理
     if (pcd_ptr_ == NULL){
         pcd_ptr==nullptr;
-        isGood = true;
+        // isGood = true;
         isValidPcd = false;
         return;
     }

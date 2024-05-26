@@ -39,7 +39,7 @@ public:
 
     Vector9d vec_minimal; // x,y,z,roll,pitch,yaw,a,b,c
 
-    double prob;    // probability from single-frame ellipsoid estimation
+    double prob = -1.0;    // probability from single-frame ellipsoid estimation
     double prob_3d; // 椭球体三维投影到平面上，与bbox的IoU比较结果
 
     bool bPointModel;

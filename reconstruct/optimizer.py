@@ -101,6 +101,7 @@ class Optimizer(object):
         :param depth: depth values (K,) only contain foreground pixels, K = M for KITTI
         :return: optimized opject pose and shape, saved as a dict
         """
+        # t1_recon = get_time()
 
         show_cuda_memory("reconstruct_object head")
         # debug = True
@@ -270,7 +271,8 @@ class Optimizer(object):
             #       % (e, loss, sdf_loss, render_loss, rot_loss))
 
         end = get_time()
-        # print("Reconstruction takes %f seconds" % (end - start))
+        print(f"Interations: {self.num_iterations_joint_optim}")
+        print("Reconstruction takes %f seconds" % (end - start))
         t_cam_obj = torch.inverse(t_obj_cam)
 
         torch.cuda.empty_cache()

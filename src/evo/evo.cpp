@@ -915,9 +915,9 @@ namespace evo
         pMap->ClearEllipsoidsObservation();
         pMap->clearArrows();
         // VisualizeEllipsoidsInMat(estObjMat, Vector3d(0, 0, 1.0), pMap, true, vAlignEstToRef);    // 仅仅关联上的才可视化
-        // 蓝色
+        // 蓝色, 估计值
         VisualizeEllipsoidsInMat(estObjMat, Vector3d(0, 0, 1.0), pMap, true, true);    // 仅仅关联上的才可视化
-        // 红色
+        // 红色， 真值
         VisualizeEllipsoidsInMat(refObjMat, Vector3d(1.0, 0, 0), pMap, true);
         DrawAlignLines(estObjMat, refObjMat, vAlignEstToRef, pMap);
     }

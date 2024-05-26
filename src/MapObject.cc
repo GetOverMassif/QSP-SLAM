@@ -596,6 +596,21 @@ void MapObject::AddDepthPointCloudFromObjectDetection(ObjectDetection* det)
     std::cout << "Merged Cloud Size: " << pcd_ptr->size() << std::endl;
     // std::cout << "mnId = " << mnId << ", Merged Cloud Size: " << std::endl;
 
+    // 进行一次将采样
+    double grid_size = Config::Get<double>("MapObject.PointCloudVoxelSize");
+    static pcl::VoxelGrid<PointType> voxel;
+    double gridsize = grid_size;
+    voxel.setLeafSize( gridsize, gridsize, gridsize );
+    voxel.setInputCloud( pcd_ptr );
+    pcl::PointCloud<PointType>::Ptr tmp( new pcl::PointCloud<PointType>() );
+    voxel.filter( *tmp );
+    pcd_ptr.reset(new pcl::PointCloud<PointType>());
+    pcl::copyPointCloud(*tmp, *pcd_ptr);
+    tmp.reset();
+
+    std::cout << "Undersampled Cloud Size: " << pcd_ptr->size() << std::endl;
+
+
     // TODO: 这里判定点云有效的参数有待写入参数文件
     if (pcd_ptr->size() > 5) {
         mbValidPointCloudFlag = true;

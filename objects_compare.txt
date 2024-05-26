@@ -1,45 +1,50 @@
  ----------- AVERAGE ---------
-    aver_IoU: 0
-    aver_IoU_aligned: 0.0326755
-    aver_dis_trans: 0.856185
-    aver_dis_yaw: 138.335
-    aver_dis_yaw_arb: 54.896
-    aver_dis_yaw_arb_valid: 54.896
-    aver_IoU_aligned_arb: 0.0326755
+    aver_IoU: 0.64118
+    aver_IoU_aligned: 0.671931
+    aver_dis_trans: 0.312218
+    aver_dis_yaw: 9.93811
+    aver_dis_yaw_arb: 9.93811
+    aver_dis_yaw_arb_valid: 9.93811
+    aver_IoU_aligned_arb: 0.674959
 
  ----------- Mid Value ---------
-    mid_IoU: 0
-    mid_IoU_aligned: 0.0326755
-    mid_dis_trans: 0.856185
-    mid_dis_yaw: 138.335
-    mid_dis_yaw_arb: 54.896
-    mid_dis_yaw_arb_valid: 54.896
-    mid_IoU_aligned_arb: 0.0326755
+    mid_IoU: 0.776794
+    mid_IoU_aligned: 0.786131
+    mid_dis_trans: 0.122699
+    mid_dis_yaw: 6.62574
+    mid_dis_yaw_arb: 6.62574
+    mid_dis_yaw_arb_valid: 6.62574
+    mid_IoU_aligned_arb: 0.786131
 
  ----------- SINGLE OBJECTS COMPARE ---------
 instanceID	IoU	IoU_aligned	dis_trans	dis_yaw(deg)	dis_yaw_arb(deg)	IoU_aligned_arb	
-0	Empty.
-1	Empty.
-2	Empty.
-3	Empty.
-4	Empty.
-5	Empty.
-6	Empty.
-    7	0	0.0326755	0.856185	138.335	54.896	0.0326755	2(est)
+    0	1	1	0	1.36106e-14	2.3049e-14	1	0(est)
+    1	0.254994	0.254994	0.0867613	3.49206	3.49206	0.254994	13(est)
+    2	0.590151	0.591846	0.122699	6.62574	6.62574	0.591846	2(est)
+    3	0	0.078789	0.869782	11.0978	11.0978	0.078789	9(est)
+    4	0.867961	0.867961	0.2212	4.41722	4.41722	0.907329	4(est)
+    5	0.976043	1	0.922289	1.56169	1.56169	1	3(est)
+    6	0.494889	0.502853	0.429448	4.93834	4.93834	0.502853	6(est)
+    7	0.999252	1	0.06135	6.6258	6.6258	1	7(est)
+    8	0.867923	0.869874	0.06135	6.62574	6.62574	0.869874	8(est)
+    9	0	0.27354	0.854502	25.439	25.439	0.27354	5(est)
+    10	0.700276	0.700276	0	17.6687	17.6687	0.700276	10(est)
+    11	0.807055	0.808836	0.06135	11.043	11.043	0.808836	11(est)
+    12	0.776794	0.786131	0.368098	29.6603	29.6603	0.786131	12(est)
 List_noAlign( est_id ) : 
-0 1 3 
- [ RMSE : 1.0143 ] 
-- precision : 0.25
-- recall : 0.125
-- F1 : 0.166667
+1 14 
+ [ RMSE : 2.40004e-16 ] 
+- precision : 0.866667
+- recall : 1
+- F1 : 0.928571
 
 --- Simple version --- 
-- rmse : 1.0143
-- Tr/Ro/Sh : 0.856185/54.896/0.0326755
-- P/R/F : 0.25/0.125/0.166667
+- rmse : 2.40004e-16
+- Tr/Ro/Sh : 0.312218/9.93811/0.674959
+- P/R/F : 0.866667/1/0.928571
 
  ======= All Rotations =======
 aver_dis_trans	aver_dis_yaw_arb	aver_IoU_aligned_arb
-0.856185	54.896	0.0326755
+0.312218	9.93811	0.674959
 precision	recall	F1
-0.25	0.125	0.166667
+0.866667	1	0.928571

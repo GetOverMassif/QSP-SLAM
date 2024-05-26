@@ -311,20 +311,6 @@ void Tracking::GetObjectDetectionsRGBD(KeyFrame *pKF)
 
     detections = mpSystem->pySequence.attr("get_frame_by_name")(pKF->mnFrameId, frame_name);
 
-    // if (!ignoreObjFlag){
-    //     detections = mpSystem->pySequence.attr("get_frame_by_name")(pKF->mnFrameId, frame_name);
-    //     // background_rays, mask, bbox, label, prob
-    // }
-    // else {
-    //     detections = py::list(0);
-    //     cout << "Size detections = " << detections.size() << endl;
-    // }
-
-    // cout << "sizeof (detections) = " << sizeof(detections) << " bytes" << endl;
-
-    // cout << "Finish get_frame_by_name" << endl;
-    // printMemoryUsage();
-
     int num_dets = detections.size();
 
     std::cout << "  - Detects " << num_dets << " objects Observations." << std::endl;
@@ -664,22 +650,22 @@ void Tracking::UpdateObjectObservation(ORB_SLAM2::Frame *pFrame, KeyFrame* pKF, 
         UpdateDepthEllipsoidEstimation(pFrame, pKF, withAssociation);
         // time_3_UpdateDepthEllipsoidEstimation = clock();
 
-        // [3] Extract Relationship
-        /**
-         * 构建椭球体与曼哈顿平面之间的关联关系
-        */
+        // // [3] Extract Relationship
+        // /**
+        //  * 构建椭球体与曼哈顿平面之间的关联关系
+        // */
         TaskRelationship(pFrame);
-        // time_4_TaskRelationship = clock();
+        // // time_4_TaskRelationship = clock();
 
-        // // [4] Use Relationship To Refine Ellipsoids
-        // // 注意: Refine时必然在第一步可以初始化出有效的物体.
+        // // // [4] Use Relationship To Refine Ellipsoids
+        // // // 注意: Refine时必然在第一步可以初始化出有效的物体.
         RefineObjectsWithRelations(pFrame);
-        // time_5_RefineObjectsWithRelations = clock();
+        // // time_5_RefineObjectsWithRelations = clock();
 
-        // // [5] 对于第一次提取，Refine提取都失败的，使用点模型
-        // UpdateDepthEllipsoidUsingPointModel(pFrame);
+        // // // // [5] 对于第一次提取，Refine提取都失败的，使用点模型
+        UpdateDepthEllipsoidUsingPointModel(pFrame);
 
-        GenerateObservationStructure(pFrame);
+        // GenerateObservationStructure(pFrame);
     }
     
     // // [6] 补充调试环节： 测试语义先验对物体的影响
@@ -880,23 +866,25 @@ void VisualizeCuboidsPlanesInImages(g2o::ellipsoid& e, const g2o::SE3Quat& campo
 // 最后，将3D椭球体存储到每一帧的成员变量mpLocalObjects中
 void Tracking::UpdateDepthEllipsoidEstimation(ORB_SLAM2::Frame* pFrame, KeyFrame* pKF, bool withAssociation)
 {
+    // 如果不打开单帧椭球体提取，则直接退出
     if( !mbDepthEllipsoidOpened ) return;
 
+    // 获取物体观测、位姿
     auto mvpObjectDetections = pKF->GetObjectDetections();
-
     Eigen::MatrixXd &obs_mat = pFrame->mmObservations;
+
     int rows = obs_mat.rows();
 
     Eigen::VectorXd pose = pFrame->cam_pose_Twc.toVector();
 
     // 每次清除一下椭球体提取器的点云
-    // mpEllipsoidExtractor->ClearPointCloudList();    // clear point cloud visualization
+    mpEllipsoidExtractor->ClearPointCloudList();    // clear point cloud visualization
 
     bool bPlaneNotClear = true;
 
     // 每次更新深度观测的时候都清除
     bool bEllipsoidNotClear = true;
-    std::cout << "[Tracking::UpdateDepthEllipsoidEstimation] " << std::endl;
+    std::cout << "[Tracking::UpdateDepthEllipsoid Estimation] " << std::endl;
     std::cout << "共有 " << rows << " 个检测结果" << std::endl;
     std::string pcd_suffix;
 
@@ -924,16 +912,6 @@ void Tracking::UpdateDepthEllipsoidEstimation(ORB_SLAM2::Frame* pFrame, KeyFrame
         bool is_border = calibrateMeasurement(measurement, mRows, mCols, Config::Get<int>("Measurement.Border.Pixels"), Config::Get<int>("Measurement.LengthLimit.Pixels"));
 
         // FIXME: 这里涉及到对观测框靠近边界的物体观测如何处理的问题：暂时在python检测中去除靠近边界的检测
-
-        // if (is_border) {
-        //     cout << ">> [is_border] " 
-        //          << "measure: " << measurement.transpose().matrix()
-        //          << ", row: " << mRows << ", col: " << mCols 
-        //          << ", length_limit: " << Config::Get<int>("Measurement.Border.Pixels")
-        //          << endl;
-        //     cout << "Press enter to continue: " << endl;
-        //     getchar();
-        // }
         
         double prob_thresh = Config::Get<double>("Measurement.Probability.Thresh");
 
@@ -954,6 +932,7 @@ void Tracking::UpdateDepthEllipsoidEstimation(ORB_SLAM2::Frame* pFrame, KeyFrame
         // C3 : under with association mode, and the association is invalid, no need to extract ellipsoids again.
         // C3 : 在关联模式下，但是关联关系非法，则不再对其进行椭球体提取
         bool c3 = false;
+
         if( withAssociation )
         {
             int instance = round(det_vec(7));
@@ -985,6 +964,7 @@ void Tracking::UpdateDepthEllipsoidEstimation(ORB_SLAM2::Frame* pFrame, KeyFrame
                 VisualizeManhattanPlanes();
                 bPlaneNotClear = false;
             }
+
             // std::cout << "*****************************" << std::endl;
             // std::cout << "Ready to EstimateLocalEllipsoidUsingMultiPlanes, press [ENTER] to continue ... " << std::endl;
             // std::cout << "*****************************" << std::endl;
@@ -996,18 +976,19 @@ void Tracking::UpdateDepthEllipsoidEstimation(ORB_SLAM2::Frame* pFrame, KeyFrame
             // TODO: 这里要将物体点云添加给观测
             pcl::PointCloud<PointType>::Ptr pcd_ptr(new pcl::PointCloud<PointType>);
 
-            // FIXME: 这里需要对不能提取出椭球体的情况进行一个分类处理
+            // FIXME: 需要判断返回的 e_extractByFitting_newSym 是否合法（初始化完成）
             g2o::ellipsoid e_extractByFitting_newSym = \
                 mpEllipsoidExtractor->EstimateLocalEllipsoidUsingMultiPlanes(\
                     pFrame->frame_img, measurement, label, measurement_prob, pose, mCamera, pcd_ptr, pcd_suffix);
 
-            cout << "e_extractByFitting_newSym.prob = " << e_extractByFitting_newSym.prob << endl;
-            // FIXME: 如果点云提取不成功，则设置该帧观测为不好, 因为 mpGlobalEllipsolds 需要添加，因此不能 continue
+            // cout << "e_extractByFitting_newSym.prob = " << e_extractByFitting_newSym.prob << endl;
+            // // FIXME: 如果点云提取不成功，则设置该帧观测为不好, 因为 mpGlobalEllipsolds 需要添加，因此不能 continue
+
+            // if (e_extractByFitting_newSym.prob < 0) // 说明没有初始化成功
 
             // 无非两个特殊情况需要考虑： 椭球体提取不成功，深度点云提取不成功
             if (pcd_ptr==NULL){
                 det->isValidPcd = false;
-                // continue;
             }
             else{
                 det->isValidPcd = true;
@@ -1018,15 +999,18 @@ void Tracking::UpdateDepthEllipsoidEstimation(ORB_SLAM2::Frame* pFrame, KeyFrame
                 det->setPcdPtr(pcd_ptr);
             }
             
+            // 判断是否拿到可靠椭球体
             bool c0 = mpEllipsoidExtractor->GetResult();
             std::cout << "mpEllipsoidExtractor->GetResult() = " << c0 << std::endl;
+
+            g2o::ellipsoid* pObjByFitting;
             
             // 可视化部分
             if( c0 )
             {
                 // Visualize estimated ellipsoid
                 // 将相机坐标系的椭球体转换到世界坐标系内
-                g2o::ellipsoid* pObjByFitting = new g2o::ellipsoid(e_extractByFitting_newSym.transform_from(pFrame->cam_pose_Twc));
+                pObjByFitting = new g2o::ellipsoid(e_extractByFitting_newSym.transform_from(pFrame->cam_pose_Twc));
                 
                 if(pObjByFitting->prob_3d > 0.5)
                     pObjByFitting->setColor(Vector3d(0.8,0.0,0.0), 1); // Set green color
@@ -1062,12 +1046,11 @@ void Tracking::UpdateDepthEllipsoidEstimation(ORB_SLAM2::Frame* pFrame, KeyFrame
                 VisualizeCuboidsPlanesInImages(e_extractByFitting_newSym, pFrame->cam_pose_Twc, mCalib, mRows, mCols, mpMap);
 
 
-            // }   // successful estimation.
+            }   // successful estimation.
 
             // // 存储条件1: 该检测 3d_prob > 0.5
             // // 最终决定使用的估计结果
-            // if( c0 ){
-
+            if( c0 ){
                 g2o::ellipsoid *pE_extractByFitting = new g2o::ellipsoid(e_extractByFitting_newSym);
                 pLocalEllipsoidThisObservation = pE_extractByFitting;   // Store result to pE_extracted.
 
@@ -1077,42 +1060,42 @@ void Tracking::UpdateDepthEllipsoidEstimation(ORB_SLAM2::Frame* pFrame, KeyFrame
 
         }
 
-        if (show_ellipsold_process) 
-        {
-            int x1 = (int)det_vec(1), y1 = (int)det_vec(2), x2 = (int)det_vec(3), y2 = (int)det_vec(4);
-            cv::Mat img_show = pFrame->rgb_img.clone();
-            cv::rectangle(img_show, cv::Point(x1, y1), cv::Point(x2, y2), cv::Scalar(255, 0, 0), 2);  // Scalar(255, 0, 0) is for blue color, 2 is the thickness
-            cv::imshow("Image with Bbox", img_show);
-            // cv::waitKey(0);
-            cv::waitKey(10);
-            cout << "Press any key to continue" << endl;
-            char key = getchar();
-        }
+        // if (show_ellipsold_process) 
+        // {
+        //     int x1 = (int)det_vec(1), y1 = (int)det_vec(2), x2 = (int)det_vec(3), y2 = (int)det_vec(4);
+        //     cv::Mat img_show = pFrame->rgb_img.clone();
+        //     cv::rectangle(img_show, cv::Point(x1, y1), cv::Point(x2, y2), cv::Scalar(255, 0, 0), 2);  // Scalar(255, 0, 0) is for blue color, 2 is the thickness
+        //     cv::imshow("Image with Bbox", img_show);
+        //     // cv::waitKey(0);
+        //     cv::waitKey(10);
+        //     cout << "Press any key to continue" << endl;
+        //     char key = getchar();
+        // }
 
         // 若不成功保持为NULL
-        // cout << "ellipsold add 1" << endl;
         pFrame->mpLocalObjects.push_back(pLocalEllipsoidThisObservation);
-        // cout << "ellipsold add 2" << endl;
-        pKF->mpLocalEllipsolds.push_back(pLocalEllipsoidThisObservation);
-        // cout << "ellipsold add 3" << endl;
 
-        // TODO: 应当在完整观测模型无效时进入局部观测模型
-        if (pGlobalEllipsoidThisObservation==NULL){
-            cout << "pGlobalEllipsoidThisObservation==NULL" << endl;
-            det->SetBadFlag();
-        }
-        else{
-            cout << "pGlobalEllipsoidThisObservation->prob = " << pGlobalEllipsoidThisObservation->prob << endl;
-        }
+        // // 两处位置添加同一个椭球体是否可能出问题, 目前 KF 中尚未使用到
+        // pKF->mpLocalEllipsolds.push_back(pLocalEllipsoidThisObservation);
 
-        // 这里要注意创建一个新的
+        // // TODO: 应当在完整观测模型无效时进入局部观测模型
+        // if (!c0){
+        //     cout << "Complete observation failed, pGlobalEllipsoidThisObservation==NULL" << endl;
+        //     det->SetBadFlag();
+        // }
+        // else{
+        //     cout << "pGlobalEllipsoidThisObservation->prob = " << pGlobalEllipsoidThisObservation->prob << endl;
+        // }
+
+        // // 这里要注意创建一个新的
         pKF->mpGlobalEllipsolds.push_back(pGlobalEllipsoidThisObservation);
 
     }
 
-    if (show_ellipsold_process){
-        cv::destroyWindow("Image with Bbox");
-    }
+    // if (show_ellipsold_process){
+    //     cv::destroyWindow("Image with Bbox");
+    // }
+
     return;
 }
 
@@ -1198,7 +1181,11 @@ void Tracking::RefineObjectsWithRelations(ORB_SLAM2::Frame *pFrame)
                 // }
 
                 // 此处设定 Refine 一定优先.
-                (*pFrame->mpLocalObjects[obj_id]) = e;                    
+                (*pFrame->mpLocalObjects[obj_id]) = e;
+
+                g2o::ellipsoid e_global = e.transform_from(pFrame->cam_pose_Twc);
+                (*cur_pKF->mpGlobalEllipsolds[obj_id]) = e_global;
+
                 success_num++;
 
                 std::cout << "success_num++ " << std::endl;
@@ -1208,90 +1195,97 @@ void Tracking::RefineObjectsWithRelations(ORB_SLAM2::Frame *pFrame)
     std::cout << "Refine result : " << success_num << " objs." << std::endl;
 }
 
-// void Tracking::UpdateDepthEllipsoidUsingPointModel(ORB_SLAM2::Frame* pFrame)
-// {
-//     if( !mbDepthEllipsoidOpened ) return;
+void Tracking::UpdateDepthEllipsoidUsingPointModel(ORB_SLAM2::Frame* pFrame)
+{
+    if( !mbDepthEllipsoidOpened ) return;
     
-//     Eigen::MatrixXd &obs_mat = pFrame->mmObservations;
-//     int rows = obs_mat.rows();
-//     Eigen::VectorXd pose = pFrame->cam_pose_Twc.toVector();
+    Eigen::MatrixXd &obs_mat = pFrame->mmObservations;
+    int rows = obs_mat.rows();
+    Eigen::VectorXd pose = pFrame->cam_pose_Twc.toVector();
 
-//     if(pFrame->mpLocalObjects.size() < rows) return;
+    if(pFrame->mpLocalObjects.size() < rows) return;
 
-//     int count_point_model = 0;
-//     int count_ellipsoid_model = 0;
-//     for(int i=0;i<rows;i++){
-//         // 下列情况不再进行点模型提取
-//         // 1) 在前面的过程中，已经产生了有效的椭球体， not NULL, prob_3d > 0.5
-//         bool c0 = pFrame->mpLocalObjects[i] != NULL && pFrame->mpLocalObjects[i]->prob_3d > 0.5;
-//         if(c0) 
-//         {
-//             count_ellipsoid_model ++;
-//             continue;
-//         }
+    int count_point_model = 0;
+    int count_ellipsoid_model = 0;
+    for(int i=0;i<rows;i++){
+        // 下列情况不再进行点模型提取
+        // 1) 在前面的过程中，已经产生了有效的椭球体， not NULL, prob_3d > 0.5
+        bool c0 = pFrame->mpLocalObjects[i] != NULL && pFrame->mpLocalObjects[i]->prob_3d > 0.5;
+        if(c0) 
+        {
+            count_ellipsoid_model ++;
+            continue;
+        }
 
-//         // ***************
-//         //  此处执行前有大量条件判断，搬照UpdateDepthEllipsoidEstimation
-//         // ***************
-//         Eigen::VectorXd det_vec = obs_mat.row(i);  // id x1 y1 x2 y2 label rate instanceID
-//         int label = round(det_vec(5));
-//         double measurement_prob = det_vec(6);
+        // ***************
+        //  此处执行前有大量条件判断，搬照UpdateDepthEllipsoidEstimation
+        // ***************
+        Eigen::VectorXd det_vec = obs_mat.row(i);  // id x1 y1 x2 y2 label rate instanceID
+        int label = round(det_vec(5));
+        double measurement_prob = det_vec(6);
 
-//         Eigen::Vector4d measurement = Eigen::Vector4d(det_vec(1), det_vec(2), det_vec(3), det_vec(4));
+        Eigen::Vector4d measurement = Eigen::Vector4d(det_vec(1), det_vec(2), det_vec(3), det_vec(4));
 
-//         // Filter those detections lying on the border.
-//         bool is_border = calibrateMeasurement(measurement, mRows, mCols, Config::Get<int>("Measurement.Border.Pixels"), Config::Get<int>("Measurement.LengthLimit.Pixels"));
-//         double prob_thresh = Config::Get<double>("Measurement.Probability.Thresh");
-//         bool prob_check = (measurement_prob > prob_thresh);
+        // Filter those detections lying on the border.
+        bool is_border = calibrateMeasurement(measurement, mRows, mCols, Config::Get<int>("Measurement.Border.Pixels"), Config::Get<int>("Measurement.LengthLimit.Pixels"));
+        double prob_thresh = Config::Get<double>("Measurement.Probability.Thresh");
+        bool prob_check = (measurement_prob > prob_thresh);
 
-//         // 2 conditions must meet to start ellipsoid extraction:
-//         // C1 : the bounding box is not on border
-//         bool c1 = !is_border;
+        // 2 conditions must meet to start ellipsoid extraction:
+        // C1 : the bounding box is not on border
+        bool c1 = !is_border;
 
-//         // C2 : the groundplane has been estimated successfully
-//         bool c2 = miGroundPlaneState == 2;
+        // C2 : the groundplane has been estimated successfully
+        bool c2 = miGroundPlaneState == 2;
         
-//         // in condition 3, it will not start
-//         // C3 : under with association mode, and the association is invalid, no need to extract ellipsoids again.
-//         bool c3 = false;
+        // in condition 3, it will not start
+        // C3 : under with association mode, and the association is invalid, no need to extract ellipsoids again.
+        bool c3 = false;
 
-//         // C4 : 物体过滤
-//         // 部分动态物体，如人类， label=0，将被过滤不考虑
-//         bool c4 = true;
-//         std::set<int> viIgnoreLabelLists = {
-//             0 // Human
-//         };
-//         if(viIgnoreLabelLists.find(label) != viIgnoreLabelLists.end())
-//             c4 = false;
+        // C4 : 物体过滤
+        // 部分动态物体，如人类， label=0，将被过滤不考虑
+        bool c4 = true;
+        std::set<int> viIgnoreLabelLists = {
+            0 // Human
+        };
+        if(viIgnoreLabelLists.find(label) != viIgnoreLabelLists.end())
+            c4 = false;
 
-//         if( prob_check && c1 && c2 && !c3 && c4 ){   
-//             // 单帧椭球体估计失败，或 prob_3d 概率太低，激活中心点估计
-//             // 为考虑三维分割效果，将其投影到图像平面，与bbox做对比；另一种方法：将概率变得更为显著.
-//             g2o::ellipsoid e_extracted;
-//             bool result = mpEllipsoidExtractor->EstimateLocalEllipsoidUsingPointModel(pFrame->frame_img, measurement, label, measurement_prob, pose, mCamera, e_extracted);
-//             if(result){
-//                 // 可视化
-//                 // Visualize estimated ellipsoid
-//                 g2o::ellipsoid* pObj_world = new g2o::ellipsoid(e_extracted.transform_from(pFrame->cam_pose_Twc));
-//                 pObj_world->setColor(Vector3d(0,1.0,0.0), 1); // Set green color
+        if( prob_check && c1 && c2 && !c3 && c4 ){   
+            // 单帧椭球体估计失败，或 prob_3d 概率太低，激活中心点估计
+            // 为考虑三维分割效果，将其投影到图像平面，与bbox做对比；另一种方法：将概率变得更为显著.
+            g2o::ellipsoid e_extracted;
+            bool result = mpEllipsoidExtractor->EstimateLocalEllipsoidUsingPointModel(pFrame->frame_img, measurement, label, measurement_prob, pose, mCamera, e_extracted);
+            if(result){
+                // 可视化
+                // Visualize estimated ellipsoid
+                g2o::ellipsoid* pObj_world = new g2o::ellipsoid(e_extracted.transform_from(pFrame->cam_pose_Twc));
+                pObj_world->setColor(Vector3d(0,1.0,0.0), 1); // Set green color
 
-//                 mpMap->addEllipsoidVisual(pObj_world);
+                mpMap->addEllipsoidVisual(pObj_world);
 
-//                 g2o::ellipsoid* pEllipsoid = new g2o::ellipsoid(e_extracted);
-//                 pFrame->mpLocalObjects[i] = pEllipsoid;
-//                 count_point_model++;
-//             } 
-//         }
-//     }
+                g2o::ellipsoid* pEllipsoid = new g2o::ellipsoid(e_extracted);
+                // FIXME 这里对之前设置为NULL的椭球体进行重新设置
+                pFrame->mpLocalObjects[i] = pEllipsoid;
 
-//     std::cout << "[Observations of frame] Total Num : " << rows << std::endl;
-//     std::cout << " - Ellipsoid Model: " << count_ellipsoid_model << std::endl;
-//     std::cout << " - Point Model : " << count_point_model << std::endl;
-//     std::cout << " - Invalid : " << rows-count_ellipsoid_model-count_point_model << std::endl;
+                g2o::ellipsoid e_global = pEllipsoid->transform_from(pFrame->cam_pose_Twc);
+                (*cur_pKF->mpGlobalEllipsolds[i]) = e_global;
 
-//     return;
 
-// }
+
+                count_point_model++;
+            } 
+        }
+    }
+
+    std::cout << "[Observations of frame] Total Num : " << rows << std::endl;
+    std::cout << " - Ellipsoid Model: " << count_ellipsoid_model << std::endl;
+    std::cout << " - Point Model : " << count_point_model << std::endl;
+    std::cout << " - Invalid : " << rows-count_ellipsoid_model-count_point_model << std::endl;
+
+    return;
+
+}
 
 // void Tracking::GenerateObservationStructure(ORB_SLAM2::Frame* pFrame)
 // {

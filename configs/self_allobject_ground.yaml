@@ -36,6 +36,9 @@ Dataset.Path.Root: /media/lj/TOSHIBA/dataset/MySimDataset/GroundObjects
 Dataset.Path.Save: map/self/GroundObjects
 Dataset.Path.MapPcd: "./dataset.pcd"
 
+Dataset.Path.AssociateFile: /associate.txt
+MapObject.PointCloudVoxelSize: 0.03
+
 Dataset.Path.ObjectGT: /objects_gt.txt
 Dataset.Path.ObjectGroundGT:  /objects_gt.txt
 Dataset.Path.TrajectoryGT:  /groundtruth.txt

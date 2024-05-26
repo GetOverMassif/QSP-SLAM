@@ -63,7 +63,8 @@ public:
     // bool drawGivenCameraState(g2o::SE3Quat* state, const Vector3d& color);
 
 
-    bool drawEllipCuboids(double prob_thresh = 0);
+    bool drawEllipCuboidsGt(double prob_thresh = 0);
+    bool drawEllipCuboidsEst(double prob_thresh = 0);
 
     void drawEllipsoid();
     bool drawEllipsoidsVisual(double prob_thresh = 0);

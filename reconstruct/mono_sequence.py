@@ -137,7 +137,8 @@ class Frame:
         if masks_2d.shape[0] == 0:
             return
 
-        if self.data_type in ["Redwood", "Freiburg"]:
+        # if self.data_type in ["Redwood", "Freiburg"]:
+        if 0:
             # For redwood and freiburg cars, we only focus on the object in the middle
             # 这里只找出了masks_2d最大的一个实例
             max_id = np.argmax(masks_2d.sum(axis=-1).sum(axis=-1))
@@ -203,7 +204,9 @@ class MonoSequence:
         print(f"self.rgb_dir = {self.rgb_dir}")
 
         # Get camera intrinsics
+        print("before fs")
         fs = cv2.FileStorage(configs.slam_config_path, cv2.FILE_STORAGE_READ)
+        print("after fs")
         fx = fs.getNode("Camera.fx").real()
         fy = fs.getNode("Camera.fy").real()
         cx = fs.getNode("Camera.cx").real()
@@ -211,10 +214,12 @@ class MonoSequence:
         k1 = fs.getNode("Camera.k1").real()
         k2 = fs.getNode("Camera.k2").real()
         self.K_cam = np.array([[fx, 0.0, cx], [0.0, fy, cy], [0.0, 0.0, 1.0]])
+        print(f"self.K_cam = {self.K_cam}")
         self.invK_cam = np.linalg.inv(self.K_cam)
         self.k1 = k1
         self.k2 = k2
 
+        print("before # configs")
         self.configs = configs
         self.data_type = self.configs.data_type
         # assert self.data_type == "Redwood" or self.data_type == "Freiburg", print("Wrong data type, supported: Redwood and Freiburg")
@@ -226,6 +231,7 @@ class MonoSequence:
         if not self.online:
             assert self.lbl2d_dir is not None, print()
 
+        print("before # Detectors")
         # Detectors
         self.detector_2d = get_detectors(self.configs)
         self.current_frame = None

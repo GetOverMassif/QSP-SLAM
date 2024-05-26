@@ -8,8 +8,6 @@ LocalMapping.KeepRawPose: 0
 Tracking.AddSuffixToPcd: 0
 Tracking.AssociateObjectWithEllipsold: 1
 Tracking.AssociateDebug: 0
-Tracking.AddDepthPcdToMapObject: 1
-Tracking.UseDepthPcdToReconstruct: 1
 
 LocalMapping.MinValidPoints: 50
 LocalMapping.MinValidRays: 1
@@ -21,9 +19,11 @@ Tracking.MinimumPtNumToJudgeGood: 5  # default 20
 LocalMapping.DistFiltParam: 0.1
 
 Tracking.IgnoreObject: 1
+Tracking.AddDepthPcdToMapObject: 0
+Tracking.UseDepthPcdToReconstruct: 0
 
-
-QSPSLAM.VoxelSize: 0.025
+QSPSLAM.VoxelSize: 0.001
+QSPSLAM.NeedDatasetPointCloud: 0
 
 # -------------------------
 # 地平面提取参数： Ground Plane Extraction
@@ -58,11 +58,15 @@ Dataset.Path.Root: /media/lj/TOSHIBA/dataset/ICL-NUIM/office/traj2_frei_png
 Dataset.Path.Save: map/icl_nuim/office/2
 Dataset.Path.MapPcd: "./dataset.pcd"
 
+
+Dataset.Path.ObjectAnno: /result/objects_qsp.txt
+# Dataset.Path.ObjectAnno: /objects_gt.txt
+
 Dataset.Path.ObjectGT: /objects_gt.txt
 Dataset.Path.ObjectGroundGT:  /objects_gt.txt
 Dataset.Path.TrajectoryGT:  /groundtruth.txt
 
-Result.ObjectEstimate: /result/objects.txt
+Result.ObjectEstimate: /result/objects_qsp.txt
 Result.TrajectoryEstimate: /result/traj.txt
 
 

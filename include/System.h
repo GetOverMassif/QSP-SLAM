@@ -156,6 +156,8 @@ public:
     void SaveEntireMap(const string &dir);
     void SaveEstimatedObjects(const string &dir);
     void SaveEstimatedObjectsForEvo(const string &dir);
+    void SaveEstimatedTrajForEvo(const string &dir);
+    
 
     // Information from most recent processed frame
     // You can call this right after TrackMonocular (or stereo or RGBD)

@@ -7,3 +7,5 @@
 bool CreateDirIfNotExist(const std::string file_path);
 
 void printMemoryUsage();
+
+double GetMemoryUsage();

@@ -744,23 +744,22 @@ g2o::ellipsoid EllipsoidExtractor::EstimateLocalEllipsoidUsingMultiPlanes(\
 
     // 通过降采样、统计滤波、平面筛选、中点欧几里德快速聚类等步骤，提取世界坐标系下的物体点云。
     // 同时也会把物体点云绘制出来
+
+    //! 提取物体点云
     pcl::PointCloud<PointType>::Ptr pCloudPCL = ExtractPointCloud(depth, bbox, pose, camera, suffix);
 
     if (pCloudPCL == NULL) {
         cout << "pCloudPCL == NULL" << endl;
         pcd_ptr = NULL;
-        return e;
+        // return e;
     }
     else{
+        // 此处可能需要重新
         *pcd_ptr = *pCloudPCL;
     }
-    
-    // if (pCloudPCL==NULL) {
-    //     cout << "return because pointcloud extraction failed" << endl;
-    //     return e;
-    // }
 
     clock_t time_1_ExtractPointCloud = clock();
+
     if (miSystemState > 0) {
         cout << "return because miSystemState = " << miSystemState << std::endl;
         return e;
@@ -821,10 +820,14 @@ g2o::ellipsoid EllipsoidExtractor::EstimateLocalEllipsoidUsingMultiPlanes(\
 
     // 基于PCA结果生成最小包围盒顶点. 位于相机坐标系内.
     // 从规范化的点云中获取椭球体
+
     g2o::ellipsoid e_zero_normalized = GetEllipsoidFromNomalizedPointCloud(pObjectCloudNormalized);
+
     // todo: 测试，有待解除注释
     delete pObjectCloudNormalized;
     pObjectCloudNormalized = NULL;
+
+    // return e;
 
     // 变换回局部坐标系
     g2o::SE3Quat campose_wc;
@@ -833,8 +836,9 @@ g2o::ellipsoid EllipsoidExtractor::EstimateLocalEllipsoidUsingMultiPlanes(\
     g2o::SE3Quat Tcn = campose_wc.inverse() * Twn;
     g2o::ellipsoid e_local_normalized = e_zero_normalized.transform_from(Tcn);
 
-    // 可视化: 物体重力坐标系下，转角对齐后的点云
-    mpMap->addEllipsoid(&e_local_normalized);
+    // // 这里添加的是函数内创建爱你的变量，是否可能出错
+    // // 可视化: 物体重力坐标系下，转角对齐后的点云
+    // mpMap->addEllipsoid(&e_local_normalized);
 
     // std::cout << "*****************************" << std::endl;
     // std::cout << "Showing ellipsoid e_local_normalized, press [ENTER] to continue ... " << std::endl;
@@ -842,6 +846,8 @@ g2o::ellipsoid EllipsoidExtractor::EstimateLocalEllipsoidUsingMultiPlanes(\
     // getchar();
 
     // -------------- 到此已获得相机坐标系下的椭球体!
+
+    // return e;
 
     // 接下来添加 ConstrainPlanes.
     Matrix3d calib = CameraToCalibMatrix(camera);
@@ -854,6 +860,7 @@ g2o::ellipsoid EllipsoidExtractor::EstimateLocalEllipsoidUsingMultiPlanes(\
     // std::cout << "*****************************" << std::endl;
     // getchar();
 
+    // return e;
 
     // 评估本次提取的概率 : 投影回来的矩形与 bbox 的 IoU 作为规律.
     double prob_3d = CalculateProbability(e_local_normalized, bbox, calib);
@@ -876,6 +883,7 @@ g2o::ellipsoid EllipsoidExtractor::EstimateLocalEllipsoidUsingMultiPlanes(\
     cout << " ---- total_ellipsoidExtraction: " << (double)(time_2_fullProcess - time_start) / CLOCKS_PER_SEC << "s" << endl;
     cout << endl;
 
+    // FIXME: 
     // // 此处添加一个判断, 若 prob_3d < 0.5 则舍弃
     // if(prob_3d < 0.5)
     // {
@@ -1088,12 +1096,6 @@ g2o::ellipsoid EllipsoidExtractor::EstimateLocalEllipsoidWithSupportingPlane(cv:
     SetSupportingPlane(pSupPlaneWorld, true);
 
     pcl::PointCloud<PointType>::Ptr pcd_ptr;
-
-    // g2o::ellipsoid e_extractByFitting_newSym = \
-    //     mpEllipsoidExtractor->EstimateLocalEllipsoidUsingMultiPlanes(\
-    //         pFrame->frame_img, measurement, label, measurement_prob, pose, mCamera, pcd_ptr, pcd_suffix);
-
-    // det.setPcdPtr(pcd_ptr);
 
     g2o::ellipsoid e = EstimateLocalEllipsoidUsingMultiPlanes(depth, bbox, label, prob, pose, camera, pcd_ptr);
 

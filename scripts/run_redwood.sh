@@ -51,7 +51,8 @@ REDWOOD_SCAN_ID=01053
 # map/redwood/$REDWOOD_SCAN_ID
 
 
-./qsp_slam_rgbd configs/Redwood_chair_03815.yaml
+./qsp_slam_rgbd configs/Redwood_chair_01053.yaml
+# ./evo_tool_qsp configs/Redwood_chair_01053.yaml
 
 # REDWOOD_SCAN_ID=01041
 # ./qsp_slam_rgbd Vocabulary/ORBvoc.bin configs/redwood_monitor_01041.yaml \

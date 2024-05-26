@@ -374,6 +374,7 @@ void LocalMapping::ProcessDetectedObjects()
     auto mvpObjectDetections = mpCurrentKeyFrame->GetObjectDetections();
     auto mvpAssociatedObjects = mpCurrentKeyFrame->GetMapObjectMatches();
 
+    // FIXME： 这里有待修改优化
     auto mvpGlobalEllipsolds = mpCurrentKeyFrame->GetEllipsoldsGlobal();
 
     std::cout << " => " << "KF" << mpCurrentKeyFrame->mnId << ", mvpObjectDetections.size() = " << mvpObjectDetections.size() << std::endl;

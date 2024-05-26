@@ -19,12 +19,12 @@ Tracking.MinimumPtNumToJudgeGood: 5  # default 20
 
 LocalMapping.DistFiltParam: 0.1
 
-Tracking.IgnoreObject: 1
-Tracking.AddDepthPcdToMapObject: 0
-Tracking.UseDepthPcdToReconstruct: 0
+Tracking.IgnoreObject: 0
+Tracking.AddDepthPcdToMapObject: 1
+Tracking.UseDepthPcdToReconstruct: 1
 
 
-QSPSLAM.VoxelSize: 0.025
+QSPSLAM.VoxelSize: 0.001
 QSPSLAM.NeedDatasetPointCloud: 0
 
 
@@ -54,7 +54,7 @@ Visualization.Builder.Global.Open: 0
 
 
 Vocabulary.Path: Vocabulary/ORBvoc.bin
-Config.StandardParamFile: configs/ICL_NUIM_home.yaml
+Config.StandardParamFile: configs/Redwood_chair_01053.yaml
 
 
 Dataset.Type: "ICL_NUIM"
@@ -62,14 +62,29 @@ Dataset.Path.Root: /media/lj/TOSHIBA/dataset/ICL-NUIM/home/living_room_traj2_fre
 Dataset.Path.Save: map/icl_nuim/home/2
 Dataset.Path.MapPcd: "./dataset.pcd"
 
-Dataset.Path.ObjectGT: /objects_gt.txt
+Dataset.Path.AssociateFile: /associate.txt
+MapObject.PointCloudVoxelSize: 0.03
+
+Dataset.Path.ObjectAnno: /result/objects_qsp.txt
+
+# Dataset.Path.ObjectGT: /objects_gt.txt
+Dataset.Path.ObjectGT: /result/objects_qsp.txt
+
 Dataset.Path.ObjectGroundGT:  /objects_gt.txt
 Dataset.Path.TrajectoryGT:  /groundtruth.txt
 
-Result.ObjectEstimate: /result/objects.txt
+# Result.ObjectEstimate: /result/objects.txt
+Result.ObjectEstimate: /result/objects_qsp.txt
 Result.TrajectoryEstimate: /result/traj.txt
 
 
+
+#--------------------------------------------------------------------------------------------
+# Parameters used for Object SLAM
+#--------------------------------------------------------------------------------------------
+# Config path for Python detectors
+DetectorConfigPath: configs/config_ICL_NUIM_home.json
+EllipObjects.maskErrosion: 5
 
 # Tracking.UseGroundTruthTraj: 1
 
@@ -110,9 +125,14 @@ Result.TrajectoryEstimate: /result/traj.txt
 #41   #杯子
 
 
-# On ground: chair-56, couch-57, dining table-60, bed-59, tv-62， vase-75
+# On ground: chair-56, couch-57, dining table-60, bed-59, tv-62， vase-75, potted plant-58,
+#            bowls-45,
+            #  refrigerator
+"benches", "chairs", "potted_plants", "beds", "dining_tables", "refrigerator", \
+                           "vase", "cups", "bowls", \
+                           "tv_monitor"
 
-YoloClasses: [56, 57, 60, 59, 62, 75]
+YoloClasses: [56, 57, 60, 59, 62, 75, 58, 45]
 # 是否能读字符串列表
 
 DecoderPaths: ["weights/deepsdf/chairs_64", 
@@ -120,7 +140,9 @@ DecoderPaths: ["weights/deepsdf/chairs_64",
                "weights/deepsdf/tables_64",
                "weights/deepsdf/beds_64",
                "weights/deepsdf/displays_64",
-               "weights/deepsdf/bottles_64"
+               "weights/deepsdf/bottles_64",
+               "weights/deepsdf/bottles_64",
+               "weights/deepsdf/bowls_64"
               ]
 
 
@@ -182,12 +204,7 @@ Camera.scale: 5000
 # DepthMapFactor: 1
 # Camera.scale: 1
 
-#--------------------------------------------------------------------------------------------
-# Parameters used for Object SLAM
-#--------------------------------------------------------------------------------------------
-# Config path for Python detectors
-DetectorConfigPath: configs/config_ICL_NUIM_home.json
-EllipObjects.maskErrosion: 5
+
 
 
 System.UseEllipsoldPoseForDSP.Open: 1

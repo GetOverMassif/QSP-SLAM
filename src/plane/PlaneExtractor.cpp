@@ -19,7 +19,7 @@ namespace ORB_SLAM2
         return p1.second > p2.second;
     }
 
-    // FIXME: 该函数内部存在问题
+    // FIXME: 该平面提取函数内部存在问题
     void PlaneExtractor::extractPlanes(const cv::Mat &imDepth) {
         mvPlaneCoefficients.clear();
         mvPlanePoints.clear();

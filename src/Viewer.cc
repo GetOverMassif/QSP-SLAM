@@ -24,6 +24,7 @@
 #include <mutex>
 
 #include "utils/dataprocess_utils.h"
+#include "include/utils/file_operate.h"
 
 namespace ORB_SLAM2
 {
@@ -57,7 +58,7 @@ Viewer::Viewer(System* pSystem, FrameDrawer *pFrameDrawer, MapDrawer *pMapDrawer
     mViewpointF = fSettings["Viewer.ViewpointF"];
 
     std::string dataset_path = fSettings["Dataset.Path.Root"];
-    std::string obj_gt_path = fSettings["Dataset.Path.ObjectGT"];
+    std::string obj_gt_path = fSettings["Dataset.Path.ObjectAnno"];
 
     mObjAnnoGtTxt = dataset_path + obj_gt_path;
 
@@ -100,6 +101,8 @@ void Viewer::Run()
     mvMenuStruct[6] = new MenuStruct(" - Len (red)", 0.5,0.001,3);
     mvMenuStruct[7] = new MenuStruct(" - Wid (green)", 0.5,0.001,3);
     mvMenuStruct[8] = new MenuStruct(" - H (blue)", 0.5,0.001,3);
+
+    pangolin::Var<double>* p_menuMemoryUsage = new pangolin::Var<double>("menu.MemUsage",0.0,0.0,999999.0);
 
     pangolin::Var<bool> menuShowAnnoObj("menu.Show AnnoObj",false,true);
     pangolin::Var<bool> menuAddAnnoObj("menu.AddAnnoObj",false,false);
@@ -149,7 +152,8 @@ void Viewer::Run()
 
     pangolin::Var<bool> menuShowEllipsoidsObservation("menu.Ellipsoids-Ob", true, true);
 
-    pangolin::Var<bool> menuShowEllipCuboids("menu. - Show EllipCuboids", true, true);
+    pangolin::Var<bool> menuShowEllipCuboidsGt("menu. - Show EllipCuboidsGt", true, true);
+    pangolin::Var<bool> menuShowEllipCuboidsEst("menu. - Show EllipCuboidsEst", true, true);
 
     // pangolin::Var<bool> menuShowCuboids("menu. - Show Cuboids", false, true);
     // pangolin::Var<bool> menuShowPlanes("menu.Show Planes", true, true);
@@ -211,6 +215,10 @@ void Viewer::Run()
     pangolin::View& depth_image = pangolin::Display("depth")
     .SetBounds(0,0.3,0.5,0.8,float(miCols) / float(miRows))
     .SetLock(pangolin::LockLeft, pangolin::LockBottom);
+
+    // pangolin::View& info_text_image = pangolin::Display("info")
+    // .SetBounds(0,0.3,0.8,1.1,float(miCols) / float(miRows))
+    // .SetLock(pangolin::LockLeft, pangolin::LockBottom);
 
     auto mpRenderer = new ObjectRenderer(w, h);
     mpRenderer->SetupCamera(mViewpointF, mViewpointF, double(w) / 2, double(h) / 2, 0.1, 5000);
@@ -358,10 +366,14 @@ void Viewer::Run()
         double ellipsoidProbThresh = SliderEllipsoidProbThresh;
 
 
+        if(menuShowEllipCuboidsEst){
+            mpMapDrawer->drawEllipCuboidsEst(ellipsoidProbThresh);
+        }
+
         // draw external cubes of ellipsoids 
-        if(menuShowEllipCuboids){
+        if(menuShowEllipCuboidsGt){
             // std::cout << "Ingnore mpMapDrawer->drawEllipCuboids tmp" << std::endl;
-            mpMapDrawer->drawEllipCuboids(ellipsoidProbThresh);
+            mpMapDrawer->drawEllipCuboidsGt(ellipsoidProbThresh);
         }
 
         // draw ellipsoids
@@ -444,6 +456,31 @@ void Viewer::Run()
                 glColor3f(1.0,1.0,1.0);
                 imageTexture.RenderToViewportFlipY();
             }
+
+            /*
+            // paint memory usage of each thread
+            cv::Mat info_img = cv::Mat(480,640,CV_8UC3, cv::Scalar(0,0,0));
+
+            int fontFace = cv::FONT_HERSHEY_SIMPLEX;  // 字体
+            double fontScale = 1.5;  // 字体缩放因子
+            cv::Scalar fontColor(0, 0, 255); // 红色
+            int thickness = 2;  // 粗细
+            cv::Point textOrg1(50, 200);  // 文字位置
+            cv::Point textOrg2(100, 200);  // 文字位置
+
+            int precision = 1;
+            double memory_use_Viewer = GetMemoryUsage();
+            std::stringstream stream;
+            stream << std::fixed << std::setprecision(precision) << memory_use_Viewer;
+            double text = "Viewer thread: " + stream.str() + " MB";
+
+            cv::putText(info_img, text, textOrg1, fontFace, fontScale, fontColor, thickness);
+
+            imageTexture.Upload(info_img.data,GL_BGR,GL_UNSIGNED_BYTE);
+            info_text_image.Activate();
+            glColor3f(1.0,1.0,1.0);
+            imageTexture.RenderToViewportFlipY();
+            */
         }
 
         pangolin::FinishFrame();
@@ -495,6 +532,10 @@ void Viewer::Run()
                 AnnoObjs[AnnoNum - 1]->index = AnnoNum - 1;
             }
         }
+
+        // 显示Viewer线程的内存使用情况
+        double memory_usage = GetMemoryUsage();
+        p_menuMemoryUsage->Ref().Set(memory_usage);
 
         cur_AnnoIndex = p_menuAnnoIndex->Get();
 
