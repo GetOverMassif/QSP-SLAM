@@ -346,7 +346,9 @@ void Tracking::DenseBuild()
             // cout << "DenseBuild: after processFrame ";
             // printMemoryUsage();
 
-            mpBuilder->voxelFilter(0.01);   // Down sample threshold; smaller the finer; depend on the hardware.
+            double voxel_size = Config::Get<double>("Visualization.Builder.VoxelSize");
+
+            mpBuilder->voxelFilter(voxel_size);   // Down sample threshold; smaller the finer; depend on the hardware.
             // cout << "DenseBuild: after voxelFilter ";
             // printMemoryUsage();
 
@@ -629,13 +631,13 @@ void Tracking::Track()
             // Check if we need to insert a new keyframe
             // 只在关键帧中进行物体检测
 
-            std::cout << "Judge NeedNewKeyFrame" << std::endl;
+            // std::cout << "Debug: Judge NeedNewKeyFrame" << std::endl;
             if(NeedNewKeyFrame())
             {
-                cout << "New Keyframe" << endl;
+                cout << std::endl << "New Keyframe" << std::endl;
                 CreateNewKeyFrame();
             }
-            std::cout << "End Judge NeedNewKeyFrame" << std::endl;
+            // std::cout << "Debug: End Judge NeedNewKeyFrame" << std::endl;
 
             // We allow points with high innovation (considererd outliers by the Huber Function)
             // pass to the new keyframe, so that bundle adjustment will finally decide
@@ -1182,7 +1184,7 @@ bool Tracking::TrackLocalMap()
         return false;
     }
 
-    std::cout << "mnMatchesInliers = " << mnMatchesInliers << std::endl;
+    // std::cout << "Debug: mnMatchesInliers = " << mnMatchesInliers << std::endl;
     // std::cout << "Debug: before TrackLocalMap return" << std::endl;
 
     if(mnMatchesInliers<30)

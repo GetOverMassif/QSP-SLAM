@@ -509,7 +509,7 @@ void LocalMapping::ProcessDetectedObjects()
 
         }
         else { // when we have relative good object shape
-            std::cout << "RemoveOutliersModel" << std::endl;
+            // std::cout << "Debug: RemoveOutliersModel" << std::endl;
             pMO->RemoveOutliersModel();
         }
         

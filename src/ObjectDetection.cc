@@ -96,8 +96,8 @@ void ObjectDetection::setPcdPtr(pcl::PointCloud<PointType>::Ptr& pcd_ptr_)
     }
     *pcd_ptr = *pcd_ptr_;
     isValidPcd = true;
-    std::cout << "ObjectDetection::setPcdPtr" << std::endl;
-    // std::cout << "ObjectDetection::setPcdPtr, size = " << pcd_ptr.size() << std::endl;
+    // std::cout << "Debug: ObjectDetection::setPcdPtr" << std::endl;
+    // std::cout << "Debug: ObjectDetection::setPcdPtr, size = " << pcd_ptr.size() << std::endl;
 }
 
 void ObjectDetection::SetBadFlag()

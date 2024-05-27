@@ -47,6 +47,7 @@ Visualization.Map.Filter.DisThresh2: -1
 # Visualization
 Visualization.Builder.Open: 1
 Visualization.Builder.Global.Open: 0
+Visualization.Builder.VoxelSize: 0.05
 
 
 Vocabulary.Path: Vocabulary/ORBvoc.bin

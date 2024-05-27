@@ -331,7 +331,7 @@ cv::Mat System::TrackRGBD(const cv::Mat &im, const cv::Mat &depthmap, const doub
 
     // KEY： 加入图像、深度和时间戳
 
-    std::cout << "Send into GrabImageRGBD" <<std::endl;
+    // std::cout << "Debug: Send into GrabImageRGBD" <<std::endl;
 
     // TODO: 设置可以使用标准轨迹
     cv::Mat Tcw = mpTracker->GrabImageRGBD(im,depthmap,timestamp);

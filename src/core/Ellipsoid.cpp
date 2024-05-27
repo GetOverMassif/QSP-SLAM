@@ -1053,7 +1053,7 @@ namespace g2o
         cv::RotatedRect rotbox2(cv::Point2f(ellipse[0],ellipse[1]), cv::Size2f(ellipse[3]*2,ellipse[4]*2), ellipse[2]/M_PI*180);
         try
         {
-            // std::cout << "drawEllipseOnImage success" << std::endl;
+            std::cout << "drawEllipseOnImage success" << std::endl;
             cv::ellipse(im, rotbox2, color);
         }
         catch(const std::exception& e)

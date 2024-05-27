@@ -295,9 +295,9 @@ void LocalMapping::Run()
 void LocalMapping::InsertKeyFrame(KeyFrame *pKF)
 {
     unique_lock<mutex> lock(mMutexNewKFs);
-    std::cout << " mpLocalMapper->InsertKeyFrame: " << pKF->mnId << std::endl;
+    // std::cout << "Debug: mpLocalMapper->InsertKeyFrame: " << pKF->mnId << std::endl;
     mlNewKeyFrames.push_back(pKF);
-    cout << "Insert success" << endl;
+    // cout << "Debug: Insert success" << endl;
     mbAbortBA=true;
 }
 

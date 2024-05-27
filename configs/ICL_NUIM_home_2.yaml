@@ -41,7 +41,7 @@ Plane.Groundplane.param: !!opencv-matrix
   rows: 1
   cols: 4
   dt: d
-  data: [-0.00144757,   0.999998, -0.00141902, 1.2]
+  data: [-0.00144757,   0.999998, -0.00141902, 1.17]
 
 # when >0, filter using dis to groundplane
 Visualization.Map.Filter.DisThresh: 2.3
@@ -51,7 +51,7 @@ Visualization.Map.Filter.DisThresh2: -0.1
 # Visualization
 Visualization.Builder.Open: 1
 Visualization.Builder.Global.Open: 0
-
+Visualization.Builder.VoxelSize: 0.05
 
 Vocabulary.Path: Vocabulary/ORBvoc.bin
 Config.StandardParamFile: configs/Redwood_chair_01053.yaml
@@ -239,7 +239,7 @@ SemanticPrior.GroundWeight: 2
 
 # deg
 Optimizer.Edges.3DConstrain.PlaneAngle.Sigma: 100
-EllipsoidExtractor.SupportingPlaneFilter.DisThresh: 0.002
+EllipsoidExtractor.SupportingPlaneFilter.DisThresh: 0.03
 
 # 10
 Dataset.Jumpframe: 5

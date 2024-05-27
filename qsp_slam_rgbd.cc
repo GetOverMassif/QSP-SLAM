@@ -78,7 +78,7 @@ int main(int argc, char **argv)
     std::cout << "path_to_settings = " << settings_path << std::endl;
 
     cv::FileStorage fSettings(settings_path, cv::FileStorage::READ);
-    
+
     std::cout << "Check Error" << std::endl;
 
     std::string vocabulary_path = fSettings["Vocabulary.Path"];
@@ -320,12 +320,12 @@ int main(int argc, char **argv)
 
         Eigen::MatrixXd* p_detMat = loader.getDetectionMatPointer(goal_id);
 
-        std::cout << "p_detMat = " << p_detMat->matrix() << std::endl;
+        // std::cout << "p_detMat = " << p_detMat->matrix() << std::endl;
 
-        std::cout << "Set current ID to : " << goal_id << std::endl;
+        // std::cout << "Set current ID to : " << goal_id << std::endl;
         
         std::cout << "\n========================================" << std::endl;
-        std::cout << "=> Inputting Image " << ni << "/" << nImages << std::endl;
+        std::cout << "=> Inputting Image " << ni << "/" << nImages;
         std::cout << "\n========================================" << std::endl;
 
         std::chrono::steady_clock::time_point t1_read = std::chrono::steady_clock::now();
@@ -334,7 +334,7 @@ int main(int argc, char **argv)
         imRGB = cv::imread(dataset_path+"/"+vstrImageFilenamesRGB[ni], CV_LOAD_IMAGE_UNCHANGED);
         imD = cv::imread(dataset_path+"/"+vstrImageFilenamesD[ni], CV_LOAD_IMAGE_UNCHANGED);
 
-        std::cout << "Read imRGB and imD" <<std::endl;
+        // std::cout << "Debug: Read imRGB and imD" <<std::endl;
 
         std::chrono::steady_clock::time_point t2_read = std::chrono::steady_clock::now();
         double t_read = std::chrono::duration_cast<std::chrono::duration<double> >(t2_read - t1_read).count();
@@ -355,7 +355,7 @@ int main(int argc, char **argv)
         assert(imRGB.type()==16);
         assert(imD.type()==2);
 
-        std::cout << "Send into TrackRGBD" <<std::endl;
+        // std::cout << "Debug: Send into TrackRGBD" <<std::endl;
 
         if (msensor == ORB_SLAM2::System::RGBD)
             SLAM.TrackRGBD(imRGB, imD, tframe);

@@ -104,14 +104,13 @@ class Detector2D(object):
         print(f"object_classes = {object_classes}")
         
         any_detect = False
-        print(f"detect ")
+        print(f"detect :", end='')
         for object_class in object_classes:
             for object_id in object_class_table[object_class]:
                 o = object_id
                 n_det_bbox = len(self.predictions[0][o])
                 n_det_mask = len(self.predictions[1][o])
 
-                
                 if n_det_bbox:
                     any_detect = True
                     print(f"{n_det_bbox} {object_class}, ", end='')

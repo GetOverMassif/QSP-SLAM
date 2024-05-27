@@ -1003,7 +1003,7 @@ void Tracking::UpdateDepthEllipsoidEstimation(ORB_SLAM2::Frame* pFrame, KeyFrame
         if(viIgnoreLabelLists.find(label) != viIgnoreLabelLists.end())
             c4 = false;
 
-        cout << "prob|NotBorder|HasGround|NotAssociation|NotFiltered:" \
+        cout << "  - prob|NotBorder|HasGround|NotAssociation|NotFiltered:" \
              << prob_check << "," << c1 << "," << c2 << "," << !c3 << "," << c4 << std::endl;
 
         // 对观测进行椭球体提取的几大条件
@@ -1049,13 +1049,13 @@ void Tracking::UpdateDepthEllipsoidEstimation(ORB_SLAM2::Frame* pFrame, KeyFrame
             }
 
             if (add_depth_pcd_to_map_object && pcd_ptr!=NULL) {
-                std::cout << "!!! det->setPcdPtr(pcd_ptr);" << std::endl;
+                std::cout << "  - !!! det->setPcdPtr(pcd_ptr);" << std::endl;
                 det->setPcdPtr(pcd_ptr);
             }
             
             // 判断是否拿到可靠椭球体
             bool c0 = mpEllipsoidExtractor->GetResult();
-            std::cout << "mpEllipsoidExtractor->GetResult() = " << c0 << std::endl;
+            std::cout << "  - mpEllipsoidExtractor->GetResult() = " << c0 << std::endl;
 
             g2o::ellipsoid* pObjByFitting;
             

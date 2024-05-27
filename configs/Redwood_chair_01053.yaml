@@ -60,6 +60,7 @@ Visualization.Map.Filter.DisThresh2: -0.2
 # Visualization
 Visualization.Builder.Open: 1
 Visualization.Builder.Global.Open: 0 # 注意，需要重建场景的时候这个要设置为1
+Visualization.Builder.VoxelSize: 0.05
 
 
 Vocabulary.Path: Vocabulary/ORBvoc.bin
@@ -249,7 +250,8 @@ SemanticPrior.GroundWeight: 2
 
 # deg
 Optimizer.Edges.3DConstrain.PlaneAngle.Sigma: 100
-EllipsoidExtractor.SupportingPlaneFilter.DisThresh: 0.002
+# EllipsoidExtractor.SupportingPlaneFilter.DisThresh: 0.002
+EllipsoidExtractor.SupportingPlaneFilter.DisThresh: 0.05
 
 # 10
 Dataset.Jumpframe: 5

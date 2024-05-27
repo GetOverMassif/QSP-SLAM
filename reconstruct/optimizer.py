@@ -306,8 +306,10 @@ class Optimizer(object):
             #       % (e, loss, sdf_loss, render_loss, rot_loss))
 
         end = get_time()
-        print(f"Interations: {self.num_iterations_joint_optim}")
+
+        print(f"Interations: {self.num_iterations_joint_optim}", end='')
         print("Reconstruction takes %f seconds" % (end - start))
+
         t_cam_obj = torch.inverse(t_obj_cam)
 
         torch.cuda.empty_cache()

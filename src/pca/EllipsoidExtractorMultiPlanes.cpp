@@ -1064,12 +1064,15 @@ ORB_SLAM2::PointCloud *EllipsoidExtractor::ApplyMHPlanesFilter(ORB_SLAM2::PointC
     ORB_SLAM2::PointCloud *pCloudFiltered = new ORB_SLAM2::PointCloud;
     int num = pCloud->size();
 
+    // double config_dis_thresh = 0.03;
+    double config_dis_thresh = Config::Get<double>("EllipsoidExtractor.SupportingPlaneFilter.DisThresh");
+
     int i = 0;
     for (auto p : (*pCloud)) {
         bool ok = true;
         for (auto &pPlane : vpPlanes) {
             double dis = pPlane->distanceToPoint(Vector3d(p.x, p.y, p.z), true); // ture means keeping the flag. The PlaneExtractor has made sure the positive value means the point is above the plane.
-            if (dis < 0.03) {
+            if (dis < config_dis_thresh) {
                 ok = false;
                 break;
             }

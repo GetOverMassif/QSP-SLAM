@@ -175,11 +175,11 @@ pcl::PointCloud<PointType>::Ptr EllipsoidExtractor::ExtractPointCloud(cv::Mat &d
 
     PointCloud *pPoints_planeFiltered;
     if (!mbOpenMHPlanesFilter){    // 使用支撑平面进行滤波
-        // std::cout << "ApplySupportingPlaneFilter" << std::endl;
+        std::cout << "ApplySupportingPlaneFilter" << std::endl;
         pPoints_planeFiltered = ApplySupportingPlaneFilter(pPoints_global);
     }
     else {
-        // std::cout << "ApplyMHPlanesFilter" << std::endl;    // 使用曼哈顿平面进行滤波
+        std::cout << "ApplyMHPlanesFilter" << std::endl;    // 使用曼哈顿平面进行滤波
         std::vector<g2o::plane *> vMHPlanes = mvpMHPlanes;
         vMHPlanes.push_back(mpPlane);
         std::cout << "vMHPlanes.size() = " << vMHPlanes.size() << std::endl;
