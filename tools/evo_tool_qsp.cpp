@@ -166,7 +166,7 @@ int main(int argc,char* argv[]) {
     }
 
     // 输出结果.
-    string path_output("./objects_compare.txt");
+    string path_output(dataset_path_savedir + "objects_compare.txt");
     ofstream fio(path_output.c_str());
     OutputResult(fio, staticResult, results, refObjMat);
     fio.close();
