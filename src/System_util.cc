@@ -201,6 +201,16 @@ void System::SaveEstimatedObjectsForEvo(const string &filepath){
     auto mvpMapObjects = mpMap->GetAllMapObjects();
     sort(mvpMapObjects.begin(), mvpMapObjects.end(), MapObject::lId);
 
+
+
+    // // TODO: 下一步考虑如何将所有物体的点云都添加到地图中，并且可以在每个新帧进行更新
+    // if (pMO->hasValidPointCloud()){
+    //     pc_num_valid++;
+    //     auto pcl_ptr= pMO->GetPointCloudPCL();
+    //     auto pPoints = pclXYZToQuadricPointCloudPtr(pcl_ptr);
+    //     mpMap->AddPointCloudList("MapObject PointCloud", pPoints, 1);
+    // }
+
     // mId, class_id, x, y, z, qx, qy, qz, sx, sy, sz
     // 1 8   75 1 0     -1.387770 0.211749 0.785359     0.000000 0.000000 0.000000 1.000000     0.246935 0.246935 0.347301   #vase
     for (MapObject *pMO : mvpMapObjects) {
@@ -213,20 +223,29 @@ void System::SaveEstimatedObjectsForEvo(const string &filepath){
         if (pMO->isDynamic())
             continue;
 
+        auto e = pMO->GetEllipsold();
+        if (e == NULL) { continue; }
+
         f_obj << pMO->mnId << " ";
-        // auto Two = pMO->GetPoseSim3();
-        auto Two = pMO->GetPoseSE3();
 
-        Vector6d pose_Two = Converter::toSE3Quat(Two).toMinimalVector();
+        // auto Two = pMO->GetPoseSE3();
+        // Vector6d pose_Two = Converter::toSE3Quat(Two).toMinimalVector();
+        // // auto scale = pMO->scale;
+        // Eigen::Vector3d scale(pMO->w, pMO->h, pMO->l);
+        // f_obj << setprecision(6) \
+        //     << pose_Two(0) << " " << pose_Two(1) << " " << pose_Two(2) << " " \
+        //     << pose_Two(3) << " " << pose_Two(4) << " " << pose_Two(5) << " " \
+        //     << scale(0)/2. << " " << scale(1)/2. << " " << scale(2)/2. ;
 
-        // auto scale = pMO->scale;
-        Eigen::Vector3d scale(pMO->w, pMO->h, pMO->l);
+
+        Vector9d vec = e->toMinimalVector();
 
         f_obj << setprecision(6) \
-            << pose_Two(0) << " " << pose_Two(1) << " " << pose_Two(2) << " " \
-            << pose_Two(3) << " " << pose_Two(4) << "" << pose_Two(5) << " " \
-            << scale(0) << " " << scale(1) << " " << scale(2) << " "
-            << pMO->label << endl;
+            << vec(0) << " " << vec(1) << " " << vec(2) << " " \
+            << vec(3) << " " << vec(4) << " " << vec(5) << " " \
+            << vec(6) << " " << vec(7) << " " << vec(8) ;
+        
+        f_obj << " " << pMO->label << endl;
         // f_obj << setprecision(9) << pMO->GetShapeCode().transpose() << endl;
     }
     f_obj.close();
@@ -234,7 +253,8 @@ void System::SaveEstimatedObjectsForEvo(const string &filepath){
 
 void System::SaveEstimatedTrajForEvo(const string &filepath)
 {
-    System::SaveTrajectoryTUM(filepath);
+    bool useIndex = true;
+    System::SaveTrajectoryTUM(filepath, useIndex);
     // ofstream f_traj;
     // f_traj.open(filepath.c_str());
     // f_traj << fixed;

@@ -74,8 +74,8 @@ Dataset.Path.ObjectGT: /objects_gt.txt
 Dataset.Path.ObjectGroundGT:  /objects_gt.txt
 Dataset.Path.TrajectoryGT:  /groundtruth.txt
 
-# Result.ObjectEstimate: /result/objects.txt
-Result.ObjectEstimate: /result/objects_quadric.txt
+Result.ObjectEstimate: /result/objects.txt
+# Result.ObjectEstimate: /result/objects_quadric.txt
 Result.TrajectoryEstimate: /result/traj.txt
 
 

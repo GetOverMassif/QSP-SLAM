@@ -600,6 +600,7 @@ namespace evo
         int est_obj_num = estObjMat.rows();
         int ref_obj_num = refObjMat.rows();
 
+        std::cout << "Build costMat" << std::endl;
         MatrixXd costMat(ref_obj_num, est_obj_num);
         for (int ref_id = 0; ref_id < ref_obj_num; ref_id++)
         {
@@ -657,6 +658,7 @@ namespace evo
             }
         }
 
+        std::cout << "Build costMatCube" << std::endl;
         MatrixXd costMatCube;
         // if the dimensions are equal (square matrix), we're done
         // else, have to figure out larger dimension and pad with matrix max
@@ -666,6 +668,7 @@ namespace evo
         }
         else
         {
+            std::cout << "est_obj_num != ref_obj_num" << std::endl;
             float max_elem = costMat.maxCoeff();     // find the max element
             int dim = max(est_obj_num, ref_obj_num); // find the dimension for the new, square matrix
             costMatCube.resize(dim, dim);
@@ -1271,7 +1274,7 @@ namespace evo
         // Trajectory estTrajInGt = MatToTraj(estTrajMat, Tre);
         Trajectory estTrajInGt = MatToTraj(estTrajMat, Tre2);
 
-        std::cout << "check not Tre";
+        std::cout << "check not Tre" << std::endl;
 
         bool bVisualize = (pMap != NULL);
         if (bVisualize)

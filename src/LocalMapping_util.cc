@@ -897,7 +897,7 @@ void LocalMapping::ProcessDetectedObjects()
 void LocalMapping::UpdateObjectsToMap()
 {
     cout << "\n[LocalMapping::UpdateObjectsToMap]" << endl;
-    auto mapObjects = mpMap->GetAllMapObjects();
+    
     mpMap->ShowMapInfo();
 
     // 每次都会重新更新一遍地图中的物体椭球体
@@ -906,13 +906,9 @@ void LocalMapping::UpdateObjectsToMap()
     int ellip_num_valid = 0;
     int pc_num_valid = 0;
 
+    auto mapObjects = mpMap->GetAllMapObjects();
     for (auto &pMO: mapObjects){
-        // if (pMO->isBad()) {
-        //     continue;
-        // }
-        // // Default type = 0: replace when exist , 1: add when exist
         // bool Map::AddPointCloudList(const string &name, PointCloud *pCloud, int type) {
-        
         if (pMO->isBad()) {
             continue;
         }

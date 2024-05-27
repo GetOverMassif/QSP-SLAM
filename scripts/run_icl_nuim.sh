@@ -28,6 +28,8 @@
 PROGRAME_TYPE=run
 # PROGRAME_TYPE=evo
 
+# PROGRAME_TYPE=$1
+
 if [ "$PROGRAME_TYPE" = "run" ]; then
     CMD=./qsp_slam_rgbd
 fi
