@@ -76,7 +76,10 @@ int main(int argc, char **argv)
     
     std::string settings_path = std::string(argv[1]);
     std::cout << "path_to_settings = " << settings_path << std::endl;
+
     cv::FileStorage fSettings(settings_path, cv::FileStorage::READ);
+    
+    std::cout << "Check Error" << std::endl;
 
     std::string vocabulary_path = fSettings["Vocabulary.Path"];
     std::string dataset_path = fSettings["Dataset.Path.Root"];
@@ -141,7 +144,7 @@ int main(int argc, char **argv)
         abort();
     }
 
-    
+
     LoadImages(strAssociationFilename, vstrImageFilenamesRGB, vstrImageFilenamesD, vTimestamps);
 
     std::vector<std::string> vstrImageFilenamesRGB_all(vstrImageFilenamesRGB);
@@ -361,7 +364,7 @@ int main(int argc, char **argv)
         else
             printf("暂时不支持这个模式\n");
 
-        std::cout << "Debug: get out of SLAM.TrackRGBD" << std::endl;
+        // std::cout << "Debug: get out of SLAM.TrackRGBD" << std::endl;
 
         // FIXME: 如有必要，将内存使用的变化情况存储下来检查一下
         if (getrusage(RUSAGE_SELF, &rusage) == 0) {

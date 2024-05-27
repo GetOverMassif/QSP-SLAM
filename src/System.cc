@@ -335,7 +335,7 @@ cv::Mat System::TrackRGBD(const cv::Mat &im, const cv::Mat &depthmap, const doub
 
     // TODO: 设置可以使用标准轨迹
     cv::Mat Tcw = mpTracker->GrabImageRGBD(im,depthmap,timestamp);
-    std::cout << "Debug: get out of GrabImageRGBD" << std::endl;
+    // std::cout << "Debug: get out of GrabImageRGBD" << std::endl;
 
     // auto traj_gt = mpMap->getTrajectoryWithName("Groundtruth");
     // int i_gt = 0;
@@ -350,7 +350,7 @@ cv::Mat System::TrackRGBD(const cv::Mat &im, const cv::Mat &depthmap, const doub
 
     mTimeList.push_back(mpTracker->mCurrentFrame->mTimeStamp);
 
-    std::cout << "Debug: mTimeList.push_back" << std::endl;
+    // std::cout << "Debug: mTimeList.push_back" << std::endl;
 
 
     // Vector7d Twc_vec = mpTracker->mCurrentFrame->cam_pose_Twc.toVector();
@@ -362,7 +362,7 @@ cv::Mat System::TrackRGBD(const cv::Mat &im, const cv::Mat &depthmap, const doub
     // cout << "After DenseBuild";
     // printMemoryUsage();
 
-    std::cout << "Debug: After DenseBuild" << std::endl;
+    // std::cout << "Debug: After DenseBuild" << std::endl;
 
     // 处理可视化内容
     mpMap->addCameraStateToTrajectory(&(mpTracker->mCurrentFrame->cam_pose_Twc));
@@ -377,9 +377,9 @@ cv::Mat System::TrackRGBD(const cv::Mat &im, const cv::Mat &depthmap, const doub
     mTrackedMapPoints = mpTracker->mCurrentFrame->mvpMapPoints;
     mTrackedKeyPointsUn = mpTracker->mCurrentFrame->mvKeysUn;
 
-    std::cout << "Debug: before GetAllFramesWithKeyframe" << std::endl;
+    // std::cout << "Debug: before GetAllFramesWithKeyframe" << std::endl;
     auto mvpFrames = mpTracker->GetAllFramesWithKeyframe();
-    std::cout << "Debug: after GetAllFramesWithKeyframe" << std::endl;
+    // std::cout << "Debug: after GetAllFramesWithKeyframe" << std::endl;
 
     // // 如果跟踪成功，则进行平面检测
     // if (mTrackingState==Tracking::OK) {
@@ -387,9 +387,9 @@ cv::Mat System::TrackRGBD(const cv::Mat &im, const cv::Mat &depthmap, const doub
     // }
 
     if (mbMapInSameThread) {
-        std::cout << "Debug: before mpLocalMapper->RunOneTime();" << std::endl;
+        // std::cout << "Debug: before mpLocalMapper->RunOneTime();" << std::endl;
         mpLocalMapper->RunOneTime();
-        std::cout << "Debug: after mpLocalMapper->RunOneTime();" << std::endl;
+        // std::cout << "Debug: after mpLocalMapper->RunOneTime();" << std::endl;
     }
 
     // mpTracker->LoadPause();

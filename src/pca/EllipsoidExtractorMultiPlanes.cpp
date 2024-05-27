@@ -776,6 +776,7 @@ g2o::ellipsoid EllipsoidExtractor::EstimateLocalEllipsoidUsingMultiPlanes(\
     pcl::compute3DCentroid(*pCloudPCL, centroid);
     g2o::SE3Quat Twg = GenerateGravityCoordinate(centroid.head(3), sup_plane.head(3));
 
+    // FIXME： 应当对非常靠近支撑平面的点云进行去除
     // 获得该系下的点云.
     g2o::SE3Quat SE3Tgw = Twg.inverse();
     Eigen::Matrix4d transform_gw = SE3Tgw.to_homogeneous_matrix();
@@ -884,13 +885,13 @@ g2o::ellipsoid EllipsoidExtractor::EstimateLocalEllipsoidUsingMultiPlanes(\
     cout << endl;
 
     // FIXME: 
-    // // 此处添加一个判断, 若 prob_3d < 0.5 则舍弃
-    // if(prob_3d < 0.5)
-    // {
-    //     mResult = false;
-    // }
-    // else
-    //     mResult = true;
+    // 此处添加一个判断, 若 prob_3d < 0.5 则舍弃
+    if(prob_3d < 0.5)
+    {
+        mResult = false;
+    }
+    else
+        mResult = true;
 
     return e_local_normalized;
 }

@@ -142,8 +142,9 @@ public:
     void TaskGroundPlane();
     void SetGroundPlaneMannually(const Eigen::Vector4d &param);
     void ActivateGroundPlane(g2o::plane &groundplane);
-    void ProcessGroundPlaneEstimation();
+    void TaskManhattanPlanes(ORB_SLAM2::Frame *pFrame);
 
+    void ProcessGroundPlaneEstimation();
     void VisualizeManhattanPlanes();
 
     void LoadPointcloud(const string& strPcdDir, const string& strPointcloud_name, g2o::SE3Quat Ttrans=g2o::SE3Quat(), double voxelsize = -1.0);

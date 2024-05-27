@@ -158,6 +158,7 @@ bool Map::AddPointCloudList(const string &name, PointCloud *pCloud, int type) {
         std::cout << "NULL point cloud." << std::endl;
         return false;
     }
+    
     // std::cout << "!!!!Map's pointcloud now: \n";
     // for (auto &pair: mmPointCloudLists) {
     //     auto strPoints = pair.first;

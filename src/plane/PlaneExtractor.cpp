@@ -21,6 +21,7 @@ namespace ORB_SLAM2
 
     // FIXME: 该平面提取函数内部存在问题
     void PlaneExtractor::extractPlanes(const cv::Mat &imDepth) {
+        std::cout << "Error in extractPlanes(if fault)" << std::endl;
         mvPlaneCoefficients.clear();
         mvPlanePoints.clear();
         int jump = 3;
@@ -31,10 +32,9 @@ namespace ORB_SLAM2
         else
             row_start = 0;
 
-        // std::cout << "Processing plane extraction, row range : " << row_start << " - " << imDepth.rows << ", Jump: " << jump << std::endl;
+        std::cout << "Processing plane extraction, row range : " << row_start << " - " << imDepth.rows << ", Jump: " << jump << std::endl;
         // std::cout << "[Config] Row range : " << row_start << " - " << imDepth.rows << std::endl;
         // std::cout << "[Config] Jump : " << jump << std::endl;
-
         PointCloudPCL::Ptr inputCloud( new PointCloudPCL() );
         for ( int m=row_start; m<imDepth.rows; m+=jump )
         {
@@ -57,33 +57,23 @@ namespace ORB_SLAM2
         inputCloud->height = ceil((imDepth.rows-row_start)/(float)jump);
         inputCloud->width = ceil((imDepth.cols)/(float)jump);
 
-        // 到这里如果进行 inputCloud.reset(); 可以运行并退出函数
-        // 但创建 cloud_normals 后就不能成功推出了，且不能进行reset操作
-
         // estimate the normal
         pcl::IntegralImageNormalEstimation<PointT, pcl::Normal> ne;
         pcl::PointCloud<pcl::Normal>::Ptr cloud_normals(new pcl::PointCloud<pcl::Normal>);
-        
-        inputCloud.reset();
         ne.setNormalEstimationMethod(ne.AVERAGE_3D_GRADIENT);
         ne.setMaxDepthChangeFactor(0.05f);
         ne.setNormalSmoothingSize(10.0f);
         ne.setInputCloud(inputCloud);
         ne.compute(*cloud_normals);
 
-        // ne.~IntegralImageNormalEstimation();
-        // inputCloud.reset();
-        // std::cout << "Debug: after inputCloud.reset();" << std::endl;
-        // cloud_normals.reset();
-
         // load config parameters
         int min_plane = Config::ReadValue<int>("Plane.MinSize");
         double AngTh = Config::ReadValue<double>("Plane.AngleThreshold");
         double DisTh = Config::ReadValue<double>("Plane.DistanceThreshold");
 
-        std::cout << "[Extractor.cpp] min_plane : " << min_plane << std::endl;
-        std::cout << "[Extractor.cpp] AngTh : " << AngTh << std::endl;
-        std::cout << "[Extractor.cpp] DisTh : " << DisTh << std::endl;
+        // std::cout << "[Extractor.cpp] min_plane : " << min_plane << std::endl;
+        // std::cout << "[Extractor.cpp] AngTh : " << AngTh << std::endl;
+        // std::cout << "[Extractor.cpp] DisTh : " << DisTh << std::endl;
 
         vector<pcl::ModelCoefficients> coefficients;
         vector<pcl::PointIndices> inliers;
@@ -91,24 +81,19 @@ namespace ORB_SLAM2
         vector<pcl::PointIndices> label_indices;
         vector<pcl::PointIndices> boundary;
 
-        inputCloud.reset();
-        cloud_normals.reset();
-        labels.reset();
-
         pcl::OrganizedMultiPlaneSegmentation< PointT, pcl::Normal, pcl::Label > mps;
-        mps.setMinInliers(min_plane);
-        mps.setAngularThreshold(0.017453 * AngTh);  // deg to rad
-        mps.setDistanceThreshold(DisTh);
-        mps.setInputNormals(cloud_normals);
-        mps.setInputCloud(inputCloud);
+        mps.setMinInliers (min_plane);
+        mps.setAngularThreshold (0.017453 * AngTh);  // deg to rad
+        mps.setDistanceThreshold (DisTh);
+        mps.setInputNormals (cloud_normals);
+        mps.setInputCloud (inputCloud);
         std::vector<pcl::PlanarRegion<PointT>, Eigen::aligned_allocator<pcl::PlanarRegion<PointT>>> regions;
-        mps.segmentAndRefine(regions, coefficients, inliers, labels, label_indices, boundary);
+        mps.segmentAndRefine (regions, coefficients, inliers, labels, label_indices, boundary);
 
         pcl::ExtractIndices<PointT> extract;
         extract.setInputCloud(inputCloud);
         extract.setNegative(false);
 
-        std::cout << "[Extractor.cpp] before mvPlaneCoefficients push" << std::endl;
         // save the points belonging to each planes, and the coefficients
         for (int i = 0; i < inliers.size(); ++i) {
             PointCloudPCL::Ptr planeCloud(new PointCloudPCL());
@@ -120,19 +105,15 @@ namespace ORB_SLAM2
                 coef = -coef;
 
             // LJ修改
-            // std::cout << "[Extractor.cpp] Point cloud ignore" << std::endl;
             // extract.setIndices(boost::make_shared<pcl::PointIndices>(inliers[i]));
-            // std::cout << "[Extractor.cpp] setIndices" << std::endl;
-
             extract.setIndices(std::make_shared<pcl::PointIndices>(inliers[i]));
             extract.filter(*planeCloud);
-            mvPlanePoints.push_back(*planeCloud);  // about point
 
-            // std::cout << "[Extractor.cpp] push_back plane" << std::endl;
+            mvPlanePoints.push_back(*planeCloud);
             mvPlaneCoefficients.push_back(coef);
-            // std::cout << "coef = \n" << coef << std::endl;
         }
-        std::cout << "[Extractor.cpp] before extractPlanes return" << std::endl;
+
+        // std::cout << "before extractPlanes return " << jump << std::endl;
     }
 
     void PlaneExtractor::SetParam(PlaneExtractorParam& param){

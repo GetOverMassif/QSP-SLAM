@@ -23,6 +23,10 @@ from reconstruct.loss import compute_sdf_loss, compute_render_loss, compute_rota
 from reconstruct.loss_utils import decode_sdf, get_robust_res, exp_se3, exp_sim3, get_time
 from reconstruct.tools import show_cuda_memory
 
+
+import open3d as o3d
+from reconstruct.visualize import getCoordinateAxis
+
 class Optimizer(object):
     def __init__(self, decoder, configs, debug=False):
         self.decoder = decoder
@@ -42,6 +46,14 @@ class Optimizer(object):
         self.debug = debug
         if configs.data_type == "KITTI":
             self.num_iterations_pose_only = optim_cfg.pose_only_optim.num_iterations
+        
+        self.visualFlag = False
+
+        if self.visualFlag:
+            self.vis = o3d.visualization.VisualizerWithKeyCallback()
+            self.vis.create_window(window_name='Show Optimize Process')
+            self.vis.run()
+            self.vis.destroy_window()
 
     # KEY: [python调用] 估计位姿
     def estimate_pose_cam_obj(self, t_co_se3, scale, pts, code):
@@ -101,7 +113,21 @@ class Optimizer(object):
         :param depth: depth values (K,) only contain foreground pixels, K = M for KITTI
         :return: optimized opject pose and shape, saved as a dict
         """
-        # t1_recon = get_time()
+        # t1_recon = get_time()\
+
+        if self.visualFlag:
+            # set_view(self.vis, dist=10, theta=80 * np.pi / 180)
+            # 绘制点云
+            pcd = o3d.geometry.PointCloud()
+            pcd.points = o3d.utility.Vector3dVector(pts) # pos[:3]
+            self.vis.add_geometry(pcd, True)
+            # 绘制世界坐标系和物体位姿初始估计
+            axis_world = getCoordinateAxis()
+            self.vis.add_geometry(axis_world, False)
+            axis_object_init = getCoordinateAxis(t_cam_obj)
+            self.vis.add_geometry(axis_object_init, False)
+            pause_input = input("visuaize, tab to continue:")
+
 
         show_cuda_memory("reconstruct_object head")
         # debug = True
@@ -266,6 +292,15 @@ class Optimizer(object):
             if debug:
                 print("Line 257")
 
+            if self.visualFlag:
+                # set_view(self.vis, dist=10, theta=80 * np.pi / 180)
+
+                # 绘制世界坐标系和物体位姿初始估计
+                t_cam_obj = torch.inverse(t_obj_cam)
+                axis_object_init = getCoordinateAxis(t_cam_obj)
+                self.vis.add_geometry(axis_object_init, False)
+                pause_input = input(f"inter {e}:visuaize, tab to continue:")
+            
             # print("Object joint optimization: Iter %d, loss: %f, sdf loss: %f, "
             #       "render loss: %f, rotation loss: %f"
             #       % (e, loss, sdf_loss, render_loss, rot_loss))

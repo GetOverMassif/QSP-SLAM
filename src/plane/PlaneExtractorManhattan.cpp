@@ -13,6 +13,7 @@ void PlaneExtractorManhattan::SetGroundPlane(g2o::plane* gplane)
 
 bool PlaneExtractorManhattan::extractManhattanPlanes(const cv::Mat &depth, Eigen::Vector3d& local_gt, g2o::SE3Quat &Twc)
 {
+    std::cout << "Deubug: extractManhattanPlanes" << std::endl;
     // ************************
     // INIT
     // ************************

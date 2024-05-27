@@ -182,6 +182,7 @@ pcl::PointCloud<PointType>::Ptr EllipsoidExtractor::ExtractPointCloud(cv::Mat &d
         // std::cout << "ApplyMHPlanesFilter" << std::endl;    // 使用曼哈顿平面进行滤波
         std::vector<g2o::plane *> vMHPlanes = mvpMHPlanes;
         vMHPlanes.push_back(mpPlane);
+        std::cout << "vMHPlanes.size() = " << vMHPlanes.size() << std::endl;
         pPoints_planeFiltered = ApplyMHPlanesFilter(pPoints_global, vMHPlanes);
     }
     clock_t time_3_SupportingPlaneFilter = clock();
@@ -257,12 +258,34 @@ pcl::PointCloud<PointType>::Ptr EllipsoidExtractor::ExtractPointCloud(cv::Mat &d
 
     // we have gotten the object points in the world coordinate
     // pcl::PointCloud<PointType>::Ptr clear_cloud_ptr = QuadricPointCloudToPclXYZ(*pPointsEuFiltered);
+    
+    
     clear_cloud_ptr = QuadricPointCloudToPclXYZ(*pPointsEuFiltered);
-
     mpPoints = pPointsEuFiltered;
-
-
     VisualizePointCloud("EuclideanFiltered" + suffix, mpPoints, Vector3d(0.4, 0, 1.0), 2);
+
+    /*
+    需要修改，使用平面过滤点云
+    PointCloud *pPointsEuFiltered = ApplyEuclideanFilter(pPoints_sampled, center);
+    // delete pPoints_sampled; pPoints_sampled = NULL;
+    if (miEuclideanFilterState > 0) {
+        std::cout << "Fail to filter by EuclideanFilter." << std::endl;  // 未能成功聚类中间点云
+        miSystemState = 2; // fail to filter
+        return NULL;
+    }
+    clock_t time_6_ApplyEuclideanFilter = clock();
+    std::cout << "pPointsEuFiltered.size() = " << pPointsEuFiltered->size() << std::endl;
+    if (pPointsEuFiltered->size() < 1) {
+        std::cout << "No enough point cloud after ApplyEuclideanFilter:  " << pPointsEuFiltered->size() << std::endl;
+        miSystemState = 3;
+        return NULL;
+    }
+    // we have gotten the object points in the world coordinate
+    // pcl::PointCloud<PointType>::Ptr clear_cloud_ptr = QuadricPointCloudToPclXYZ(*pPointsEuFiltered);
+    clear_cloud_ptr = QuadricPointCloudToPclXYZ(*pPointsEuFiltered);
+    mpPoints = pPointsEuFiltered;
+    VisualizePointCloud("EuclideanFiltered" + suffix, mpPoints, Vector3d(0.4, 0, 1.0), 2);
+    */
 
     clock_t time_7_VisualizePointCloud = clock();
 

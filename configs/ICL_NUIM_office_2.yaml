@@ -18,9 +18,9 @@ Tracking.MinimumPtNumToJudgeGood: 5  # default 20
 
 LocalMapping.DistFiltParam: 0.1
 
-Tracking.IgnoreObject: 1
-Tracking.AddDepthPcdToMapObject: 0
-Tracking.UseDepthPcdToReconstruct: 0
+Tracking.IgnoreObject: 0
+Tracking.AddDepthPcdToMapObject: 1
+Tracking.UseDepthPcdToReconstruct: 1
 
 QSPSLAM.VoxelSize: 0.001
 QSPSLAM.NeedDatasetPointCloud: 0
@@ -58,15 +58,19 @@ Dataset.Path.Root: /media/lj/TOSHIBA/dataset/ICL-NUIM/office/traj2_frei_png
 Dataset.Path.Save: map/icl_nuim/office/2
 Dataset.Path.MapPcd: "./dataset.pcd"
 
+Dataset.Path.AssociateFile: /associate.txt
+MapObject.PointCloudVoxelSize: 0.03
 
-Dataset.Path.ObjectAnno: /result/objects_qsp.txt
+# Dataset.Path.ObjectAnno: /result/objects_qsp.txt
+# Dataset.Path.ObjectAnno: /result/objects_np.txt
+Dataset.Path.ObjectAnno: /result/objects_quadric.txt
 # Dataset.Path.ObjectAnno: /objects_gt.txt
 
 Dataset.Path.ObjectGT: /objects_gt.txt
 Dataset.Path.ObjectGroundGT:  /objects_gt.txt
 Dataset.Path.TrajectoryGT:  /groundtruth.txt
 
-Result.ObjectEstimate: /result/objects_qsp.txt
+Result.ObjectEstimate: /result/objects_quadric.txt
 Result.TrajectoryEstimate: /result/traj.txt
 
 

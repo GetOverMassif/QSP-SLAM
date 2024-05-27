@@ -637,8 +637,8 @@ void Tracking::UpdateObjectObservation(ORB_SLAM2::Frame *pFrame, KeyFrame* pKF, 
     
     // clock_t time_1_TaskGroundPlane = clock();
 
-    // // New task : for Manhattan Planes
-    // // TaskManhattanPlanes(pFrame);
+    // // // New task : for Manhattan Planes
+    // TaskManhattanPlanes(pFrame);
     // clock_t time_2_TaskManhattanPlanes = clock();
 
     // [2] process single-frame ellipsoid estimation
@@ -660,10 +660,17 @@ void Tracking::UpdateObjectObservation(ORB_SLAM2::Frame *pFrame, KeyFrame* pKF, 
         // // // [4] Use Relationship To Refine Ellipsoids
         // // // 注意: Refine时必然在第一步可以初始化出有效的物体.
         RefineObjectsWithRelations(pFrame);
+        std::cout << "Finish RefineObjectsWithRelations" << std::endl;
         // // time_5_RefineObjectsWithRelations = clock();
 
-        // // // // [5] 对于第一次提取，Refine提取都失败的，使用点模型
-        UpdateDepthEllipsoidUsingPointModel(pFrame);
+
+        bool use_point_model = Config::Get<int>("Tracking.UsePointModel");
+        std::cout << "use_point_model = " << use_point_model << std::endl;
+        if (use_point_model){
+            // // // // [5] 对于第一次提取，Refine提取都失败的，使用点模型
+            UpdateDepthEllipsoidUsingPointModel(pFrame);
+            std::cout << "Finish UpdateDepthEllipsoidUsingPointModel" << std::endl;
+        }
 
         // GenerateObservationStructure(pFrame);
     }
@@ -819,6 +826,53 @@ void Tracking::ActivateGroundPlane(g2o::plane &groundplane)
 
     // Change state
     miGroundPlaneState = 2;
+}
+
+// running after groundplane has been estimated
+void Tracking::TaskManhattanPlanes(ORB_SLAM2::Frame *pFrame)
+{
+    // 清除可视化
+    mpMap->DeletePointCloudList("pPlaneExtractorManhattan", 1);
+    g2o::SE3Quat Twc = pFrame->cam_pose_Twc;
+
+    // int miGroundPlaneState; // 0: Closed  1: estimating 2: estimated 3: set by mannual
+    if(miGroundPlaneState == 2 && miMHPlanesState == 1){
+        g2o::plane local_ground = mGroundPlane;
+        local_ground.transform(pFrame->cam_pose_Tcw);
+        Vector3d local_gt = local_ground.param.head(3);
+        bool result = pPlaneExtractorManhattan->extractManhattanPlanes(pFrame->frame_img, local_gt, Twc);
+        
+        if(mbDepthEllipsoidOpened && result)    // 仅当开启了 Depth 提取.
+        {
+            // 动态更新 EllipsoidExtractor 中存放的平面
+            // 仅当新增了新的 MH Planes时，该返回值为真.
+            if( pPlaneExtractorManhattan->GetMHResult())
+            {
+                // 在此添加一个 MHPlanes 的开关. 关闭后，MHPlane的分割不再生效，但支撑平面会继续生效. 
+                bool bOpenMHPlane = Config::Get<int>("Plane.ManhattanPlane.Open") > 0;
+                if(!bOpenMHPlane) return;
+
+                mpEllipsoidExtractor->SetManhattanPlanes(pPlaneExtractorManhattan->GetDominantMHPlanes());
+            }
+        }
+
+        // 可视化
+        bool bVisualizePlanes = true;
+        if(bVisualizePlanes)
+        {
+            std::vector<PointCloudPCL> vpPlanePoints = pPlaneExtractorManhattan->GetPoints();
+            mpMap->AddPointCloudList("pPlaneExtractorManhattan.MH-Plane Points", vpPlanePoints, Twc, REPLACE_POINT_CLOUD);
+        }
+
+        bool bVisualizeMHPlanes = true;
+        if(bVisualizeMHPlanes)
+        {
+            std::vector<PointCloudPCL> vpPlanePoints = pPlaneExtractorManhattan->GetPotentialGroundPlanePoints();
+            mpMap->AddPointCloudList("pPlaneExtractorManhattan.MH-MH Points", vpPlanePoints, Twc, REPLACE_POINT_CLOUD);
+        }
+    }
+
+    return;
 }
 
 void Tracking::OpenDepthEllipsoid(){

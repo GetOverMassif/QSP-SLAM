@@ -219,7 +219,6 @@ class MonoSequence:
         self.k1 = k1
         self.k2 = k2
 
-        print("before # configs")
         self.configs = configs
         self.data_type = self.configs.data_type
         # assert self.data_type == "Redwood" or self.data_type == "Freiburg", print("Wrong data type, supported: Redwood and Freiburg")
@@ -231,7 +230,6 @@ class MonoSequence:
         if not self.online:
             assert self.lbl2d_dir is not None, print()
 
-        print("before # Detectors")
         # Detectors
         self.detector_2d = get_detectors(self.configs)
         self.current_frame = None

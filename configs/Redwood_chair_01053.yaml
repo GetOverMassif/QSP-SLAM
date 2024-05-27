@@ -14,7 +14,6 @@ LocalMapping.MinValidPoints: 50
 LocalMapping.MinValidRays: 1
 
 Tracking.AssociateIoUThresold: 0.52
-
 Tracking.MinimumPtNumToJudgeGood: 5  # default 20
 
 LocalMapping.DistFiltParam: 0.1
@@ -27,20 +26,23 @@ EllipObjects.maskErrosion: 5
 
 Tracking.IgnoreObject: 0
 Tracking.AddDepthPcdToMapObject: 1  # 目前一定要设置为1
-Tracking.UseDepthPcdToReconstruct: 0
+Tracking.UseDepthPcdToReconstruct: 1
 
 
 QSPSLAM.VoxelSize: 0.02
-QSPSLAM.NeedDatasetPointCloud: 1
+QSPSLAM.NeedDatasetPointCloud: 0
 
 
 # -------------------------
 # 地平面提取参数： Ground Plane Extraction
 # -------------------------
-Plane.MinSize: 1000
+Plane.MinSize: 800
 Plane.AngleThreshold: 3.0
 Plane.DistanceThreshold: 0.05
 Plane.MannualCheck.Open: 1
+
+Plane.ManhattanPlane.Open: 0
+Tracking.UsePointModel: 0
 
 # Mannual set
 Plane.Groundplane.param: !!opencv-matrix
@@ -57,7 +59,7 @@ Visualization.Map.Filter.DisThresh2: -0.2
 
 # Visualization
 Visualization.Builder.Open: 1
-Visualization.Builder.Global.Open: 1 # 注意，需要重建场景的时候这个要设置为1
+Visualization.Builder.Global.Open: 0 # 注意，需要重建场景的时候这个要设置为1
 
 
 Vocabulary.Path: Vocabulary/ORBvoc.bin
@@ -75,7 +77,8 @@ Dataset.Path.Save: map/redwood_new/01053
 # Dataset.Path.Save: map/redwood_new/09374
 
 Dataset.Path.MapPcd: "./dataset.pcd"
-Dataset.Path.AssociateFile: /associate_short.txt
+Dataset.Path.AssociateFile: /associate.txt
+# Dataset.Path.AssociateFile: /associate_short.txt
 MapObject.PointCloudVoxelSize: 0.03
 
 Dataset.Path.ObjectAnno: /result/objects_qsp.txt

@@ -8,6 +8,7 @@ LocalMapping.KeepRawPose: 0
 Tracking.AddSuffixToPcd: 0
 Tracking.AssociateObjectWithEllipsold: 1
 Tracking.AssociateDebug: 0
+
 Tracking.AddDepthPcdToMapObject: 1
 Tracking.UseDepthPcdToReconstruct: 1
 
@@ -27,8 +28,16 @@ Visualization.Builder.Open: 1
 Visualization.Builder.Global.Open: 0
 
 
+QSPSLAM.VoxelSize: 0.02
+QSPSLAM.NeedDatasetPointCloud: 0
+
+# when >0, filter using dis to groundplane
+Visualization.Map.Filter.DisThresh: 2.3
+Visualization.Map.Filter.DisThresh2: -0.2
+
+
 Vocabulary.Path: Vocabulary/ORBvoc.bin
-Config.StandardParamFile: configs/ICL_NUIM_home.yaml
+Config.StandardParamFile: configs/Redwood_chair_01053.yaml
 
 
 Dataset.Type: "MySimDataset"
@@ -39,6 +48,8 @@ Dataset.Path.MapPcd: "./dataset.pcd"
 Dataset.Path.AssociateFile: /associate.txt
 MapObject.PointCloudVoxelSize: 0.03
 
+Dataset.Path.ObjectAnno: /objects_gt.txt
+
 Dataset.Path.ObjectGT: /objects_gt.txt
 Dataset.Path.ObjectGroundGT:  /objects_gt.txt
 Dataset.Path.TrajectoryGT:  /groundtruth.txt
@@ -46,6 +57,7 @@ Dataset.Path.TrajectoryGT:  /groundtruth.txt
 Result.ObjectEstimate: /result/objects.txt
 Result.TrajectoryEstimate: /result/traj.txt
 
+DetectorConfigPath: configs/config_self_allobject_ground.json
 
 
 # Tracking.UseGroundTruthTraj: 1
@@ -175,7 +187,6 @@ Camera.scale: 5000
 # Parameters used for Object SLAM
 #--------------------------------------------------------------------------------------------
 # Config path for Python detectors
-DetectorConfigPath: configs/config_self_allobject_ground.json
 EllipObjects.maskErrosion: 5
 
 
@@ -301,8 +312,6 @@ Measurement.Probability.Thresh: 0
 # Close it to consider every observations.
 Tracking.KeyFrameCheck.Close: 1
 
-# when >0, filter using dis to groundplane
-Visualization.Map.Filter.DisThresh: 2.3
 
 #------------------
 # ORB相关参数： ORB Parameters
