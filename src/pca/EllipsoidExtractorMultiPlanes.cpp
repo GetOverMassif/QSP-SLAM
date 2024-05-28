@@ -886,6 +886,7 @@ g2o::ellipsoid EllipsoidExtractor::EstimateLocalEllipsoidUsingMultiPlanes(\
 
     // FIXME: 
     // 此处添加一个判断, 若 prob_3d < 0.5 则舍弃
+    
     if(prob_3d < 0.5)
     {
         mResult = false;

@@ -69,6 +69,7 @@ class Frame:
             self.object_class = object_classes_on_ground
         elif sequence.data_type == "ICL-NUIM":
             self.object_class = object_classes_icl_nuim
+            # self.object_class = object_classes
         
         # elif sequence.data_type=='Tum':
         #     self.object_class = "monitor"

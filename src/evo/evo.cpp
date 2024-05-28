@@ -1267,14 +1267,11 @@ namespace evo
         std::cout << "Tre.toMinimalVector() = ";
         std::cout << Tre.toMinimalVector().transpose() << std::endl;
 
-        g2o::SE3Quat Tre2;
-
         // TODO: 可视化轨迹对齐情况
         Trajectory gtTraj = MatToTraj(gtTrajMat);
-        // Trajectory estTrajInGt = MatToTraj(estTrajMat, Tre);
-        Trajectory estTrajInGt = MatToTraj(estTrajMat, Tre2);
+        Trajectory estTrajInGt = MatToTraj(estTrajMat, Tre);
 
-        std::cout << "check not Tre" << std::endl;
+        // std::cout << "check not Tre" << std::endl;
 
         bool bVisualize = (pMap != NULL);
         if (bVisualize)
@@ -1283,9 +1280,10 @@ namespace evo
             pMap->addOneTrajectory(gtTraj, "AlignedGroundtruth");
         }
 
-        // MatrixXd estObjMatInRef = transformObjMat(estObjMat, Tre);
-        MatrixXd estObjMatInRef = transformObjMat(estObjMat, Tre2);
+        MatrixXd estObjMatInRef = transformObjMat(estObjMat, Tre);
 
+        std::cout << "estObjMat tranformed: " << std::endl;
+        std::cout << estObjMatInRef.matrix() << std::endl;
 
         // std::vector<int> vAlignEstToRef = AlignEllipsoids(estObjMatInRef, refObjMat);
 

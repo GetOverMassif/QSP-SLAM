@@ -28,9 +28,8 @@ object_classes_redwood = ["benches", "chairs"]
 
 object_classes_freiburg = ["cars"]
 
-object_classes_icl_nuim = ["benches", "chairs", "potted_plants", "beds", "dining_tables", "refrigerator", \
-                           "vase", "cups", "bowls", \
-                           "tv_monitor"]
+object_classes_icl_nuim = ["benches", "chairs", "beds", "dining_tables", "refrigerator", \
+                           "vase", "cups", "bowls", "tv_monitor"]
 
 object_classes_on_ground = ["benches", "chairs", "potted_plants", "beds", "dining_tables", "refrigerator"]
 object_classes_on_table = [c for c in object_classes if c not in object_classes_on_ground ]

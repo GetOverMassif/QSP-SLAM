@@ -9,24 +9,11 @@
 
 
 
-# configs/redwood_chair_01053.yaml \
-
-# dishes # configs/tum_fr2_dishes.yaml \
-
-
-# ./qsp_slam_rgbd \
-# Vocabulary/ORBvoc.bin \
-# configs/self_allobject_circle.yaml \
-# /media/lj/TOSHIBA/dataset/FromZHJD/circle \
-# /media/lj/TOSHIBA/dataset/FromZHJD/circle/associate.txt \
-# map/self/circle
-
 # ICL-NUIM 数据集中的 associations.txt 中顺序为 FrameID, depth_img, FrameID, rgb_img
 # 需要修改为： time, rgb_img, time, depth_img
 
-
-PROGRAME_TYPE=run
-# PROGRAME_TYPE=evo
+# PROGRAME_TYPE=run
+PROGRAME_TYPE=evo
 
 # PROGRAME_TYPE=$1
 
@@ -38,12 +25,8 @@ if [ "$PROGRAME_TYPE" = "evo" ]; then
 fi
 
 
-# SCENE_TYPE=office
-# # SCENE_TYPE=home
-# DATA_NUM=2
-
-$CMD configs/ICL_NUIM_home_2.yaml
-# $CMD configs/ICL_NUIM_office_2.yaml
+# $CMD configs/ICL_NUIM_home_2.yaml
+$CMD configs/ICL_NUIM_office_2.yaml
 
 # if [ "$SCENE_TYPE" = "home" ]; then
 #     $CMD \

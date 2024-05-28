@@ -347,7 +347,7 @@ int main(int argc, char **argv)
         {
             cerr << endl << "Failed to load image at: "
                  << dataset_path << "/" << vstrImageFilenamesRGB[ni] << endl;
-            return 1;/*  */
+            return 1;
         }
 
         std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();

@@ -8,24 +8,96 @@ LocalMapping.KeepRawPose: 0
 Tracking.AddSuffixToPcd: 0
 Tracking.AssociateObjectWithEllipsold: 1
 Tracking.AssociateDebug: 0
-Tracking.AddDepthPcdToMapObject: 1
-Tracking.UseDepthPcdToReconstruct: 1
+
 
 LocalMapping.MinValidPoints: 50
 LocalMapping.MinValidRays: 1
 
 Tracking.AssociateIoUThresold: 0.52
-
 Tracking.MinimumPtNumToJudgeGood: 5  # default 20
 
 LocalMapping.DistFiltParam: 0.1
 
-Tracking.IgnoreObject: 1
+#--------------------------------------------------------------------------------------------
+# Parameters used for Object SLAM
+#--------------------------------------------------------------------------------------------
+# Config path for Python detectors
+EllipObjects.maskErrosion: 5
+
+Tracking.IgnoreObject: 0
+Tracking.AddDepthPcdToMapObject: 1  # 目前一定要设置为1
+Tracking.UseDepthPcdToReconstruct: 1
 
 
-Tracking.UseGroundTruthTraj: 1
+QSPSLAM.VoxelSize: 0.02
+QSPSLAM.NeedDatasetPointCloud: 0
 
-Tracking.GroundTruthTrajFile: traj1.gt.freiburg
+
+# -------------------------
+# 地平面提取参数： Ground Plane Extraction
+# -------------------------
+Plane.MinSize: 800
+Plane.AngleThreshold: 3.0
+Plane.DistanceThreshold: 0.05
+Plane.MannualCheck.Open: 1
+
+Plane.ManhattanPlane.Open: 0
+Tracking.UsePointModel: 0
+
+# # Mannual set
+# Plane.Groundplane.param: !!opencv-matrix
+#   rows: 1
+#   cols: 4
+#   dt: d
+#   data: [-0.021179821, -0.91581553, -0.40104032, 0.93834794]
+
+
+# when >0, filter using dis to groundplane
+Visualization.Map.Filter.DisThresh: 2.3
+Visualization.Map.Filter.DisThresh2: -0.2
+
+
+# Visualization
+Visualization.Builder.Open: 1
+Visualization.Builder.Global.Open: 0 # 注意，需要重建场景的时候这个要设置为1
+Visualization.Builder.VoxelSize: 0.05
+
+
+Vocabulary.Path: Vocabulary/ORBvoc.bin
+Config.StandardParamFile: configs/Redwood_chair_01053.yaml
+
+
+Dataset.Type: "Redwood"
+# Dataset.Path.Root: /media/lj/TOSHIBA/dataset/RedwoodOS/forQSPSLAM/01053
+# Dataset.Path.Save: map/redwood_new/01053
+Dataset.Path.Root: /media/lj/TOSHIBA/dataset/RedwoodOS/forQSPSLAM/03815
+Dataset.Path.Save: map/redwood_new/03815
+# Dataset.Path.Root: /media/lj/TOSHIBA/dataset/RedwoodOS/forQSPSLAM/00033
+# Dataset.Path.Save: map/redwood_new/00033
+# Dataset.Path.Root: /media/lj/TOSHIBA/dataset/RedwoodOS/forQSPSLAM/09374
+# Dataset.Path.Save: map/redwood_new/09374
+
+Dataset.Path.MapPcd: "./dataset.pcd"
+Dataset.Path.AssociateFile: /associate.txt
+# Dataset.Path.AssociateFile: /associate_short.txt
+MapObject.PointCloudVoxelSize: 0.03
+
+Dataset.Path.ObjectAnno: /result/objects_qsp.txt
+
+Dataset.Path.ObjectGT: /objects_gt.txt
+Dataset.Path.ObjectGroundGT:  /objects_gt.txt
+Dataset.Path.TrajectoryGT:  /groundtruth.txt
+
+Result.ObjectEstimate: /result/objects.txt
+# Result.ObjectEstimate: /result/objects_qsp.txt
+Result.TrajectoryEstimate: /result/traj.txt
+
+DetectorConfigPath: configs/config_redwood_01053.json
+
+
+# Tracking.UseGroundTruthTraj: 1
+
+# Tracking.GroundTruthTrajFile: 
 
 #--------------------------------------------------------------------------------------------
 # yolo
@@ -60,37 +132,16 @@ Tracking.GroundTruthTrajFile: traj1.gt.freiburg
 #66,  #键盘
 #41   #杯子
 
-# keyboard, laptop, bottle, bowl, 
 
-# yolo_class: [77, 73, 39, 63, 75, 66, 41, 64]   #先去掉笔记本电脑 63
-
-# On table: laptop-63, book-73, vase-75, bottle-39, keyboard-66, cup-41
-# YoloClasses: [63, 73, 75, 39, 66, 41]
-# # 是否能读字符串列表
-
-# DecoderPaths: ["weights/deepsdf/laptops_64", 
-#                "weights/deepsdf/books_64_c",
-#                "weights/deepsdf/vases_64_c",
-#                "weights/deepsdf/bottles_64",
-#                "weights/deepsdf/keyboards_64",
-#                "weights/deepsdf/cups_64_c"]
-
-
-# On ground: chair-56, couch-57, dining table-60, bed-59, bookshelf-
-
-YoloClasses: [56, 57, 60, 59]
+YoloClasses: [56, 57, 13, 60, 59]
 # 是否能读字符串列表
 
-DecoderPaths: ["weights/deepsdf/chairs_64", 
-               "weights/deepsdf/sofas_64",
-               "weights/deepsdf/tables_64",
-               "weights/deepsdf/beds_64"]
-
-
-# [Dataset Path]
-# Dataset.Type: "Redwood"
-# Dataset.Path.Root: "/media/lj/TOSHIBA/dataset/MySimDataset/GroundObjects"
-# Dataset.Path.MapPcd: "./dataset.pcd"
+DecoderPaths: ["weights/deepsdf/chairs_64",  # 56-chair
+               "weights/deepsdf/sofas_64",   # 57-coach
+               "weights/deepsdf/sofas_64",   # 13-bench
+               "weights/deepsdf/tables_64",  # 60-dining table
+               "weights/deepsdf/beds_64"     # 59-bed
+               ]
 
 
 frame_by_frame: 1  # 1: True, 0: False
@@ -109,10 +160,10 @@ System.LocalMappingInSameThread: 1
 #---------------------------
 
 # Camera calibration and distortion parameters (OpenCV)
-Camera.fx: 554.254691191187
-Camera.fy: 554.254691191187
-Camera.cx: 320.5
-Camera.cy: 240.5
+Camera.fx: 525
+Camera.fy: 525
+Camera.cx: 319.5
+Camera.cy: 239.5
 
 Camera.k1: 0.0
 Camera.k2: 0.0
@@ -138,24 +189,17 @@ ThDepth: 40.0
 # Deptmap values factor
 # DepthMapFactor: 5000.0
 
-# DepthMapFactor: 1250
-DepthMapFactor: 5000
+DepthMapFactor: 1000
 
-Camera.scale: 5000
+Camera.scale: 1000
 
 # DepthMapFactor: 1
 # Camera.scale: 1
 
-#--------------------------------------------------------------------------------------------
-# Parameters used for Object SLAM
-#--------------------------------------------------------------------------------------------
-# Config path for Python detectors
-DetectorConfigPath: configs/config_self_allobject_ground.json
-EllipObjects.maskErrosion: 5
 
 
 System.UseEllipsoldPoseForDSP.Open: 1
-Running.skip_num: 2
+Running.skip_num: 1
 Running.total_ratio: 1.0
 
 flip_sample_num: 4
@@ -185,7 +229,8 @@ SemanticPrior.GroundWeight: 2
 
 # deg
 Optimizer.Edges.3DConstrain.PlaneAngle.Sigma: 100
-EllipsoidExtractor.SupportingPlaneFilter.DisThresh: 0.002
+# EllipsoidExtractor.SupportingPlaneFilter.DisThresh: 0.002
+EllipsoidExtractor.SupportingPlaneFilter.DisThresh: 0.05
 
 # 10
 Dataset.Jumpframe: 5
@@ -242,21 +287,6 @@ SymmetrySolver.Sigma: 0.1
 # EllipsoidExtractor::LoadSymmetryPrior()
 
 
-# -------------------------
-# 地平面提取参数： Ground Plane Extraction
-# -------------------------
-Plane.MinSize: 1000
-Plane.AngleThreshold: 3.0
-Plane.DistanceThreshold: 0.05
-Plane.MannualCheck.Open: 1
-
-# Mannual set
-Plane.Groundplane.param: !!opencv-matrix
-  rows: 1
-  cols: 4
-  dt: d
-  data: [-0.00144757,   0.999998, -0.00141902,     -1.2]
-
 # Whether use the normal of the groundplane to constrain the ellipsoid
 Optimizer.Edges.GravityPrior.Open: 1
 Optimizer.Edges.GravityPrior.Scale: 100
@@ -275,13 +305,6 @@ Measurement.Probability.Thresh: 0
 # A observation will only be valid when the robot has a change of view.
 # Close it to consider every observations.
 Tracking.KeyFrameCheck.Close: 1
-
-# Visualization
-Visualization.Builder.Open: 1
-Visualization.Builder.Global.Open: 1
-
-# when >0, filter using dis to groundplane
-Visualization.Map.Filter.DisThresh: 2.3
 
 #------------------
 # ORB相关参数： ORB Parameters
