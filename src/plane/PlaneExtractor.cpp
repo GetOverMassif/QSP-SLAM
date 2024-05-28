@@ -59,59 +59,60 @@ namespace ORB_SLAM2
 
         // estimate the normal
         pcl::IntegralImageNormalEstimation<PointT, pcl::Normal> ne;
+        // success if return here
         pcl::PointCloud<pcl::Normal>::Ptr cloud_normals(new pcl::PointCloud<pcl::Normal>);
-        ne.setNormalEstimationMethod(ne.AVERAGE_3D_GRADIENT);
-        ne.setMaxDepthChangeFactor(0.05f);
-        ne.setNormalSmoothingSize(10.0f);
-        ne.setInputCloud(inputCloud);
-        ne.compute(*cloud_normals);
+        // ne.setNormalEstimationMethod(ne.AVERAGE_3D_GRADIENT);
+        // ne.setMaxDepthChangeFactor(0.05f);
+        // ne.setNormalSmoothingSize(10.0f);
+        // ne.setInputCloud(inputCloud);
+        // ne.compute(*cloud_normals);
 
-        // load config parameters
-        int min_plane = Config::ReadValue<int>("Plane.MinSize");
-        double AngTh = Config::ReadValue<double>("Plane.AngleThreshold");
-        double DisTh = Config::ReadValue<double>("Plane.DistanceThreshold");
+        // // load config parameters
+        // int min_plane = Config::ReadValue<int>("Plane.MinSize");
+        // double AngTh = Config::ReadValue<double>("Plane.AngleThreshold");
+        // double DisTh = Config::ReadValue<double>("Plane.DistanceThreshold");
 
-        // std::cout << "[Extractor.cpp] min_plane : " << min_plane << std::endl;
-        // std::cout << "[Extractor.cpp] AngTh : " << AngTh << std::endl;
-        // std::cout << "[Extractor.cpp] DisTh : " << DisTh << std::endl;
+        // // std::cout << "[Extractor.cpp] min_plane : " << min_plane << std::endl;
+        // // std::cout << "[Extractor.cpp] AngTh : " << AngTh << std::endl;
+        // // std::cout << "[Extractor.cpp] DisTh : " << DisTh << std::endl;
 
-        vector<pcl::ModelCoefficients> coefficients;
-        vector<pcl::PointIndices> inliers;
-        pcl::PointCloud<pcl::Label>::Ptr labels ( new pcl::PointCloud<pcl::Label> );
-        vector<pcl::PointIndices> label_indices;
-        vector<pcl::PointIndices> boundary;
+        // vector<pcl::ModelCoefficients> coefficients;
+        // vector<pcl::PointIndices> inliers;
+        // pcl::PointCloud<pcl::Label>::Ptr labels ( new pcl::PointCloud<pcl::Label> );
+        // vector<pcl::PointIndices> label_indices;
+        // vector<pcl::PointIndices> boundary;
 
-        pcl::OrganizedMultiPlaneSegmentation< PointT, pcl::Normal, pcl::Label > mps;
-        mps.setMinInliers (min_plane);
-        mps.setAngularThreshold (0.017453 * AngTh);  // deg to rad
-        mps.setDistanceThreshold (DisTh);
-        mps.setInputNormals (cloud_normals);
-        mps.setInputCloud (inputCloud);
-        std::vector<pcl::PlanarRegion<PointT>, Eigen::aligned_allocator<pcl::PlanarRegion<PointT>>> regions;
-        mps.segmentAndRefine (regions, coefficients, inliers, labels, label_indices, boundary);
+        // pcl::OrganizedMultiPlaneSegmentation< PointT, pcl::Normal, pcl::Label > mps;
+        // mps.setMinInliers (min_plane);
+        // mps.setAngularThreshold (0.017453 * AngTh);  // deg to rad
+        // mps.setDistanceThreshold (DisTh);
+        // mps.setInputNormals (cloud_normals);
+        // mps.setInputCloud (inputCloud);
+        // std::vector<pcl::PlanarRegion<PointT>, Eigen::aligned_allocator<pcl::PlanarRegion<PointT>>> regions;
+        // mps.segmentAndRefine (regions, coefficients, inliers, labels, label_indices, boundary);
 
-        pcl::ExtractIndices<PointT> extract;
-        extract.setInputCloud(inputCloud);
-        extract.setNegative(false);
+        // pcl::ExtractIndices<PointT> extract;
+        // extract.setInputCloud(inputCloud);
+        // extract.setNegative(false);
 
-        // save the points belonging to each planes, and the coefficients
-        for (int i = 0; i < inliers.size(); ++i) {
-            PointCloudPCL::Ptr planeCloud(new PointCloudPCL());
-            cv::Mat coef = (cv::Mat_<float>(4,1) << coefficients[i].values[0],
-                    coefficients[i].values[1],
-                    coefficients[i].values[2],
-                    coefficients[i].values[3]);
-            if(coef.at<float>(3) < 0)
-                coef = -coef;
+        // // save the points belonging to each planes, and the coefficients
+        // for (int i = 0; i < inliers.size(); ++i) {
+        //     PointCloudPCL::Ptr planeCloud(new PointCloudPCL());
+        //     cv::Mat coef = (cv::Mat_<float>(4,1) << coefficients[i].values[0],
+        //             coefficients[i].values[1],
+        //             coefficients[i].values[2],
+        //             coefficients[i].values[3]);
+        //     if(coef.at<float>(3) < 0)
+        //         coef = -coef;
 
-            // LJ修改
-            // extract.setIndices(boost::make_shared<pcl::PointIndices>(inliers[i]));
-            extract.setIndices(std::make_shared<pcl::PointIndices>(inliers[i]));
-            extract.filter(*planeCloud);
+        //     // LJ修改
+        //     // extract.setIndices(boost::make_shared<pcl::PointIndices>(inliers[i]));
+        //     extract.setIndices(std::make_shared<pcl::PointIndices>(inliers[i]));
+        //     extract.filter(*planeCloud);
 
-            mvPlanePoints.push_back(*planeCloud);
-            mvPlaneCoefficients.push_back(coef);
-        }
+        //     mvPlanePoints.push_back(*planeCloud);
+        //     mvPlaneCoefficients.push_back(coef);
+        // }
 
         // std::cout << "before extractPlanes return " << jump << std::endl;
     }

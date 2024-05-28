@@ -69,7 +69,8 @@ class Frame:
             self.object_class = object_classes_on_ground
         elif sequence.data_type == "ICL-NUIM":
             self.object_class = object_classes_icl_nuim
-            # self.object_class = object_classes
+        else:
+            self.object_class = object_classes
         
         # elif sequence.data_type=='Tum':
         #     self.object_class = "monitor"
@@ -223,7 +224,9 @@ class MonoSequence:
         self.configs = configs
         self.data_type = self.configs.data_type
         # assert self.data_type == "Redwood" or self.data_type == "Freiburg", print("Wrong data type, supported: Redwood and Freiburg")
-        assert self.data_type in valid_data_types, print(f"Wrong data type, supported: {valid_data_types}")
+        # assert self.data_type in valid_data_types, print(f"Wrong data type, supported: {valid_data_types}")
+        if self.data_type not in valid_data_types:
+            print(f"Wrong data type, supported: {valid_data_types}")
         
         self.online = self.configs.detect_online
         # Pre-stored label path

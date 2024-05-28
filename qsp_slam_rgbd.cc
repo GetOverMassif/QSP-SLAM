@@ -304,7 +304,7 @@ int main(int argc, char **argv)
 
     if(frame_by_frame) {
         std::cout << "*****************************" << std::endl;
-        std::cout << "Press [ENTER] to continue ... , [y] to autonomous mode" << std::endl;
+        std::cout << "input image: Press [ENTER] to continue ... , [y] to autonomous mode" << std::endl;
         std::cout << "*****************************" << std::endl;
         char key = getchar();
         if (key=='y')

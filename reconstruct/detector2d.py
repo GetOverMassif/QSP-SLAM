@@ -25,19 +25,20 @@ from mmdet.models import build_detector
 from mmdet.core import get_classes
 from mmdet.apis import inference_detector, show_result_pyplot
 
-from contents import object_class_table
+from reconstruct.contents import object_class_table
+
+
+coco_classes = ["person","bicycle","car","motorcycle","airplane","bus","train",
+"truck","boat","traffic light","fire hydrant","stop sign","parking meter","bench","bird",
+"cat","dog","horse","sheep","cow","elephant","bear","zebra","giraffe","backpack","umbrella",
+"handbag","tie","suitcase","frisbee","skis","snowboard","sports ball","kite","baseball bat",
+"baseball glove","skateboard","surfboard","tennis racket","bottle","wine glass","cup","fork",
+"knife","spoon","bowl","banana","apple","sandwich","orange","broccoli","carrot","hot dog",
+"pizza","donut","cake","chair","couch","potted plant","bed","dining table","toilet","monitor",
+"laptop","mouse","remote","keyboard","cell phone","microwave","oven","toaster","sink",
+"refrigerator","book","clock","vase","scissors","teddy bear","hair drier","toothbrush"]
 
 def GetLabelText(id):
-    coco_classes = ["person","bicycle","car","motorcycle","airplane","bus","train",
-    "truck","boat","traffic light","fire hydrant","stop sign","parking meter","bench","bird",
-    "cat","dog","horse","sheep","cow","elephant","bear","zebra","giraffe","backpack","umbrella",
-    "handbag","tie","suitcase","frisbee","skis","snowboard","sports ball","kite","baseball bat",
-    "baseball glove","skateboard","surfboard","tennis racket","bottle","wine glass","cup","fork",
-    "knife","spoon","bowl","banana","apple","sandwich","orange","broccoli","carrot","hot dog",
-    "pizza","donut","cake","chair","couch","potted plant","bed","dining table","toilet","monitor",
-    "laptop","mouse","remote","keyboard","cell phone","microwave","oven","toaster","sink",
-    "refrigerator","book","clock","vase","scissors","teddy bear","hair drier","toothbrush"]
-
     return coco_classes[id]
 
 
@@ -75,11 +76,11 @@ class Detector2D(object):
         self.mCol = configs.image.mCol
         self.mEdge = configs.image.mEdge
 
-    def make_prediction(self, image, object_classes=["cars"]):
+    def make_prediction(self, image, object_classes=coco_classes):
         
         # assert object_class == "chairs" or object_class == "cars"
-        for object_class in object_classes:
-            assert object_class in object_class_table, f"{object_class} is not valid class to detect"
+        # for object_class in object_classes:
+        #     assert object_class in object_class_table, f"{object_class} is not valid class to detect"
 
         self.predictions = inference_detector(self.model, image)
 

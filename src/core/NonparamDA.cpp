@@ -1142,7 +1142,7 @@ double dirichlet(std::map<int,int>& classVoter, int total_num, int label)
 
 void OutputComplexDAResult(std::vector<DAResult>& daResults, EllipObjects& objs)
 {
-    ofstream out_obj("./complex_daresult.txt");
+    ofstream out_obj("./OptimizerOutput/complex_daresult.txt");
 
     int result_num = daResults.size();
 

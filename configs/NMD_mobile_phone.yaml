@@ -1,0 +1,261 @@
+%YAML:1.0
+
+CreateSingleObject: 0
+MinimumMatchToAssociate: 10
+
+QSPSLAM.VoxelSize: 0.001
+QSPSLAM.NeedDatasetPointCloud: 0
+
+Tracking.ShowEllipsoldProcess: 0
+Tracking.AddSuffixToPcd: 0
+Tracking.AssociateObjectWithEllipsold: 1
+Tracking.AssociateDebug: 0
+Tracking.AssociateIoUThresold: 0.52
+Tracking.MinimumPtNumToJudgeGood: 5  # default 20
+Tracking.IgnoreObject: 0
+Tracking.AddDepthPcdToMapObject: 1
+Tracking.UseDepthPcdToReconstruct: 1
+
+LocalMapping.MinValidPoints: 50
+LocalMapping.MinValidRays: 1
+LocalMapping.ShowEllipsoldProcess: 0
+LocalMapping.KeepRawPose: 0
+LocalMapping.DistFiltParam: 0.1
+
+# -------------------------
+# 地平面提取参数： Ground Plane Extraction
+# -------------------------
+Plane.MinSize: 1000
+Plane.AngleThreshold: 3.0
+Plane.DistanceThreshold: 0.05
+Plane.MannualCheck.Open: 1
+
+Plane.ManhattanPlane.Open: 0
+Tracking.UsePointModel: 0
+
+# Mannual set
+Plane.Groundplane.param: !!opencv-matrix
+  rows: 1
+  cols: 4
+  dt: d
+  data: [-0.00144757,   0.999998, -0.00141902, 1.17]
+
+# when >0, filter using dis to groundplane
+Visualization.Map.Filter.DisThresh: 2.3
+Visualization.Map.Filter.DisThresh2: -0.1
+
+# Visualization
+Visualization.Builder.Open: 1
+Visualization.Builder.Global.Open: 0
+Visualization.Builder.VoxelSize: 0.05
+
+Vocabulary.Path: Vocabulary/ORBvoc.bin
+Config.StandardParamFile: configs/Redwood_chair_01053.yaml
+
+Dataset.Type: "ICL_NUIM"
+Dataset.Path.Root: /media/lj/TOSHIBA/dataset/ICL-NUIM/home/living_room_traj2_frei_png
+Dataset.Path.Save: map/icl_nuim/home/2
+
+Dataset.Path.MapPcd: "./dataset.pcd"
+
+Dataset.Path.AssociateFile: /associate.txt
+MapObject.PointCloudVoxelSize: 0.03
+
+Dataset.Path.ObjectAnno: /objects_gt.txt
+Dataset.Path.ObjectGT: /objects_gt.txt
+
+Dataset.Path.ObjectGroundGT:  /objects_gt.txt
+Dataset.Path.TrajectoryGT:  /groundtruth.txt
+
+Result.ObjectEstimate: /result/objects.txt
+Result.TrajectoryEstimate: /result/traj.txt
+
+
+DetectorConfigPath: configs/config_ICL_NUIM_home.json
+EllipObjects.maskErrosion: 5
+
+
+YoloClasses: [56, 57, 60, 59, 62, 75, 58, 45, 13]
+DecoderPaths: ["weights/deepsdf/chairs_64",   # 56 - chair
+               "weights/deepsdf/sofas_64",    # 57 - sofa/couch
+               "weights/deepsdf/tables_64",   # 60 - dining table
+               "weights/deepsdf/beds_64",     # 59 - bed
+               "weights/deepsdf/displays_64", # 62 - tv
+               "weights/deepsdf/bottles_64",  # 75 - vase
+               "weights/deepsdf/bottles_64",  # 58 - potted plant
+               "weights/deepsdf/bowls_64",    # 45 - bowl
+               "weights/deepsdf/sofas_64"     # 13 - bench
+              ]
+
+
+frame_by_frame: 1  # 1: True, 0: False
+Tracking.frame_by_frame: 1  # 1: True, 0: False
+
+System.mode: RGBD
+System.output: KeyFrameTrajectory_QSP.txt
+
+# System.mode: MONOCULAR
+# System.output: KeyFrameTrajectoryMONO.txt
+
+System.LocalMappingInSameThread: 1
+
+#---------------------------
+# Camera Parameters. 
+#---------------------------
+
+# Camera calibration and distortion parameters (OpenCV)
+Camera.fx: 481.20
+Camera.fy: -480.00
+Camera.cx: 319.50
+Camera.cy: 239.50
+
+Camera.k1: 0.0
+Camera.k2: 0.0
+Camera.p1: 0.0
+Camera.p2: 0.0
+
+Camera.width: 640
+Camera.height: 480
+
+Camera.fps: 30.0  # Camera frames per second
+Camera.bf: 40.0  # IR projector baseline times fx (aprox.)
+Camera.RGB: 1  # Color order of the images (0: BGR, 1: RGB. It is ignored if images are grayscale)
+ThDepth: 40.0  # Close/Far threshold. Baseline times.
+DepthMapFactor: 5000  # Deptmap values factor, icl-nuim/tum: 5000, redwood: 1250
+Camera.scale: 5000  # seem equal to DepthMapFactor
+
+
+System.UseEllipsoldPoseForDSP.Open: 1
+Running.skip_num: 1
+Running.total_ratio: 1.0
+
+flip_sample_num: 4
+
+# [From EllipsoldSLAM]
+
+# -----------------------------
+#   Monocular Infer
+# -----------------------------
+MonocularInfer.Init.Dis: 5
+
+# -----------------------------
+#   Semantic  Prior
+# -----------------------------
+
+# System.MonocularInfer.Open: 1
+System.MonocularInfer.Open: 0
+
+Dataset.Path.PriTable: "./config/pritable.txt"
+
+SemanticPrior.PriorD: 1
+SemanticPrior.PriorE: 1
+# Prior weight
+SemanticPrior.Weight: 1
+# Ground Plane Contrain weight
+SemanticPrior.GroundWeight: 2
+
+# deg
+Optimizer.Edges.3DConstrain.PlaneAngle.Sigma: 100
+EllipsoidExtractor.SupportingPlaneFilter.DisThresh: 0.03
+
+# 10
+Dataset.Jumpframe: 5
+
+# Use gt
+Dataset.UseGroundtruth: 1
+
+# ------------------------------
+#  Probabilistic Data Association
+# ------------------------------
+# 
+DataAssociation.DPAlpha: 0.1
+DataAssociation.PlaneError.DisSigma: 0.5
+
+# ------------------------------------
+#  单帧椭球体估计： Single-frame ellipsoid estimation
+# ------------------------------------
+# Pointcloud segmentation parameters
+EllipsoidExtraction.Euclidean.ClusterTolerance: 0.1
+EllipsoidExtraction.Euclidean.MinClusterSize: 5
+EllipsoidExtraction.Euclidean.CenterDis: 0.5
+
+EllipsoidExtractor.Rotation.NormalVoter.KSearchNum: 35
+EllipsoidExtractor.MinNeighborsInRadius: 40
+EllipsoidExtractor.StatisticalOutlierRemoval.MeanK: 50
+
+# 0: Fix camera poses in optimization, 1: oppesite
+Optimizer.SLAM.mode: 0
+
+# weights of 3d, 2d edges in optimization
+Optimizer.Edges.3DEllipsoid.Scale: 0.1
+Optimizer.Edges.2D.Scale: 0.1
+Optimizer.PartialObservation.Open: 1
+Optimizer.NonparametricDA.Num: 1
+Optimizer.Optimize.Num: 5
+# ------------------------------
+#  对称性估计： Symmetry Estimation
+# ------------------------------
+# Whether open symmetry estimation 是否开启对称性估计
+EllipsoidExtraction.Symmetry.Open: 0
+
+# Downsample grid size. Extremely influence the time and efficiency.
+EllipsoidExtraction.Symmetry.GridSize: 0.1
+
+# Parameters for symmetry probability
+SymmetrySolver.Sigma: 0.1
+
+# ----------------------------------
+# Symmetry types of semantic labels
+# ----------------------------------
+  
+# Please see the definitions in the function:
+# EllipsoidExtractor::LoadSymmetryPrior()
+
+# Whether use the normal of the groundplane to constrain the ellipsoid
+Optimizer.Edges.GravityPrior.Open: 1
+Optimizer.Edges.GravityPrior.Scale: 100
+
+Optimizer.Edges.2DConstrain.Close: 0
+Optimizer.Edges.3DConstrain.Close: 1
+# ------------------------------
+# Other Parameters
+# ------------------------------
+# Bounding box filter
+Measurement.Border.Pixels: 10
+Measurement.LengthLimit.Pixels: 0
+Measurement.Probability.Thresh: 0
+
+# A observation will only be valid when the robot has a change of view.
+# Close it to consider every observations.
+Tracking.KeyFrameCheck.Close: 1
+
+#------------------
+# ORB相关参数： ORB Parameters
+#------------------
+
+# ORB Extractor: Number of features per image
+ORBextractor.nFeatures: 4000
+# ORB Extractor: Scale factor between levels in the scale pyramid
+ORBextractor.scaleFactor: 1.2
+# ORB Extractor: Number of levels in the scale pyramid
+ORBextractor.nLevels: 8
+# ORB Extractor: Fast threshold
+# Image is divided in a grid. At each cell FAST are extracted imposing a minimum response.
+# Firstly we impose iniThFAST. If no corners are detected we impose a lower value minThFAST
+# You can lower these values if your images have low contrast
+ORBextractor.iniThFAST: 12
+ORBextractor.minThFAST: 7
+
+#--------------------------------------------------------------------------------------------
+# 显示界面参数： Viewer Parameters
+#--------------------------------------------------------------------------------------------
+Viewer.KeyFrameSize: 0.1  # originally 0.6
+Viewer.KeyFrameLineWidth: 2
+Viewer.GraphLineWidth: 4
+Viewer.PointSize: 2
+Viewer.CameraSize: 0.15  # originally 0.7
+Viewer.CameraLineWidth: 3
+Viewer.ViewpointX: 0
+Viewer.ViewpointY: -10   # originally -10
+Viewer.ViewpointZ: -0.1
+Viewer.ViewpointF: 2000

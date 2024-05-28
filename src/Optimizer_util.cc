@@ -893,7 +893,7 @@ bool IsSymmetry(int label)
 void OutputOptimizationEdgeErrors(EllipObjects& objs, std::map<int, std::vector<g2o::EdgeSE3EllipsoidPlane*>>& mapInsEdgePlanes, 
     std::map<int, std::vector<g2o::EdgeSE3EllipsoidPlanePartial*>>& mapInsEdgePlanesPartial)
 {
-    ofstream out_obj("./optimization_edges.txt");
+    ofstream out_obj("./OptimizerOutput/optimization_edges.txt");
     for( int i=0;i<objs.size();i++)
     {
         EllipObject& obj = objs[i];
@@ -931,7 +931,7 @@ void OutputOptimizationEdgeErrors(EllipObjects& objs, std::map<int, std::vector<
 
 void OutputInstanceObservationNum(std::map<int,int>& map)
 {
-    ofstream out_obj("./instance_observation_num.txt");
+    ofstream out_obj("./OptimizerOutput/instance_observation_num.txt");
 
     for(auto pair : map)
     {
@@ -1552,7 +1552,8 @@ void Optimizer::OptimizeWithDataAssociationUsingMultiplanes(std::vector<Frame *>
 
     // Output optimization information.
     // object list
-    ofstream out_obj("./object_list_nonparam.txt");
+
+    ofstream out_obj("./OptimizerOutput/object_list_nonparam.txt");
     auto iter = vEllipsoidVertexMaps.begin();
     for(;iter!=vEllipsoidVertexMaps.end();iter++)
     {
