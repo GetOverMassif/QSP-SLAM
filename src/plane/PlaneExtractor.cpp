@@ -60,7 +60,7 @@ namespace ORB_SLAM2
         // estimate the normal
         pcl::IntegralImageNormalEstimation<PointT, pcl::Normal> ne;
         // success if return here
-        pcl::PointCloud<pcl::Normal>::Ptr cloud_normals(new pcl::PointCloud<pcl::Normal>);
+        // pcl::PointCloud<pcl::Normal>::Ptr cloud_normals(new pcl::PointCloud<pcl::Normal>);
         // ne.setNormalEstimationMethod(ne.AVERAGE_3D_GRADIENT);
         // ne.setMaxDepthChangeFactor(0.05f);
         // ne.setNormalSmoothingSize(10.0f);

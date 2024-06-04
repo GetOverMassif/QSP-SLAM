@@ -34,7 +34,6 @@ for img_name in img_list:
     img_labeled_bgr = show_result_pyplot(detector.model, img_bgr, detector.predictions, score_thr=0.2)
     # img_labeled_rgb = img_labeled_bgr[:,:,(2,1,0)]
 
-    
     # plt.imshow(img_labeled_rgb)
     # plt.show()
 
